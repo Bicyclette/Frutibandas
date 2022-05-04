@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules ${CMAKE_MODULE_PATH})
 set(CMAKE_RUNTIME_OUTPUT ${CMAKE_BINARY_DIR})
+set(APP_ICON_RESOURCE_WINDOWS "src/resources.rc")
 cmake_policy(SET CMP0072 NEW)
 
 include_directories(include
@@ -56,12 +57,14 @@ set(SRCS
     src/user_interface.cpp
 	src/network_client.cpp
 	src/helpers.cpp
+	src/mouse.cpp
 	src/imgui.cpp
 	src/imgui_draw.cpp
 	src/imgui_tables.cpp
 	src/imgui_widgets.cpp
 	src/imgui_impl_sdl.cpp
-	src/imgui_impl_opengl3.cpp)
+	src/imgui_impl_opengl3.cpp
+	src/tinyfiledialogs.cpp)
 
 set(HEADERS
 	include/stb_image.h
@@ -93,6 +96,7 @@ set(HEADERS
 	include/helpers.hpp
 	include/allocation.hpp
 	include/network_client.hpp
+	include/mouse.hpp
 	include/imgui.h
 	include/imconfig.h
 	include/imgui_internal.h
@@ -100,9 +104,10 @@ set(HEADERS
 	include/imstb_rectpack.h
 	include/imstb_truetype.h
 	include/imgui_impl_sdl.h
-	include/imgui_impl_opengl3.h)
+	include/imgui_impl_opengl3.h
+	include/tinyfiledialogs.hpp)
 
-add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS})
+add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 
 find_package(OPENMP REQUIRED)
 if(OPENMP_FOUND)

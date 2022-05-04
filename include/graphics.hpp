@@ -98,11 +98,13 @@ class Graphics
 		std::array<GLuint, 2> bloomTexture;
         std::array<std::unique_ptr<Framebuffer>, 4> volumetrics; // hdr color, no multisampling
         std::unique_ptr<Framebuffer> motionBlurFBO;
-        std::unique_ptr<Framebuffer> userInterfaceFBO;
+		std::unique_ptr<Framebuffer> userInterfaceFBO;
+		std::unique_ptr<Framebuffer> avatarFBO;
 		std::array<std::unique_ptr<Framebuffer>, 2> compositeFBO;
 
 		TONE_MAPPING scene_tone_mapping;
 		TONE_MAPPING ui_tone_mapping;
+		float aspect_ratio;
 		float near;
 		float far;
 		bool shadows;

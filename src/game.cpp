@@ -1,26 +1,140 @@
 #include "game.hpp"
 
+void Writer::write(std::bitset<52>& writeInput, float delta)
+{
+	WRITE_ACTION writeAction;
+	bool maj = writeInput.test(43) || writeInput.test(44);
+	char c{ '~' };
+	for (int i{ 0 }; i < 26; ++i)
+	{
+		if (writeInput.test(i))
+			c = (maj) ? 'A' + i : 'a' + i;
+	}
+	for (int i{ 26 }; i < 36; ++i)
+	{
+		if (writeInput.test(i))
+			c = '0' + (i - 26);
+	}
+	if (writeInput.test(36))
+		c = '_';
+	if (writeInput.test(37))
+		c = '-';
+	if (writeInput.test(38))
+		c = ' ';
+	if (writeInput.test(39))
+		c = '*';
+	if (writeInput.test(45))
+		c = '.';
+	if (writeInput.test(46))
+		c = '?';
+	if (writeInput.test(47))
+		c = '!';
+	if (writeInput.test(48))
+		c = ',';
+	if (writeInput.test(49))
+		c = ';';
+	if (writeInput.test(50))
+		c = '/';
+	if (writeInput.test(51))
+		c = '+';
+
+	if (writeInput.test(40))
+		writeAction = WRITE_ACTION::ERASE;
+	else if (writeInput.test(41))
+		writeAction = WRITE_ACTION::CURSOR_LEFT;
+	else if (writeInput.test(42))
+		writeAction = WRITE_ACTION::CURSOR_RIGHT;
+	else if (c == '~')
+		writeAction = WRITE_ACTION::NOTHING;
+	else
+		writeAction = WRITE_ACTION::CHARACTER;
+
+	write_aux(writeAction, c, delta);
+}
+
+void Writer::write_aux(WRITE_ACTION writeAction, char c, float delta)
+{
+	if (writeAction == WRITE_ACTION::NOTHING)
+	{
+		m_lastCharacter = '~';
+		m_deltaWrite = 0.0f;
+		m_lastWriteAction = writeAction;
+		return;
+	}
+	if (m_lastWriteAction == writeAction || (writeAction == WRITE_ACTION::CHARACTER && c == m_lastCharacter))
+	{
+		m_deltaWrite += delta;
+		if (m_deltaWrite < 1.0f)
+			return;
+		else
+		{
+			if (m_deltaWrite < 1.05f)
+				return;
+			else
+				m_deltaWrite = 1.0f;
+		}
+	}
+	if (writeAction == WRITE_ACTION::CHARACTER)
+	{
+		if (c != m_lastCharacter)
+		{
+			m_lastCharacter = c;
+			m_deltaWrite = 0.0f;
+		}
+		if (m_textInput[m_cursor.m_focus].size() < m_textInputMaxCapacity[m_cursor.m_focus])
+		{
+			m_textInput[m_cursor.m_focus].insert(m_cursor.m_pos, &c, 1);
+			m_cursor.m_pos++;
+		}
+	}
+	else if (writeAction == WRITE_ACTION::ERASE)
+	{
+		if (m_textInput[m_cursor.m_focus].size() > 0)
+		{
+			m_textInput[m_cursor.m_focus].erase(--m_cursor.m_pos);
+		}
+	}
+	else if (writeAction == WRITE_ACTION::CURSOR_LEFT)
+	{
+		m_cursor.m_pos = max(0, m_cursor.m_pos - 1);
+	}
+	else if (writeAction == WRITE_ACTION::CURSOR_RIGHT)
+	{
+		if (m_cursor.m_pos < m_textInput[m_cursor.m_focus].size())
+			m_cursor.m_pos = min(m_textInputMaxCapacity[m_cursor.m_focus], m_cursor.m_pos + 1);
+	}
+
+	m_lastWriteAction = writeAction;
+}
+
 Game::Game(int clientWidth, int clientHeight) :
 	activeScene(0),
 	activeVehicle(-1),
 	graphics(clientWidth, clientHeight),
-    textRenderer(std::make_unique<Text>(clientWidth, clientHeight))
+    textRenderer(std::make_unique<Text>(clientWidth, clientHeight)),
+	m_cards(clientWidth, clientHeight),
+	m_board(clientWidth, clientHeight, graphics.aspect_ratio),
+	m_fruit(-1)
 {
-    // load some fonts and set an active font
-    textRenderer->load_police("assets/fonts/FreeMonoBold.ttf", 24);
-    textRenderer->use_police(0);
-	
-	// scene objects
-	std::vector<std::shared_ptr<Object>> scene_objects;
+	// create mouse
+	int mouse_pos[2];
+	SDL_GetMouseState(&mouse_pos[0], &mouse_pos[1]);
+	int mouse_size[2] = { 25,25 };
+	m_mouse = std::make_unique<Mouse>(mouse_pos, mouse_size, "assets/mouse/normal.tga", "assets/mouse/hover.tga", clientWidth, clientHeight);
+	m_mouse->activate();
 
+	// load some fonts and set an active font
+    textRenderer->load_police("assets/fonts/ebrima.ttf", 24);
+    textRenderer->use_police(0);
+
+	// scene
 	glm::vec3 camPos;
 	glm::vec3 camTarget;
 	glm::vec3 camDir;
 	glm::vec3 camRight;
 	glm::vec3 camUp;
 
-	// create client scene
-	scenes.emplace_back("client", 0);
+	scenes.emplace_back("Frutibandas", 0);
 
 	camPos = glm::vec3(0.0f, 0.0f, -1.0f);
 	camTarget = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -29,138 +143,205 @@ Game::Game(int clientWidth, int clientHeight) :
 	camRight = glm::normalize(glm::cross(camDir, camUp));
 	camUp = glm::normalize(glm::cross(camRight, camDir));
 	scenes[0].addCamera(CAM_TYPE::REGULAR, glm::ivec2(clientWidth, clientHeight), camPos, camTarget, camUp, 45.0f, 0.1f, 100.0f);
-
 	scenes[0].setActiveCamera(0);
 
-	// create frutibandas scene
-	scenes.emplace_back("frutibandas", 1);
+	// init
+	createUI(clientWidth, clientHeight);
+}
 
-	camPos = glm::vec3(0.0f, 0.0f, -1.0f);
-	camTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-	camDir = glm::normalize(camTarget - camPos);
-	camUp = glm::vec3(0.0f, 1.0f, 0.0f);
-	camRight = glm::normalize(glm::cross(camDir, camUp));
-	camUp = glm::normalize(glm::cross(camRight, camDir));
-	scenes[1].addCamera(CAM_TYPE::REGULAR, glm::ivec2(clientWidth, clientHeight), camPos, camTarget, camUp, 45.0f, 0.1f, 100.0f);
-	scenes[1].setActiveCamera(0);
+void Game::createUI(int width, int height)
+{
+	// home page
+	m_ui.add_page();
 
-	// set sprite groups
-	float screenAR = static_cast<float>(clientWidth) / static_cast<float>(clientHeight);
-	sprite_group.emplace_back(0); // interface
-	sprite_group.emplace_back(1); // plateau
-	sprite_group.emplace_back(2); // oranges
-	sprite_group.emplace_back(3); // bananes
-	sprite_group.emplace_back(4); // chat
-
-	// interface
-	glm::vec2 avatar_size(0.12f, 0.12f * screenAR);
-	glm::vec2 left_avatar_pos(0.02f, 0.97f);
-	glm::vec2 right_avatar_pos(0.98f - avatar_size.x, 0.97f);
-
-	glm::vec2 slot_size(0.08f, 0.16f);
-	glm::vec4 slot_color(0.67f, 0.69f, 0.25f, 1.0f);
-	float start_slot = 0.73f;
-	float marginV = 0.01f;
-	float marginH = (0.22f - slot_size.x * 2.0f) / 3.0f;
-
-	std::unique_ptr<Sprite> bkg(std::make_unique<Sprite>(glm::vec2(0.0f, 1.0f), glm::vec2(1.0f, 1.0f), -0.25f, clientWidth, clientHeight));
-	bkg->set_background_color(glm::vec4(0.21f, 0.30f, 0.025f, 1.0f));
-	std::unique_ptr<Sprite> leftPanel(std::make_unique<Sprite>(glm::vec2(0.0f, 1.0f), glm::vec2(0.22f, 1.0f), 0.5f, clientWidth, clientHeight));
-	leftPanel->set_background_color(glm::vec4(0.737f, 0.806f, 0.396f, 1.0f));
-	std::unique_ptr<Sprite> rightPanel(std::make_unique<Sprite>(glm::vec2(0.78f, 1.0f), glm::vec2(0.22f, 1.0f), 0.5f, clientWidth, clientHeight));
-	rightPanel->set_background_color(glm::vec4(0.737f, 0.806f, 0.396f, 1.0f));
+	Page& home_page = m_ui.get_page(0);
+	home_page.add_layer(0);
+	home_page.add_layer(1); // emphase sur le nom de la partie du visage en cours d'édition
+	home_page.add_layer(2); // menu déroulant "partie du visage"
+	home_page.add_layer(3); // options visage
+	home_page.add_layer(4); // options cheveux (homme)
+	home_page.add_layer(5); // options cheveux (femme)
+	home_page.add_layer(6); // options yeux (homme)
+	home_page.add_layer(7); // options yeux (femme)
+	home_page.add_layer(8); // options bouche
+	home_page.add_layer(9); // options sexe
+	home_page.add_layer(10); // avatar
+	home_page.add_layer(11); // choix de couleur
 	
-	std::unique_ptr<Sprite> left_avatar(std::make_unique<Sprite>(left_avatar_pos, avatar_size, 0.55f, clientWidth, clientHeight));
-	std::unique_ptr<Sprite> right_avatar(std::make_unique<Sprite>(right_avatar_pos, avatar_size, 0.55f, clientWidth, clientHeight));
+	Layer& h_layer0 = home_page.get_layer(0);
+	h_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(width, height), width, height);
+	h_layer0.get_sprite(0)->set_background_img("assets/home.tga");
+	h_layer0.get_sprite(0)->use_background_img();
 
-	float shiftX = 0.78f;
-	float shiftY = 0.0f;
-	std::vector<std::unique_ptr<Sprite>> left_cards;
-	std::vector<std::unique_ptr<Sprite>> right_cards;
-	for (int i{ 0 }; i < 4; ++i)
-	{
-		shiftY = (slot_size.y + marginV) * i;
-		left_cards.push_back(std::make_unique<Sprite>(glm::vec2(marginH, start_slot - shiftY), slot_size, 0.55f, clientWidth, clientHeight));
-		left_cards.push_back(std::make_unique<Sprite>(glm::vec2(slot_size.x + 2 * marginH, start_slot - shiftY), slot_size, 0.55f, clientWidth, clientHeight));
-		right_cards.push_back(std::make_unique<Sprite>(glm::vec2(marginH + shiftX, start_slot - shiftY), slot_size, 0.55f, clientWidth, clientHeight));
-		right_cards.push_back(std::make_unique<Sprite>(glm::vec2(slot_size.x + 2 * marginH + shiftX, start_slot - shiftY), slot_size, 0.55f, clientWidth, clientHeight));
-	}
+	Layer& h_layer1 = home_page.get_layer(1);
+	h_layer1.set_visibility(false);
+	h_layer1.add_sprite(1, glm::vec2(400, 728-(140+48)), glm::vec2(400, 48), width, height);
+	h_layer1.get_sprite(1)->set_background_img("assets/avatar/face_part_highlight.tga");
+	h_layer1.get_sprite(1)->use_background_img();
 
-	std::unique_ptr<Sprite> rOrange(std::make_unique<Sprite>(glm::vec2(0.15f, 0.97f), glm::vec2(0.03f, 0.03f * screenAR), 0.8f, clientWidth, clientHeight));
-	rOrange->set_background_img("assets/orange.tga");
-	std::unique_ptr<Sprite> rBanane(std::make_unique<Sprite>(glm::vec2(0.79f, 0.97f + 0.03f * screenAR * 0.5f), glm::vec2(0.03f, 0.03f * screenAR * 1.5f), 0.8f, clientWidth, clientHeight));
-	rBanane->set_background_img("assets/banane.tga");
+	Layer& h_layer2 = home_page.get_layer(2);
+	h_layer2.add_sprite(2, glm::vec2(600, 728 - (140 + 48 - 12)), glm::vec2(150, 24), width, height);
+	h_layer2.get_sprite(2)->set_background_img("assets/avatar/visage.tga");
+	h_layer2.get_sprite(2)->set_background_img_selected("assets/avatar/visage_hover.tga");
+	h_layer2.get_sprite(2)->use_background_img();
+	h_layer2.get_sprite(2)->select();
+	// >>>>> highlight
+	h_layer1.get_sprite(1)->set_pos(glm::vec2(400, 728 - 140));
+	h_layer1.set_visibility(true);
+	// <<<<< highlight
+	h_layer2.add_sprite(3, glm::vec2(600, 728 - (140 + 48*2 - 12)), glm::vec2(150, 24), width, height);
+	h_layer2.get_sprite(3)->set_background_img("assets/avatar/cheveux.tga");
+	h_layer2.get_sprite(3)->set_background_img_selected("assets/avatar/cheveux_hover.tga");
+	h_layer2.get_sprite(3)->use_background_img();
+	h_layer2.add_sprite(4, glm::vec2(600, 728 - (140 + 48*3 - 12)), glm::vec2(150, 24), width, height);
+	h_layer2.get_sprite(4)->set_background_img("assets/avatar/yeux.tga");
+	h_layer2.get_sprite(4)->set_background_img_selected("assets/avatar/yeux_hover.tga");
+	h_layer2.get_sprite(4)->use_background_img();
+	h_layer2.add_sprite(5, glm::vec2(600, 728 - (140 + 48*4 - 12)), glm::vec2(150, 24), width, height);
+	h_layer2.get_sprite(5)->set_background_img("assets/avatar/bouche.tga");
+	h_layer2.get_sprite(5)->set_background_img_selected("assets/avatar/bouche_hover.tga");
+	h_layer2.get_sprite(5)->use_background_img();
+	h_layer2.add_sprite(6, glm::vec2(600, 728 - (140 + 48*5 - 12)), glm::vec2(150, 24), width, height);
+	h_layer2.get_sprite(6)->set_background_img("assets/avatar/sexe.tga");
+	h_layer2.get_sprite(6)->set_background_img_selected("assets/avatar/sexe_hover.tga");
+	h_layer2.get_sprite(6)->use_background_img();
 
-	std::unique_ptr<Sprite> left(std::make_unique<Sprite>(glm::vec2(0.225f, 0.65f), glm::vec2(0.08f, 0.08f * screenAR), 0.75f, clientWidth, clientHeight));
-	left->set_background_img("assets/arrow_left.tga");
-	std::unique_ptr<Sprite> right(std::make_unique<Sprite>(glm::vec2(0.695f, 0.65f), glm::vec2(0.08f, 0.08f * screenAR), 0.75f, clientWidth, clientHeight));
-	right->set_background_img("assets/arrow_right.tga");
-	std::unique_ptr<Sprite> up(std::make_unique<Sprite>(glm::vec2(0.46f, 0.985f), glm::vec2(0.08f, 0.08f * screenAR), 0.75f, clientWidth, clientHeight));
-	up->set_background_img("assets/arrow_up.tga");
-	std::unique_ptr<Sprite> down(std::make_unique<Sprite>(glm::vec2(0.46f, 0.335f), glm::vec2(0.08f, 0.08f * screenAR), 0.75f, clientWidth, clientHeight));
-	down->set_background_img("assets/arrow_down.tga");
+	Layer& h_layer3 = home_page.get_layer(3);
+	h_layer3.set_visibility(false);
+	h_layer3.add_sprite(7, glm::vec2(610, 728 - (140 + 48 + 12)), glm::vec2(130, 24), width, height);
+	h_layer3.get_sprite(7)->set_background_img("assets/avatar/visage_normal.tga");
+	h_layer3.get_sprite(7)->set_background_img_selected("assets/avatar/visage_normal_hover.tga");
+	h_layer3.get_sprite(7)->use_background_img();
 
-	sprite_group[0].m_sprite.emplace_back(std::move(bkg));
-	sprite_group[0].m_sprite.emplace_back(std::move(leftPanel));
-	sprite_group[0].m_sprite.emplace_back(std::move(rightPanel));
-	sprite_group[0].m_sprite.emplace_back(std::move(left_avatar));
-	sprite_group[0].m_sprite.emplace_back(std::move(right_avatar));
-	for (int i = 0; i < left_cards.size(); ++i)
-	{
-		sprite_group[0].m_sprite.emplace_back(std::move(left_cards[i]));
-		sprite_group[0].m_sprite.emplace_back(std::move(right_cards[i]));
-	}
-	sprite_group[0].m_sprite.emplace_back(std::move(rOrange));
-	sprite_group[0].m_sprite.emplace_back(std::move(rBanane));
-	sprite_group[0].m_sprite.emplace_back(std::move(left));
-	sprite_group[0].m_sprite.emplace_back(std::move(right));
-	sprite_group[0].m_sprite.emplace_back(std::move(up));
-	sprite_group[0].m_sprite.emplace_back(std::move(down));
+	Layer& h_layer4 = home_page.get_layer(4);
+	h_layer4.set_visibility(false);
+	h_layer4.add_sprite(8, glm::vec2(610, 728 - (140 + 48 * 2 + 12)), glm::vec2(130, 24), width, height);
+	h_layer4.get_sprite(8)->set_background_img("assets/avatar/cheveux_herisson.tga");
+	h_layer4.get_sprite(8)->set_background_img_selected("assets/avatar/cheveux_herisson_hover.tga");
+	h_layer4.get_sprite(8)->use_background_img();
+	h_layer4.add_sprite(9, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer4.get_sprite(9)->set_background_img("assets/avatar/cheveux_decoiffe.tga");
+	h_layer4.get_sprite(9)->set_background_img_selected("assets/avatar/cheveux_decoiffe_hover.tga");
+	h_layer4.get_sprite(9)->use_background_img();
+	h_layer4.add_sprite(10, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 48)), glm::vec2(130, 24), width, height);
+	h_layer4.get_sprite(10)->set_background_img("assets/avatar/cheveux_meche_avant.tga");
+	h_layer4.get_sprite(10)->set_background_img_selected("assets/avatar/cheveux_meche_avant_hover.tga");
+	h_layer4.get_sprite(10)->use_background_img();
+	h_layer4.add_sprite(11, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 72)), glm::vec2(130, 24), width, height);
+	h_layer4.get_sprite(11)->set_background_img("assets/avatar/yeux_manga.tga");
+	h_layer4.get_sprite(11)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer4.get_sprite(11)->use_background_img();
+	h_layer4.add_sprite(12, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 96)), glm::vec2(130, 24), width, height);
+	h_layer4.get_sprite(12)->set_background_img("assets/avatar/cheveux_arriere.tga");
+	h_layer4.get_sprite(12)->set_background_img_selected("assets/avatar/cheveux_arriere_hover.tga");
+	h_layer4.get_sprite(12)->use_background_img();
 
-	// plateau
-	float tileDim = (0.56f / 12.0f);
-	glm::vec2 top_left_start(0.22f + 2 * tileDim, 1.0f - 2 * tileDim * screenAR);
-	for (int i{ 0 }; i < 8; ++i)
-	{
-		for (int j{ 0 }; j < 8; ++j)
-		{
-			std::unique_ptr<Sprite> tile(std::make_unique<Sprite>(top_left_start + glm::vec2(j * tileDim, -i * tileDim * screenAR), glm::vec2(tileDim, tileDim * screenAR), 0.55f, clientWidth, clientHeight));
-			if (i == 7)
-				tile->set_background_img("assets/board_bottom.tga");
-			else
-				tile->set_background_img("assets/board.tga");
-			sprite_group[1].m_sprite.emplace_back(std::move(tile));
-		}
-	}
+	Layer& h_layer5 = home_page.get_layer(5);
+	h_layer5.set_visibility(false);
+	h_layer5.add_sprite(13, glm::vec2(610, 728 - (140 + 48 * 2 + 12)), glm::vec2(130, 24), width, height);
+	h_layer5.get_sprite(13)->set_background_img("assets/avatar/yeux_manga.tga");
+	h_layer5.get_sprite(13)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer5.get_sprite(13)->use_background_img();
+	h_layer5.add_sprite(14, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer5.get_sprite(14)->set_background_img("assets/avatar/cheveux_mi_long.tga");
+	h_layer5.get_sprite(14)->set_background_img_selected("assets/avatar/cheveux_mi_long_hover.tga");
+	h_layer5.get_sprite(14)->use_background_img();
+	h_layer5.add_sprite(15, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 48)), glm::vec2(130, 24), width, height);
+	h_layer5.get_sprite(15)->set_background_img("assets/avatar/cheveux_frange.tga");
+	h_layer5.get_sprite(15)->set_background_img_selected("assets/avatar/cheveux_frange_hover.tga");
+	h_layer5.get_sprite(15)->use_background_img();
+	h_layer5.add_sprite(16, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 72)), glm::vec2(130, 24), width, height);
+	h_layer5.get_sprite(16)->set_background_img("assets/avatar/cheveux_au_bol.tga");
+	h_layer5.get_sprite(16)->set_background_img_selected("assets/avatar/cheveux_au_bol_hover.tga");
+	h_layer5.get_sprite(16)->use_background_img();
+	h_layer5.add_sprite(17, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 96)), glm::vec2(130, 24), width, height);
+	h_layer5.get_sprite(17)->set_background_img("assets/avatar/cheveux_raide.tga");
+	h_layer5.get_sprite(17)->set_background_img_selected("assets/avatar/cheveux_raide_hover.tga");
+	h_layer5.get_sprite(17)->use_background_img();
 
-	// oranges et bananes
-	glm::vec2 orange_start(0.22f + 2 * tileDim, 1.0f - 2 * tileDim * screenAR);
-	glm::vec2 banane_start(0.22f + 2 * tileDim, 1.0f - (1.5 * tileDim * screenAR));
+	Layer& h_layer6 = home_page.get_layer(6);
+	h_layer6.set_visibility(false);
+	h_layer6.add_sprite(18, glm::vec2(610, 728 - (140 + 48 * 3 + 12)), glm::vec2(130, 24), width, height);
+	h_layer6.get_sprite(18)->set_background_img("assets/avatar/yeux_manga.tga");
+	h_layer6.get_sprite(18)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer6.get_sprite(18)->use_background_img();
+	h_layer6.add_sprite(19, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer6.get_sprite(19)->set_background_img("assets/avatar/yeux_amande.tga");
+	h_layer6.get_sprite(19)->set_background_img_selected("assets/avatar/yeux_amande_hover.tga");
+	h_layer6.get_sprite(19)->use_background_img();
+	h_layer6.add_sprite(20, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 48)), glm::vec2(130, 24), width, height);
+	h_layer6.get_sprite(20)->set_background_img("assets/avatar/yeux_gros.tga");
+	h_layer6.get_sprite(20)->set_background_img_selected("assets/avatar/yeux_gros_hover.tga");
+	h_layer6.get_sprite(20)->use_background_img();
 
-	for (int i{ 0 }; i < 8; ++i)
-	{
-		for (int j{ 0 }; j < 8; ++j)
-		{
-			int board_value = board[i][j];
-			if (board_value == 0)
-			{
-				std::unique_ptr<Sprite> orange(std::make_unique<Sprite>(orange_start + glm::vec2(j,-i) * glm::vec2(tileDim, tileDim * screenAR), glm::vec2(tileDim, tileDim * screenAR), 0.6f, clientWidth, clientHeight));
-				orange->set_background_img("assets/orange.tga");
-				sprite_group[2].m_sprite.emplace_back(std::move(orange));
-			}
-			else if (board_value == 1)
-			{
-				std::unique_ptr<Sprite> banane(std::make_unique<Sprite>(banane_start + glm::vec2(j,-i) * glm::vec2(tileDim, tileDim * screenAR), glm::vec2(tileDim, tileDim * screenAR * 1.5f), 0.65f, clientWidth, clientHeight));
-				banane->set_background_img("assets/banane.tga");
-				sprite_group[3].m_sprite.emplace_back(std::move(banane));
-			}
-		}
-	}
+	Layer& h_layer7 = home_page.get_layer(7);
+	h_layer7.set_visibility(false);
+	h_layer7.add_sprite(21, glm::vec2(610, 728 - (140 + 48 * 3 + 12)), glm::vec2(130, 24), width, height);
+	h_layer7.get_sprite(21)->set_background_img("assets/avatar/yeux_manga.tga");
+	h_layer7.get_sprite(21)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer7.get_sprite(21)->use_background_img();
+	h_layer7.add_sprite(22, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer7.get_sprite(22)->set_background_img("assets/avatar/yeux_egypte.tga");
+	h_layer7.get_sprite(22)->set_background_img_selected("assets/avatar/yeux_egypte_hover.tga");
+	h_layer7.get_sprite(22)->use_background_img();
+	h_layer7.add_sprite(23, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 48)), glm::vec2(130, 24), width, height);
+	h_layer7.get_sprite(23)->set_background_img("assets/avatar/yeux_mascara.tga");
+	h_layer7.get_sprite(23)->set_background_img_selected("assets/avatar/yeux_mascara_hover.tga");
+	h_layer7.get_sprite(23)->use_background_img();
 
-	// chat
-	std::unique_ptr<Sprite> chat(std::make_unique<Sprite>(glm::vec2(0.23, 0.23f), glm::vec2(0.54f, 0.22f), 0.5f, clientWidth, clientHeight));
-	chat->set_background_color(glm::vec4(0.737f, 0.806f, 0.396f, 1.0f));
-	sprite_group[4].m_sprite.emplace_back(std::move(chat));
+	Layer& h_layer8 = home_page.get_layer(8);
+	h_layer8.set_visibility(false);
+	h_layer8.add_sprite(24, glm::vec2(610, 728 - (140 + 48 * 4 + 12)), glm::vec2(130, 24), width, height);
+	h_layer8.get_sprite(24)->set_background_img("assets/avatar/bouche_petite.tga");
+	h_layer8.get_sprite(24)->set_background_img_selected("assets/avatar/bouche_petite_hover.tga");
+	h_layer8.get_sprite(24)->use_background_img();
+	h_layer8.add_sprite(25, glm::vec2(610, 728 - (140 + 48 * 4 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer8.get_sprite(25)->set_background_img("assets/avatar/bouche_moyenne.tga");
+	h_layer8.get_sprite(25)->set_background_img_selected("assets/avatar/bouche_moyenne_hover.tga");
+	h_layer8.get_sprite(25)->use_background_img();
+	h_layer8.add_sprite(26, glm::vec2(610, 728 - (140 + 48 * 4 + 12 + 48)), glm::vec2(130, 24), width, height);
+	h_layer8.get_sprite(26)->set_background_img("assets/avatar/bouche_grande.tga");
+	h_layer8.get_sprite(26)->set_background_img_selected("assets/avatar/bouche_grande_hover.tga");
+	h_layer8.get_sprite(26)->use_background_img();
+
+	Layer& h_layer9 = home_page.get_layer(9);
+	h_layer9.set_visibility(false);
+	h_layer9.add_sprite(27, glm::vec2(610, 728 - (140 + 48 * 5 + 12)), glm::vec2(130, 24), width, height);
+	h_layer9.get_sprite(27)->set_background_img("assets/avatar/sexe_homme.tga");
+	h_layer9.get_sprite(27)->set_background_img_selected("assets/avatar/sexe_homme_hover.tga");
+	h_layer9.get_sprite(27)->use_background_img();
+	h_layer9.get_sprite(27)->select();
+	h_layer9.add_sprite(28, glm::vec2(610, 728 - (140 + 48 * 5 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer9.get_sprite(28)->set_background_img("assets/avatar/sexe_femme.tga");
+	h_layer9.get_sprite(28)->set_background_img_selected("assets/avatar/sexe_femme_hover.tga");
+	h_layer9.get_sprite(28)->use_background_img();
+
+	Layer& h_layer10 = home_page.get_layer(10);
+	h_layer10.add_sprite(29, glm::vec2(250, 728 - (140 + 48 * 5 + 12 + 24)), glm::vec2(300, 300), width, height);
+	h_layer10.get_sprite(29)->set_background_img_gl(graphics.avatarFBO->getAttachments()[0].id);
+	h_layer10.get_sprite(29)->use_background_img_gl();
+
+	Layer& h_layer11 = home_page.get_layer(11);
+	h_layer11.add_sprite(30, glm::vec2(225, 728 - 285), glm::vec2(50, 50), width, height);
+	h_layer11.get_sprite(30)->set_background_img("assets/avatar/couleur_left.tga");
+	h_layer11.get_sprite(30)->use_background_img();
+	h_layer11.add_sprite(31, glm::vec2(525, 728 - 285), glm::vec2(50, 50), width, height);
+	h_layer11.get_sprite(31)->set_background_img("assets/avatar/couleur_right.tga");
+	h_layer11.get_sprite(31)->use_background_img();
+
+	// game page
+	m_ui.add_page();
+	
+	Page& game_page = m_ui.get_page(1);
+	game_page.add_layer(0);
+
+	Layer& g_layer0 = game_page.get_layer(0);
+	g_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(width, height), width, height);
+	g_layer0.get_sprite(0)->set_background_img("assets/game.tga");
+	g_layer0.get_sprite(0)->use_background_img();
+
+	// active page
+	m_ui.set_active_page(0);
 }
 
 void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWING_MODE mode, bool debug, bool debugPhysics)
@@ -192,6 +373,7 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 
 	if(activeScene < scenes.size())
 	{
+		/*
 	    s.use();
 
 		s.setInt("shadowOn", 0);
@@ -225,7 +407,7 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
         // MOTION BLUR PASS
 		if(graphics.motionBlurFX)
 			motionBlurPass(activeScene, width, height);
-
+		*/
         // DRAW USER INTERFACE
         drawUI(delta, elapsedTime, width, height, mode);
 
@@ -240,14 +422,25 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 
 void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAWING_MODE mode)
 {
+	// draw avatar
+	graphics.avatarFBO->bind();
+	glViewport(0, 0, 512, 512);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	m_avatar.draw();
+
+	// draw UI
     graphics.userInterfaceFBO->bind();
+	glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+	m_ui.get_page(m_ui.get_active_page()).draw();
 
-	for (SpriteGroup & sg : sprite_group)
+	// mouse
+	if (m_mouse && m_mouse->is_active())
 	{
-		for(auto& s : sg.m_sprite)
-			s->draw();
+		m_mouse->update_position();
+		m_mouse->draw();
 	}
 
 	bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
@@ -264,16 +457,9 @@ void Game::resizeScreen(int clientWidth, int clientHeight)
 
 	graphics.resizeScreen(clientWidth, clientHeight);
     textRenderer->resize_screen(clientWidth, clientHeight);
-	for (SpriteGroup& sg : sprite_group)
-	{
-		for (auto& s : sg.m_sprite)
-		{
-			s->resize_screen(clientWidth, clientHeight);
-		}
-	}
 }
 
-void Game::updateSceneActiveCameraView(int index, const std::bitset<16> & inputs, std::array<int, 3> & mouse, float delta)
+void Game::updateSceneActiveCameraView(int index, const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta)
 {
 	if(index < scenes.size())
 	{
@@ -446,6 +632,454 @@ void Game::vehicleUpdateUpVector()
 {
 	worldPhysics[activeScene].updateVehicleUpVector(scenes[activeScene].getVehicles()[activeVehicle]);
 }
+
+int Game::getCursorFocus()
+{
+	return m_writer.m_cursor.m_focus;
+}
+
+Writer& Game::get_writer()
+{
+	return m_writer;
+}
+
+void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, float delta)
+{
+	int* mouse_pos = m_mouse->get_position();
+	int* mouse_size = m_mouse->get_size();
+	m_mouse->use_normal();
+	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos[0], mouse_pos[1]);
+
+	if (!hovered)
+		return;
+	if (m_ui.get_active_page() == 0) // home
+	{
+		Page& home_page{m_ui.get_page(0)};
+		int sprite_id{ hovered->get_id() };
+
+		if (sprite_id >= 2 && sprite_id <= 6) // hovered a face feature
+		{
+			// change sprite texture to selected/hover texture
+			home_page.get_layer(2).get_sprite(sprite_id)->use_background_img_selected();
+			for (int i{ 2 }; i < 7; ++i)
+				if (i != sprite_id)
+					home_page.get_layer(2).get_sprite(i)->use_background_img();
+		}
+		else
+		{
+			// reset to normal texture
+			for (int i{ 2 }; i < 7; ++i)
+				home_page.get_layer(2).get_sprite(i)->use_background_img();
+		}
+		if (sprite_id >= 7 && sprite_id <= 28) // hovered a face feature option
+		{
+			// change sprite texture to selected/hover texture
+			Layer& layer{home_page.get_layer(hovered->get_layer_id())};
+			layer.get_sprite(sprite_id)->use_background_img_selected();
+			for (int i{ 7 }; i < 29; ++i)
+			{
+				if (i == sprite_id)
+					continue;
+				if (i == 7) // layer 3
+					home_page.get_layer(3).get_sprite(i)->use_background_img();
+				else if (i >= 8 && i <= 12) // layer 4
+					home_page.get_layer(4).get_sprite(i)->use_background_img();
+				else if (i >= 13 && i <= 17) // layer 5
+					home_page.get_layer(5).get_sprite(i)->use_background_img();
+				else if (i >= 18 && i <= 20) // layer 6
+					home_page.get_layer(6).get_sprite(i)->use_background_img();
+				else if (i >= 21 && i <= 23) // layer 7
+					home_page.get_layer(7).get_sprite(i)->use_background_img();
+				else if (i >= 24 && i <= 26) // layer 8
+					home_page.get_layer(8).get_sprite(i)->use_background_img();
+				else if (i == 27 || i == 28) // layer 9
+					home_page.get_layer(9).get_sprite(i)->use_background_img();
+			}
+		}
+		else
+		{
+			// reset to normal texture
+			for (int i{ 7 }; i < 29; ++i)
+			{
+				if (i == 7) // layer 3
+					home_page.get_layer(3).get_sprite(i)->use_background_img();
+				else if (i >= 8 && i <= 12) // layer 4
+					home_page.get_layer(4).get_sprite(i)->use_background_img();
+				else if (i >= 13 && i <= 17) // layer 5
+					home_page.get_layer(5).get_sprite(i)->use_background_img();
+				else if (i >= 18 && i <= 20) // layer 6
+					home_page.get_layer(6).get_sprite(i)->use_background_img();
+				else if (i >= 21 && i <= 23) // layer 7
+					home_page.get_layer(7).get_sprite(i)->use_background_img();
+				else if (i >= 24 && i <= 26) // layer 8
+					home_page.get_layer(8).get_sprite(i)->use_background_img();
+				else if (i == 27 || i == 28) // layer 9
+					home_page.get_layer(9).get_sprite(i)->use_background_img();
+			}
+		}
+		if (sprite_id == 30 || sprite_id == 31) // hovered a color picker arrow
+		{
+			// bloom
+			home_page.get_layer(11).get_sprite(sprite_id)->set_bloom_strength(1.5f);
+		}
+		else
+		{
+			// reset bloom
+			home_page.get_layer(11).get_sprite(30)->set_bloom_strength(1.0f);
+			home_page.get_layer(11).get_sprite(31)->set_bloom_strength(1.0f);
+		}
+		if (sprite_id >= 2 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on a face feature
+		{
+			// highlight
+			home_page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (sprite_id - 2))));
+			home_page.get_layer(1).set_visibility(true);
+
+			// select
+			hovered->select();
+			for (int i{ 2 }; i <= 6; ++i)
+			{
+				if (sprite_id != i)
+				{
+					home_page.get_layer(2).get_sprite(i)->unselect();
+				}
+			}
+
+			// show options
+			if (sprite_id == 2)
+			{
+				if(home_page.get_layer(3).m_visible)
+					home_page.get_layer(3).set_visibility(false);
+				else
+					home_page.get_layer(3).set_visibility(true);
+				for(int i{4}; i < 9; ++i)
+					home_page.get_layer(i).set_visibility(false);
+			}
+			else if (sprite_id == 3)
+			{
+				if (home_page.get_layer(9).get_sprite(27)->is_selected())
+				{
+					if(home_page.get_layer(4).m_visible)
+						home_page.get_layer(4).set_visibility(false);
+					else
+						home_page.get_layer(4).set_visibility(true);
+					for (int i{ 3 }; i < 10; ++i)
+						if (i != 4)
+							home_page.get_layer(i).set_visibility(false);
+				}
+				else if (home_page.get_layer(9).get_sprite(28)->is_selected())
+				{
+					if(home_page.get_layer(5).m_visible)
+						home_page.get_layer(5).set_visibility(true);
+					else
+						home_page.get_layer(5).set_visibility(true);
+					for (int i{ 3 }; i < 10; ++i)
+						if (i != 5)
+							home_page.get_layer(i).set_visibility(false);
+				}
+			}
+			else if (sprite_id == 4)
+			{
+				if (home_page.get_layer(9).get_sprite(27)->is_selected())
+				{
+					if (home_page.get_layer(6).m_visible)
+						home_page.get_layer(6).set_visibility(false);
+					else
+						home_page.get_layer(6).set_visibility(true);
+					for (int i{ 3 }; i < 10; ++i)
+						if (i != 6)
+							home_page.get_layer(i).set_visibility(false);
+				}
+				else if (home_page.get_layer(9).get_sprite(28)->is_selected())
+				{
+					if (home_page.get_layer(7).m_visible)
+						home_page.get_layer(7).set_visibility(true);
+					else
+						home_page.get_layer(7).set_visibility(true);
+					for (int i{ 3 }; i < 10; ++i)
+						if (i != 7)
+							home_page.get_layer(i).set_visibility(false);
+				}
+			}
+			else if (sprite_id == 5)
+			{
+				if(home_page.get_layer(8).m_visible)
+					home_page.get_layer(8).set_visibility(false);
+				else
+					home_page.get_layer(8).set_visibility(true);
+				for (int i{ 3 }; i < 10; ++i)
+					if (i != 8)
+						home_page.get_layer(i).set_visibility(false);
+			}
+			else if (sprite_id == 6)
+			{
+				if(home_page.get_layer(9).m_visible)
+					home_page.get_layer(9).set_visibility(false);
+				else
+					home_page.get_layer(9).set_visibility(true);
+				for (int i{ 3 }; i < 9; ++i)
+						home_page.get_layer(i).set_visibility(false);
+			}
+		}
+		else if (sprite_id >= 7 && sprite_id <= 28 && inputs.test(2) && inputs.test(9)) // clicked on a face feature option
+		{
+			// select option
+			hovered->select();
+			if (sprite_id >= 8 && sprite_id <= 12)
+			{
+				for (int i{ 8 }; i <= 12; ++i)
+				{
+					if (i == sprite_id)
+						continue;
+					home_page.get_layer(4).get_sprite(i)->unselect();
+				}
+			}
+			else if (sprite_id >= 13 && sprite_id <= 17)
+			{
+				for (int i{ 13 }; i <= 17; ++i)
+				{
+					if (i == sprite_id)
+						continue;
+					home_page.get_layer(5).get_sprite(i)->unselect();
+				}
+			}
+			else if (sprite_id >= 18 && sprite_id <= 20)
+			{
+				for (int i{ 18 }; i <= 20; ++i)
+				{
+					if (i == sprite_id)
+						continue;
+					home_page.get_layer(6).get_sprite(i)->unselect();
+				}
+			}
+			else if (sprite_id >= 21 && sprite_id <= 23)
+			{
+				for (int i{ 21 }; i <= 23; ++i)
+				{
+					if (i == sprite_id)
+						continue;
+					home_page.get_layer(7).get_sprite(i)->unselect();
+				}
+			}
+			else if (sprite_id >= 24 && sprite_id <= 26)
+			{
+				for (int i{ 24 }; i <= 26; ++i)
+				{
+					if (i == sprite_id)
+						continue;
+					home_page.get_layer(8).get_sprite(i)->unselect();
+				}
+			}
+			else if (sprite_id >= 27 && sprite_id <= 28)
+			{
+				for (int i{ 27 }; i <= 28; ++i)
+				{
+					if (i == sprite_id)
+						continue;
+					home_page.get_layer(9).get_sprite(i)->unselect();
+				}
+			}
+
+			// hide layer
+			home_page.get_layer(hovered->get_layer_id()).set_visibility(false);
+
+			// set gender
+			if (sprite_id == 27)
+			{
+				m_avatar.m_gender = Avatar::GENDER::MALE;
+				// unselect all female features and select corresponding male ones
+				swap_gender_features(Avatar::GENDER::FEMALE, Avatar::GENDER::MALE);
+			}
+			else if (sprite_id == 28)
+			{
+				m_avatar.m_gender = Avatar::GENDER::FEMALE;
+				// unselect all male features and select corresponding female ones
+				swap_gender_features(Avatar::GENDER::MALE, Avatar::GENDER::FEMALE);
+			}
+
+			// set mouth
+			else if (sprite_id == 26)
+				m_avatar.m_mouth = Avatar::MOUTH::GRANDE;
+			else if (sprite_id == 25)
+				m_avatar.m_mouth = Avatar::MOUTH::MOYENNE;
+			else if (sprite_id == 24)
+				m_avatar.m_mouth = Avatar::MOUTH::PETITE;
+			else
+			{
+				if (m_avatar.m_gender == Avatar::GENDER::MALE)
+				{
+					// set male eyes
+					if (sprite_id == 18)
+						m_avatar.m_eyes = Avatar::EYES::MANGA;
+					else if (sprite_id == 19)
+						m_avatar.m_eyes = Avatar::EYES::AMANDE;
+					else if (sprite_id == 20)
+						m_avatar.m_eyes = Avatar::EYES::GROS;
+
+					// set male hair
+					else if (sprite_id == 8)
+						m_avatar.m_hair = Avatar::HAIR::HERISSON;
+					else if (sprite_id == 9)
+						m_avatar.m_hair = Avatar::HAIR::DECOIFFE;
+					else if (sprite_id == 10)
+						m_avatar.m_hair = Avatar::HAIR::MECHE_AVANT;
+					else if (sprite_id == 11)
+						m_avatar.m_hair = Avatar::HAIR::MANGA;
+					else if (sprite_id == 12)
+						m_avatar.m_hair = Avatar::HAIR::ARRIERE;
+				}
+				else
+				{
+					// set female eyes
+					if (sprite_id == 21)
+						m_avatar.m_eyes = Avatar::EYES::MANGA;
+					else if (sprite_id == 22)
+						m_avatar.m_eyes = Avatar::EYES::EGYPTE;
+					else if (sprite_id == 23)
+						m_avatar.m_eyes = Avatar::EYES::MASCARA;
+
+					// set female hair
+					else if (sprite_id == 13)
+						m_avatar.m_hair = Avatar::HAIR::MANGA;
+					else if (sprite_id == 14)
+						m_avatar.m_hair = Avatar::HAIR::MI_LONG;
+					else if (sprite_id == 15)
+						m_avatar.m_hair = Avatar::HAIR::FRANGE;
+					else if (sprite_id == 16)
+						m_avatar.m_hair = Avatar::HAIR::AU_BOL;
+					else if (sprite_id == 17)
+						m_avatar.m_hair = Avatar::HAIR::RAIDE;
+				}
+			}
+		}
+		else if ((sprite_id == 30 || sprite_id == 31) && inputs.test(2) && inputs.test(9)) // color picker
+		{
+			if (home_page.get_layer(2).get_sprite(2)->is_selected()) // change skin color
+			{
+				if (sprite_id == 30)
+				{
+					m_avatar.m_skin_color_id--;
+					if (m_avatar.m_skin_color_id == -1)
+					{
+						m_avatar.m_skin_color_id = m_avatar.m_skin_hue.size() - 1;
+					}
+				}
+				else
+				{
+					m_avatar.m_skin_color_id++;
+					if (m_avatar.m_skin_color_id >= m_avatar.m_skin_hue.size())
+					{
+						m_avatar.m_skin_color_id = 0;
+					}
+				}
+			}
+			else if (home_page.get_layer(2).get_sprite(3)->is_selected()) // change hair color
+			{
+				if (sprite_id == 30)
+				{
+					m_avatar.m_hair_color_id--;
+					if (m_avatar.m_hair_color_id == -1)
+					{
+						m_avatar.m_hair_color_id = m_avatar.m_hair_hue.size() - 1;
+					}
+				}
+				else
+				{
+					m_avatar.m_hair_color_id++;
+					if (m_avatar.m_hair_color_id >= m_avatar.m_hair_hue.size())
+					{
+						m_avatar.m_hair_color_id = 0;
+					}
+				}
+			}
+			else if (home_page.get_layer(2).get_sprite(4)->is_selected()) // change eyes color
+			{
+				if (sprite_id == 30)
+				{
+					m_avatar.m_eyes_color_id--;
+					if (m_avatar.m_eyes_color_id == -1)
+					{
+						m_avatar.m_eyes_color_id = m_avatar.m_eyes_hue.size() - 1;
+					}
+				}
+				else
+				{
+					m_avatar.m_eyes_color_id++;
+					if (m_avatar.m_eyes_color_id >= m_avatar.m_eyes_hue.size())
+					{
+						m_avatar.m_eyes_color_id = 0;
+					}
+				}
+			}
+
+			// hide face feature options
+			home_page.get_layer(3).set_visibility(false);
+			home_page.get_layer(4).set_visibility(false);
+			home_page.get_layer(5).set_visibility(false);
+			home_page.get_layer(6).set_visibility(false);
+			home_page.get_layer(7).set_visibility(false);
+			home_page.get_layer(8).set_visibility(false);
+			home_page.get_layer(9).set_visibility(false);
+		}
+		else if (inputs.test(2) && inputs.test(9))
+		{
+			// hide face feature options
+			home_page.get_layer(3).set_visibility(false);
+			home_page.get_layer(4).set_visibility(false);
+			home_page.get_layer(5).set_visibility(false);
+			home_page.get_layer(6).set_visibility(false);
+			home_page.get_layer(7).set_visibility(false);
+			home_page.get_layer(8).set_visibility(false);
+			home_page.get_layer(9).set_visibility(false);
+		}
+	}
+	else // game
+	{
+
+	}
+}
+
+void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
+{
+	// swap hair
+	if (from == Avatar::GENDER::MALE)
+	{
+		if (m_avatar.m_hair == Avatar::HAIR::ARRIERE)
+			m_avatar.m_hair = Avatar::HAIR::RAIDE;
+		else if (m_avatar.m_hair == Avatar::HAIR::DECOIFFE)
+			m_avatar.m_hair = Avatar::HAIR::AU_BOL;
+		else if (m_avatar.m_hair == Avatar::HAIR::HERISSON)
+			m_avatar.m_hair = Avatar::HAIR::MI_LONG;
+		else if (m_avatar.m_hair == Avatar::HAIR::MECHE_AVANT)
+			m_avatar.m_hair = Avatar::HAIR::FRANGE;
+	}
+	else
+	{
+		if (m_avatar.m_hair == Avatar::HAIR::FRANGE)
+			m_avatar.m_hair = Avatar::HAIR::MECHE_AVANT;
+		else if (m_avatar.m_hair == Avatar::HAIR::MI_LONG)
+			m_avatar.m_hair = Avatar::HAIR::HERISSON;
+		else if (m_avatar.m_hair == Avatar::HAIR::RAIDE)
+			m_avatar.m_hair = Avatar::HAIR::ARRIERE;
+		else if (m_avatar.m_hair == Avatar::HAIR::AU_BOL)
+			m_avatar.m_hair = Avatar::HAIR::DECOIFFE;
+	}
+	// swap eyes
+	if (from == Avatar::GENDER::MALE)
+	{
+		if (m_avatar.m_eyes == Avatar::EYES::AMANDE)
+			m_avatar.m_eyes = Avatar::EYES::EGYPTE;
+		else if (m_avatar.m_eyes == Avatar::EYES::GROS)
+			m_avatar.m_eyes = Avatar::EYES::MASCARA;
+	}
+	else
+	{
+		if (m_avatar.m_eyes == Avatar::EYES::EGYPTE)
+			m_avatar.m_eyes = Avatar::EYES::AMANDE;
+		else if (m_avatar.m_eyes == Avatar::EYES::MASCARA)
+			m_avatar.m_eyes = Avatar::EYES::GROS;
+	}
+}
+
 
 void Game::directionalShadowPass(int index, float delta, DRAWING_MODE mode)
 {

@@ -3,6 +3,7 @@
 Graphics::Graphics(int width, int height) :
 	scene_tone_mapping(TONE_MAPPING::ACES),
 	ui_tone_mapping(TONE_MAPPING::OFF),
+	aspect_ratio(static_cast<float>(width)/static_cast<float>(height)),
 	near(0.1f),
 	far(100.0f),
 	shadows(true),
@@ -92,7 +93,8 @@ Graphics::Graphics(int width, int height) :
         std::make_unique<Framebuffer>(true, false, true)
     },
     motionBlurFBO{std::make_unique<Framebuffer>(true, false, true)},
-    userInterfaceFBO{std::make_unique<Framebuffer>(true, false, true)},
+	userInterfaceFBO{ std::make_unique<Framebuffer>(true, false, true) },
+	avatarFBO{std::make_unique<Framebuffer>(true, false, true)},
 	compositeFBO{
 		std::make_unique<Framebuffer>(true, false, true),
 		std::make_unique<Framebuffer>(true, false, true)
@@ -214,6 +216,9 @@ Graphics::Graphics(int width, int height) :
 	// UI FBO
     userInterfaceFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);
     userInterfaceFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);
+
+	// AVATAR FBO
+	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// COMPOSITING
 	compositeFBO[0]->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);
@@ -509,6 +514,7 @@ std::unique_ptr<Mesh> & Graphics::getQuadMesh()
 
 void Graphics::resizeScreen(int width, int height)
 {
+	aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
 	multisample = std::make_unique<Framebuffer>(true, true, true);
 	normal = std::array<std::unique_ptr<Framebuffer>, 2>{
 		std::make_unique<Framebuffer>(true, false, true),
@@ -562,7 +568,8 @@ void Graphics::resizeScreen(int width, int height)
         std::make_unique<Framebuffer>(true, false, true)
     };
     motionBlurFBO = std::make_unique<Framebuffer>(true, false, true);
-    userInterfaceFBO = std::make_unique<Framebuffer>(true, false, true);
+	userInterfaceFBO = std::make_unique<Framebuffer>(true, false, true);
+	avatarFBO = std::make_unique<Framebuffer>(true, false, true);
 	compositeFBO = std::array<std::unique_ptr<Framebuffer>, 2>{
 		std::make_unique<Framebuffer>(true, false, true),
 		std::make_unique<Framebuffer>(true, false, true)
@@ -631,6 +638,9 @@ void Graphics::resizeScreen(int width, int height)
     // UI FBO
     userInterfaceFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);
     userInterfaceFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);
+
+	// AVATAR FBO
+	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// COMPOSITING
 	compositeFBO[0]->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);
