@@ -15,34 +15,15 @@
 #include "user_interface.hpp"
 #include "network_client.hpp"
 #include "mouse.hpp"
-#include "tinyfiledialogs.hpp"
 
-#define MARRON_CLAIR_HUE 0.04f
-#define MARRON_CLAIR_SAT 1.0f
-
-#define VIOLET_HUE 0.736f
-#define VIOLET_SAT 1.0f
-
-#define ROSE_HUE 0.868f
-#define ROSE_SAT 0.73f
-
-#define JAUNE_HUE 0.08f
-#define JAUNE_SAT 1.0f
-
-#define BLEU_HUE 0.666f
-#define BLEU_SAT 1.0f
-
-#define ROSE_FLASH_HUE 0.85f
-#define ROSE_FLASH_SAT 1.0f
-
-#define LBLEU_HUE 0.427f
-#define LBLEU_SAT 1.0f
-
-#define ROUGE_HUE 1.0f
-#define ROUGE_SAT 1.0f
-
-#define VERT_HUE 0.333f
-#define VERT_SAT 1.0f
+#define JAUNE	55 / 360.0f
+#define MARRON	40 / 360.0f
+#define ROUGE	360 / 360.0f
+#define VIOLET	275 / 360.0f
+#define ROSE	322 / 360.0f
+#define BLEU	216 / 360.0f
+#define VERT	100 / 360.0f
+#define SKIN	340 / 360.0f
 
 struct Avatar
 {
@@ -59,7 +40,7 @@ struct Avatar
 	};
 	enum class HAIR
 	{
-		MANGA,
+		MIXTE,
 		HERISSON,
 		DECOIFFE,
 		ARRIERE,
@@ -67,37 +48,66 @@ struct Avatar
 		MI_LONG,
 		FRANGE,
 		AU_BOL,
-		RAIDE
+		PONYTAIL
 	};
 	enum class EYES
 	{
 		MANGA,
 		AMANDE,
-		GROS,
 		EGYPTE,
 		MASCARA
 	};
 
 	Avatar() :
 		m_gender(Avatar::GENDER::MALE),
-		m_hair(Avatar::HAIR::DECOIFFE),
+		m_hair(Avatar::HAIR::HERISSON),
 		m_eyes(Avatar::EYES::MANGA),
-		m_mouth(Avatar::MOUTH::MOYENNE),
-		m_skin_hue{ MARRON_CLAIR_HUE, JAUNE_HUE, ROSE_HUE, ROSE_FLASH_HUE, LBLEU_HUE, BLEU_HUE, VIOLET_HUE, ROUGE_HUE, VERT_HUE},
-		m_skin_saturation{ MARRON_CLAIR_SAT, JAUNE_SAT, ROSE_SAT, ROSE_FLASH_SAT, LBLEU_SAT, BLEU_SAT, VIOLET_SAT, ROUGE_SAT, VERT_SAT },
-		m_hair_hue{ MARRON_CLAIR_HUE, JAUNE_HUE, ROSE_HUE, ROSE_FLASH_HUE, LBLEU_HUE, BLEU_HUE, VIOLET_HUE, ROUGE_HUE, VERT_HUE },
-		m_hair_saturation{ MARRON_CLAIR_SAT, JAUNE_SAT, ROSE_SAT, ROSE_FLASH_SAT, LBLEU_SAT, BLEU_SAT, VIOLET_SAT, ROUGE_SAT, VERT_SAT },
-		m_eyes_hue{ MARRON_CLAIR_HUE, JAUNE_HUE, ROSE_HUE, ROSE_FLASH_HUE, LBLEU_HUE, BLEU_HUE, VIOLET_HUE, ROUGE_HUE, VERT_HUE },
-		m_eyes_saturation{ MARRON_CLAIR_SAT, JAUNE_SAT, ROSE_SAT, ROSE_FLASH_SAT, LBLEU_SAT, BLEU_SAT, VIOLET_SAT, ROUGE_SAT, VERT_SAT },
-		m_skin_color_id(0),
-		m_hair_color_id(0),
-		m_eyes_color_id(0),
+		m_mouth(Avatar::MOUTH::PETITE),
+		m_color{
+			JAUNE,
+			MARRON,
+			ROUGE,
+			VIOLET,
+			ROSE,
+			BLEU,
+			VERT,
+			SKIN
+		},
+		m_skin_color_id(7),
+		m_hair_color_id(5),
+		m_eyes_color_id(5),
 		m_shader("shaders/avatar/vertex.glsl", "shaders/avatar/fragment.glsl"),
 		m_projection(glm::ortho(0.0f, 512.0f, 0.0f, 512.0f)),
 		m_tex{
-			createTexture("assets/avatar/sprites/visage.tga", TEXTURE_TYPE::DIFFUSE, true),
-			createTexture("assets/avatar/sprites/cheveux_manga_homme.tga", TEXTURE_TYPE::DIFFUSE, true),
-			createTexture("assets/avatar/sprites/yeux_manga_homme.tga", TEXTURE_TYPE::DIFFUSE, true)
+			createTexture("assets/avatar/sprites/visage.tga", TEXTURE_TYPE::DIFFUSE, true),					// 0
+			createTexture("assets/avatar/sprites/cheveux_decoiffe.tga", TEXTURE_TYPE::DIFFUSE, true),		// 1
+			createTexture("assets/avatar/sprites/cheveux_arriere_homme.tga", TEXTURE_TYPE::DIFFUSE, true),	// 2
+			createTexture("assets/avatar/sprites/cheveux_meche.tga", TEXTURE_TYPE::DIFFUSE, true),			// 3
+			createTexture("assets/avatar/sprites/cheveux_herisson.tga", TEXTURE_TYPE::DIFFUSE, true),		// 4
+			createTexture("assets/avatar/sprites/cheveux_mixte_front.tga", TEXTURE_TYPE::DIFFUSE, true),	// 5
+			createTexture("assets/avatar/sprites/cheveux_mixte_back.tga", TEXTURE_TYPE::DIFFUSE, true),		// 6
+			createTexture("assets/avatar/sprites/cheveux_ponytail_front.tga", TEXTURE_TYPE::DIFFUSE, true),	// 7
+			createTexture("assets/avatar/sprites/cheveux_ponytail_back.tga", TEXTURE_TYPE::DIFFUSE, true),	// 8
+			createTexture("assets/avatar/sprites/cheveux_frange_front.tga", TEXTURE_TYPE::DIFFUSE, true),	// 9
+			createTexture("assets/avatar/sprites/cheveux_frange_back.tga", TEXTURE_TYPE::DIFFUSE, true),	// 10
+			createTexture("assets/avatar/sprites/cheveux_au_bol_front.tga", TEXTURE_TYPE::DIFFUSE, true),	// 11
+			createTexture("assets/avatar/sprites/cheveux_au_bol_back.tga", TEXTURE_TYPE::DIFFUSE, true),	// 12
+			createTexture("assets/avatar/sprites/cheveux_mi_long.tga", TEXTURE_TYPE::DIFFUSE, true),		// 13
+			createTexture("assets/avatar/sprites/bouche_petite.tga", TEXTURE_TYPE::DIFFUSE, true),			// 14
+			createTexture("assets/avatar/sprites/bouche_moyenne.tga", TEXTURE_TYPE::DIFFUSE, true),			// 15
+			createTexture("assets/avatar/sprites/bouche_grande.tga", TEXTURE_TYPE::DIFFUSE, true),			// 16
+			createTexture("assets/avatar/sprites/yeux_manga_homme.tga", TEXTURE_TYPE::DIFFUSE, true),		// 17
+			createTexture("assets/avatar/sprites/visage_light.tga", TEXTURE_TYPE::DIFFUSE, true),			// 18
+			createTexture("assets/avatar/sprites/bouche_petite_light.tga", TEXTURE_TYPE::DIFFUSE, true),	// 19
+			createTexture("assets/avatar/sprites/bouche_moyenne_light.tga", TEXTURE_TYPE::DIFFUSE, true),	// 20
+			createTexture("assets/avatar/sprites/bouche_grande_light.tga", TEXTURE_TYPE::DIFFUSE, true),	// 21
+			createTexture("assets/avatar/sprites/yeux_mascara.tga", TEXTURE_TYPE::DIFFUSE, true),			// 22
+			createTexture("assets/avatar/sprites/yeux_egypte.tga", TEXTURE_TYPE::DIFFUSE, true),			// 23
+			createTexture("assets/avatar/sprites/sourcils_femme.tga", TEXTURE_TYPE::DIFFUSE, true),			// 24
+			createTexture("assets/avatar/sprites/sourcils_homme.tga", TEXTURE_TYPE::DIFFUSE, true),			// 25
+			createTexture("assets/avatar/sprites/cheveux_mi_long_back.tga", TEXTURE_TYPE::DIFFUSE, true),	// 26
+			createTexture("assets/avatar/sprites/yeux_amande.tga", TEXTURE_TYPE::DIFFUSE, true),			// 27
+			createTexture("assets/avatar/sprites/sourcils_amande.tga", TEXTURE_TYPE::DIFFUSE, true)			// 28
 		}
 	{
 		glGenVertexArrays(1, &m_vao);
@@ -133,22 +143,164 @@ struct Avatar
 		glActiveTexture(GL_TEXTURE0);
 		m_shader.setInt("image", 0);
 
-		// draw face
-		glBindTexture(GL_TEXTURE_2D, m_tex[0].id);
-		m_shader.setFloat("teinte", m_skin_hue[m_skin_color_id]);
-		m_shader.setFloat("saturation", m_skin_saturation[m_skin_color_id]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		// draw eyes
-		glBindTexture(GL_TEXTURE_2D, m_tex[2].id);
-		m_shader.setFloat("teinte", m_eyes_hue[m_eyes_color_id]);
-		m_shader.setFloat("saturation", m_eyes_saturation[m_skin_color_id]);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		// draw mouth
+		// draw back hair
+		if (m_gender == GENDER::MALE) {
+			if (m_hair == HAIR::MIXTE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[6].id);
+				m_shader.setFloat("teinte", m_color[m_hair_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+		}
+		else {
+			if (m_hair == HAIR::MIXTE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[6].id);
+				m_shader.setFloat("teinte", m_color[m_hair_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_hair == HAIR::AU_BOL) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[12].id);
+				m_shader.setFloat("teinte", m_color[m_hair_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_hair == HAIR::FRANGE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[10].id);
+				m_shader.setFloat("teinte", m_color[m_hair_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_hair == HAIR::PONYTAIL) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[8].id);
+				m_shader.setFloat("teinte", m_color[m_hair_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_hair == HAIR::MI_LONG) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[26].id);
+				m_shader.setFloat("teinte", m_color[m_hair_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+		}
 
+		// draw face
+		if (m_skin_color_id == 7) {
+			glBindTexture(GL_TEXTURE_2D, m_tex[18].id);
+			m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+		else {
+			glBindTexture(GL_TEXTURE_2D, m_tex[0].id);
+			m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		// draw eyebrows
+		if (m_gender == GENDER::MALE){
+			if (m_eyes == EYES::AMANDE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[28].id);
+			}
+			else if (m_eyes == EYES::MANGA) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[25].id);
+			}
+		}
+		else if (m_gender == GENDER::FEMALE){
+			glBindTexture(GL_TEXTURE_2D, m_tex[24].id);
+		}
+		m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		// draw eyes
+		if (m_gender == GENDER::MALE) {
+			if (m_eyes == EYES::MANGA) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[17].id);
+			}
+			else if (m_eyes == EYES::AMANDE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[27].id);
+			}
+		}
+		else if (m_gender == GENDER::FEMALE) {
+			if (m_eyes == EYES::MANGA) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[17].id);
+			}
+			else if (m_eyes == EYES::MASCARA) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[22].id);
+			}
+			else if (m_eyes == EYES::EGYPTE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[23].id);
+			}
+		}
+		m_shader.setFloat("teinte", m_color[m_eyes_color_id]);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		// draw mouth
+		if (m_skin_color_id == 7) {
+			if (m_mouth == MOUTH::PETITE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[19].id);
+				m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_mouth == MOUTH::MOYENNE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[20].id);
+				m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_mouth == MOUTH::GRANDE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[21].id);
+				m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+		}
+		else {
+			if (m_mouth == MOUTH::PETITE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[14].id);
+				m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_mouth == MOUTH::MOYENNE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[15].id);
+				m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_mouth == MOUTH::GRANDE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[16].id);
+				m_shader.setFloat("teinte", m_color[m_skin_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+		}
+		
 		// draw hair
-		glBindTexture(GL_TEXTURE_2D, m_tex[1].id);
-		m_shader.setFloat("teinte", m_hair_hue[m_hair_color_id]);
-		m_shader.setFloat("saturation", m_hair_saturation[m_skin_color_id]);
+		if (m_gender == GENDER::MALE) {
+			if (m_hair == HAIR::MIXTE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[5].id);
+			}
+			else if (m_hair == HAIR::ARRIERE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[2].id);
+			}
+			else if (m_hair == HAIR::DECOIFFE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[1].id);
+			}
+			else if (m_hair == HAIR::MECHE_AVANT) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[3].id);
+			}
+			else if (m_hair == HAIR::HERISSON) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[4].id);
+			}
+		}
+		else {
+			if (m_hair == HAIR::MIXTE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[5].id);
+			}
+			else if (m_hair == HAIR::AU_BOL) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[11].id);
+			}
+			else if (m_hair == HAIR::FRANGE) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[9].id);
+			}
+			else if (m_hair == HAIR::PONYTAIL) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[7].id);
+			}
+			else if (m_hair == HAIR::MI_LONG) {
+				glBindTexture(GL_TEXTURE_2D, m_tex[13].id);
+			}
+		}
+		m_shader.setFloat("teinte", m_color[m_hair_color_id]);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glBindVertexArray(0);
@@ -158,18 +310,13 @@ struct Avatar
 	HAIR m_hair;
 	EYES m_eyes;
 	MOUTH m_mouth;
-	std::array<float, 9> m_skin_hue;
-	std::array<float, 9> m_skin_saturation;
-	std::array<float, 9> m_hair_hue;
-	std::array<float, 9> m_hair_saturation;
-	std::array<float, 9> m_eyes_hue;
-	std::array<float, 9> m_eyes_saturation;
+	std::array<float, 8> m_color;
 	int m_skin_color_id;
 	int m_hair_color_id;
 	int m_eyes_color_id;
 	Shader m_shader;
 	glm::mat4 m_projection;
-	std::array<Texture, 3> m_tex; // 20 quand j'aurais toutes les textures
+	std::array<Texture, 29> m_tex;
 	GLuint m_vao;
 	GLuint m_vbo;
 };
@@ -310,8 +457,64 @@ struct Board
 
 struct Cursor
 {
+	Cursor(int screenW, int screenH) :
+		m_pos(0),
+		m_focus(2),
+		m_blink(0.0f),
+		m_blink_ctrl(false),
+		m_projection(glm::ortho(0.0f, static_cast<float>(screenW), 0.0f, static_cast<float>(screenH))),
+		m_shader("shaders/cursor/vertex.glsl", "shaders/cursor/fragment.glsl")
+	{
+		glGenVertexArrays(1, &m_vao);
+		glGenBuffers(1, &m_vbo);
+
+		glBindVertexArray(m_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+
+		float data[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+		glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(0));
+		glEnableVertexAttribArray(0);
+		glBindVertexArray(0);
+	}
+	
+	void draw(glm::vec3 cursor_shape, float delta)
+	{
+		// blink
+		m_blink += delta;
+		if (m_blink >= 1.0f) {
+			m_blink = 0.0f;
+			m_blink_ctrl = false;
+		}
+		else if (m_blink >= 0.5f) {
+			m_blink_ctrl = true;
+		}
+
+		// create geometry data
+		float data[4] = {
+			cursor_shape.x, cursor_shape.y,
+			cursor_shape.x, cursor_shape.y + cursor_shape.z
+		};
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * sizeof(float), data);
+
+		// draw
+		glBindVertexArray(m_vao);
+		m_shader.use();
+		m_shader.setMatrix("proj", m_projection);
+		m_shader.setBool("blink", m_blink_ctrl);
+		glDrawArrays(GL_LINE_STRIP, 0, 2);
+	}
+
 	int m_focus; // 0 = pseudo, 1 = chat, 2 = not writing
 	int m_pos;
+	float m_blink;
+	bool m_blink_ctrl;
+	Shader m_shader;
+	glm::mat4 m_projection;
+	GLuint m_vao;
+	GLuint m_vbo;
 };
 
 enum class WRITE_ACTION
@@ -326,26 +529,25 @@ enum class WRITE_ACTION
 class Writer
 {
 	public:
-		Writer()
+		Writer(int screenW, int screenH) :
+			m_cursor(screenW, screenH)
 		{
-			m_cursor.m_focus = 2;
-			m_cursor.m_pos = 0;
 			m_deltaWrite = 0.0f;
 			m_lastWriteAction = WRITE_ACTION::NOTHING;
-			m_lastCharacter = '~';
+			m_lastCharacter = "";
 		}
 
-		void write(std::bitset<52>& writeInput, float delta);
+		void write(char* c, std::bitset<10>& userInputs, float delta, int boundX, glm::vec3 cursor_shape);
 		
 		std::array<std::string, 2> m_textInput;
-		const int m_textInputMaxCapacity[2] = { 20, 30 };
+		std::array<std::vector<int>, 2> m_textSectionsWidth;
 		Cursor m_cursor;
 		float m_deltaWrite;
 		WRITE_ACTION m_lastWriteAction;
-		char m_lastCharacter;
+		std::string m_lastCharacter;
 	
 	private:
-		void write_aux(WRITE_ACTION writeAction, char c, float delta);
+		void write_aux(WRITE_ACTION writeAction, std::string& character, float delta, int boundX, glm::vec3 cursor_shape);
 };
 
 class Game
@@ -379,7 +581,7 @@ class Game
 		void vehicleUpdateUpVector();
 		int getCursorFocus();
 		Writer& get_writer();
-		void updateUI(const std::bitset<10> & inputs, int screenW, int screenH, float delta);
+		void updateUI(std::bitset<10> & inputs, char* text_input, int screenW, int screenH, float delta);
 		void swap_gender_features(Avatar::GENDER from, Avatar::GENDER to);
 
 	private:

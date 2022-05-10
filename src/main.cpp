@@ -28,14 +28,13 @@ void render(std::unique_ptr<WindowManager> client, std::unique_ptr<Game> game)
 	{
 		currentFrame = omp_get_wtime();
 		delta = static_cast<float>(currentFrame - lastFrame);
-		if(game->getCursorFocus() == 2)
-            client->checkEvents();
-        else
-        {
+		if (game->getCursorFocus() == 2) {
+			client->checkEvents();
+		}
+        else {
             client->checkEvents(true);
-            game->get_writer().write(client->getWriteInput(), delta);
         }
-		game->updateUI(client->getUserInputs(), client->getWidth(), client->getHeight(), delta);
+		game->updateUI(client->getUserInputs(), client->get_text_input(), client->getWidth(), client->getHeight(), delta);
 		game->updateSceneActiveCameraView(game->getActiveScene(), client->getUserInputs(), client->getMouseData(), delta);
 
 		// draw scene

@@ -124,9 +124,9 @@ std::bitset<10>& WindowManager::getUserInputs()
 	return userInputs;
 }
 
-std::bitset<52>& WindowManager::getWriteInput()
+char* WindowManager::get_text_input()
 {
-	return writeInput;
+	return m_textInput;
 }
 
 bool WindowManager::isAlive()
@@ -170,6 +170,19 @@ void WindowManager::checkEvents(bool writing)
 			userInputs.set(3);
 			mouseData[2] = event.e.wheel.y;
 		}
+		if (writing)
+		{
+			if (event.e.type == SDL_TEXTINPUT)
+			{
+				memcpy(m_textInput, event.e.text.text, 32);
+			}
+			else
+			{
+				for (int i{ 0 }; i < 32; ++i) {
+					m_textInput[i] = '\0';
+				}
+			}
+		}
 	}
 
 	if(SDL_BUTTON(event.mouseButtonBitMask) == SDL_BUTTON_LEFT)
@@ -187,18 +200,12 @@ void WindowManager::checkEvents(bool writing)
 		userInputs.set(0);
 	}
 
-	if (writing)
-	{
-		fillWriteInput();
-		return;
-	}
-
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_UP)])
+	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_TAB)])
 	{
 		userInputs.set(5);
 	}
 
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_DOWN)])
+	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_BACKSPACE)])
 	{
 		userInputs.set(6);
 	}
@@ -217,245 +224,4 @@ void WindowManager::checkEvents(bool writing)
 void WindowManager::resetEvents()
 {
 	userInputs.reset();
-	writeInput.reset();
-}
-
-void WindowManager::fillWriteInput()
-{
-	// alphabet
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_a)])
-	{
-		writeInput.set(0);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_b)])
-	{
-		writeInput.set(1);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_c)])
-	{
-		writeInput.set(2);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_d)])
-	{
-		writeInput.set(3);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_e)])
-	{
-		writeInput.set(4);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_f)])
-	{
-		writeInput.set(5);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_g)])
-	{
-		writeInput.set(6);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_h)])
-	{
-		writeInput.set(7);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_i)])
-	{
-		writeInput.set(8);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_j)])
-	{
-		writeInput.set(9);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_k)])
-	{
-		writeInput.set(10);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_l)])
-	{
-		writeInput.set(11);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_m)])
-	{
-		writeInput.set(12);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_n)])
-	{
-		writeInput.set(13);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_o)])
-	{
-		writeInput.set(14);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_p)])
-	{
-		writeInput.set(15);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_q)])
-	{
-		writeInput.set(16);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_r)])
-	{
-		writeInput.set(17);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_s)])
-	{
-		writeInput.set(18);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_t)])
-	{
-		writeInput.set(19);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_u)])
-	{
-		writeInput.set(20);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_v)])
-	{
-		writeInput.set(21);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_w)])
-	{
-		writeInput.set(22);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_x)])
-	{
-		writeInput.set(23);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_y)])
-	{
-		writeInput.set(24);
-	}
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_z)])
-	{
-		writeInput.set(25);
-	}
-	// digit
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_0)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_0)])
-	{
-		writeInput.set(26);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_1)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_1)])
-	{
-		writeInput.set(27);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_2)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_2)])
-	{
-		writeInput.set(28);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_3)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_3)])
-	{
-		writeInput.set(29);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_4)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_4)])
-	{
-		writeInput.set(30);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_5)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_5)])
-	{
-		writeInput.set(31);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_6)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_6)])
-	{
-		writeInput.set(32);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_7)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_7)])
-	{
-		writeInput.set(33);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_8)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_8)])
-	{
-		writeInput.set(34);
-	}
-	if ((event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_9)]) ||
-		event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_9)])
-	{
-		writeInput.set(35);
-	}
-	// underscore
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_UNDERSCORE)])
-	{
-		writeInput.set(36);
-	}
-	// dash
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_MINUS)] || event.keyboardState[SDL_GetScancodeFromKey(SDLK_MINUS)])
-	{
-		writeInput.set(37);
-	}
-	// space
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_SPACE)])
-	{
-		writeInput.set(38);
-	}
-	// star
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_MULTIPLY)] || event.keyboardState[SDL_GetScancodeFromKey(SDLK_ASTERISK)])
-	{
-		writeInput.set(39);
-	}
-	// backspace
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_BACKSPACE)])
-	{
-		writeInput.set(40);
-	}
-	// left
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_LEFT)])
-	{
-		writeInput.set(41);
-	}
-	// right
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_RIGHT)])
-	{
-		writeInput.set(42);
-	}
-	// shift
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)])
-	{
-		writeInput.set(43);
-	}
-	// maj
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_CAPSLOCK)])
-	{
-		writeInput.set(44);
-	}
-	// point
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_PERIOD)])
-	{
-		writeInput.set(44);
-	}
-	// question
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_LSHIFT)] && event.keyboardState[SDL_GetScancodeFromKey(SDLK_QUESTION)])
-	{
-		writeInput.set(44);
-	}
-	// exclamation
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_EXCLAM)])
-	{
-		writeInput.set(44);
-	}
-	// comma
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_COMMA)])
-	{
-		writeInput.set(44);
-	}
-	// semicolon
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_SEMICOLON)])
-	{
-		writeInput.set(44);
-	}
-	// div
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_DIVIDE)])
-	{
-		writeInput.set(44);
-	}
-	// add
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_KP_PLUS)])
-	{
-		writeInput.set(44);
-	}
 }

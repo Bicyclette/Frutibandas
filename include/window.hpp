@@ -49,7 +49,7 @@ class WindowManager
 		SDL_Window* getWindowPtr();
 		std::array<int, 3> & getMouseData();
 		std::bitset<10>& getUserInputs();
-		std::bitset<52>& getWriteInput();
+		char* get_text_input();
 		bool isAlive();
 		void checkEvents(bool writing = false);
 		void resetEvents();
@@ -69,25 +69,7 @@ class WindowManager
 		struct WindowEvent event;
 		std::array<int, 3> mouseData; // 0 = xRel, 1 = yRel, 2 = mouse wheel direction
 		std::bitset<10> userInputs;
-		std::bitset<52> writeInput;
-		// 26 letters
-		// 10 digits
-		// underscore
-		// dash
-		// space
-		// star
-		// backspace
-		// left
-		// right
-		// shift
-		// maj
-		// point
-		// question
-		// exclamation
-		// comma
-		// semicolon
-		// div
-		// add
+		char m_textInput[32];
 };
 
 #endif

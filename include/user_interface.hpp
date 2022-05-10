@@ -37,6 +37,7 @@ class Text
         void load_police(std::string ttf_file, int font_size);
         void use_police(int index);
         void print(std::string txt, float x, float y, float scale, glm::vec3 color);
+        glm::vec3 get_cursor_shape(std::string txt, float x, float y, float scale, int cursor_pos); // x,y => pos, z => height
 
     private:
         FT_Library ft;
@@ -215,6 +216,20 @@ class UI
         void add_page() {m_page.emplace_back(m_page.size());}
 
         Page& get_page(int index) { return m_page[index]; }
+
+        void resize_screen(int width, int height)
+        {
+            for (auto& page : m_page)
+            {
+                for (auto& layer : page.m_layer)
+                {
+                    for (auto& sprite : layer.m_sg.m_sprite)
+                    {
+                        sprite->resize_screen(width, height);
+                    }
+                }
+            }
+        }
 
     private:
         std::vector<Page> m_page;

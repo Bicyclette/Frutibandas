@@ -1,67 +1,37 @@
 #include "game.hpp"
 
-void Writer::write(std::bitset<52>& writeInput, float delta)
+void Writer::write(char* c, std::bitset<10>& userInputs, float delta, int boundX, glm::vec3 cursor_shape)
 {
-	WRITE_ACTION writeAction;
-	bool maj = writeInput.test(43) || writeInput.test(44);
-	char c{ '~' };
-	for (int i{ 0 }; i < 26; ++i)
-	{
-		if (writeInput.test(i))
-			c = (maj) ? 'A' + i : 'a' + i;
+	std::string character(c);
+	if (character.size() > 1) {
+		return;
 	}
-	for (int i{ 26 }; i < 36; ++i)
-	{
-		if (writeInput.test(i))
-			c = '0' + (i - 26);
-	}
-	if (writeInput.test(36))
-		c = '_';
-	if (writeInput.test(37))
-		c = '-';
-	if (writeInput.test(38))
-		c = ' ';
-	if (writeInput.test(39))
-		c = '*';
-	if (writeInput.test(45))
-		c = '.';
-	if (writeInput.test(46))
-		c = '?';
-	if (writeInput.test(47))
-		c = '!';
-	if (writeInput.test(48))
-		c = ',';
-	if (writeInput.test(49))
-		c = ';';
-	if (writeInput.test(50))
-		c = '/';
-	if (writeInput.test(51))
-		c = '+';
 
-	if (writeInput.test(40))
+	WRITE_ACTION writeAction;
+	if (userInputs.test(6))
 		writeAction = WRITE_ACTION::ERASE;
-	else if (writeInput.test(41))
+	else if (userInputs.test(8))
 		writeAction = WRITE_ACTION::CURSOR_LEFT;
-	else if (writeInput.test(42))
+	else if (userInputs.test(7))
 		writeAction = WRITE_ACTION::CURSOR_RIGHT;
-	else if (c == '~')
+	else if (character == "")
 		writeAction = WRITE_ACTION::NOTHING;
 	else
 		writeAction = WRITE_ACTION::CHARACTER;
 
-	write_aux(writeAction, c, delta);
+	write_aux(writeAction, character, delta, boundX, cursor_shape);
 }
 
-void Writer::write_aux(WRITE_ACTION writeAction, char c, float delta)
+void Writer::write_aux(WRITE_ACTION writeAction, std::string& character, float delta, int boundX, glm::vec3 cursor_shape)
 {
 	if (writeAction == WRITE_ACTION::NOTHING)
 	{
-		m_lastCharacter = '~';
+		m_lastCharacter = "";
 		m_deltaWrite = 0.0f;
 		m_lastWriteAction = writeAction;
 		return;
 	}
-	if (m_lastWriteAction == writeAction || (writeAction == WRITE_ACTION::CHARACTER && c == m_lastCharacter))
+	if (m_lastWriteAction == writeAction || (writeAction == WRITE_ACTION::CHARACTER && character == m_lastCharacter))
 	{
 		m_deltaWrite += delta;
 		if (m_deltaWrite < 1.0f)
@@ -76,22 +46,26 @@ void Writer::write_aux(WRITE_ACTION writeAction, char c, float delta)
 	}
 	if (writeAction == WRITE_ACTION::CHARACTER)
 	{
-		if (c != m_lastCharacter)
+		if (character != m_lastCharacter)
 		{
-			m_lastCharacter = c;
+			m_lastCharacter = character;
 			m_deltaWrite = 0.0f;
 		}
-		if (m_textInput[m_cursor.m_focus].size() < m_textInputMaxCapacity[m_cursor.m_focus])
+		if (boundX > (cursor_shape.x + cursor_shape.z))
 		{
-			m_textInput[m_cursor.m_focus].insert(m_cursor.m_pos, &c, 1);
+			m_textInput[m_cursor.m_focus].insert(m_cursor.m_pos, character.data(), character.size());
+			m_textSectionsWidth[m_cursor.m_focus].insert(m_textSectionsWidth[m_cursor.m_focus].begin() + m_cursor.m_pos, character.size());
 			m_cursor.m_pos++;
 		}
 	}
 	else if (writeAction == WRITE_ACTION::ERASE)
 	{
-		if (m_textInput[m_cursor.m_focus].size() > 0)
+		if (m_textInput[m_cursor.m_focus].size() > 0 && m_cursor.m_pos > 0)
 		{
-			m_textInput[m_cursor.m_focus].erase(--m_cursor.m_pos);
+			int sectionWidth = m_textSectionsWidth[m_cursor.m_focus][m_cursor.m_pos - 1];
+			m_textSectionsWidth[m_cursor.m_focus].erase(m_textSectionsWidth[m_cursor.m_focus].begin() + m_cursor.m_pos - 1);
+			m_textInput[m_cursor.m_focus].erase(m_cursor.m_pos - sectionWidth, sectionWidth);
+			m_cursor.m_pos -= sectionWidth;
 		}
 	}
 	else if (writeAction == WRITE_ACTION::CURSOR_LEFT)
@@ -101,7 +75,7 @@ void Writer::write_aux(WRITE_ACTION writeAction, char c, float delta)
 	else if (writeAction == WRITE_ACTION::CURSOR_RIGHT)
 	{
 		if (m_cursor.m_pos < m_textInput[m_cursor.m_focus].size())
-			m_cursor.m_pos = min(m_textInputMaxCapacity[m_cursor.m_focus], m_cursor.m_pos + 1);
+			m_cursor.m_pos = min(m_textInput[m_cursor.m_focus].size(), m_cursor.m_pos + 1);
 	}
 
 	m_lastWriteAction = writeAction;
@@ -114,7 +88,8 @@ Game::Game(int clientWidth, int clientHeight) :
     textRenderer(std::make_unique<Text>(clientWidth, clientHeight)),
 	m_cards(clientWidth, clientHeight),
 	m_board(clientWidth, clientHeight, graphics.aspect_ratio),
-	m_fruit(-1)
+	m_fruit(-1),
+	m_writer(clientWidth, clientHeight)
 {
 	// create mouse
 	int mouse_pos[2];
@@ -124,7 +99,7 @@ Game::Game(int clientWidth, int clientHeight) :
 	m_mouse->activate();
 
 	// load some fonts and set an active font
-    textRenderer->load_police("assets/fonts/ebrima.ttf", 24);
+    textRenderer->load_police("assets/fonts/ebrima.ttf", 20);
     textRenderer->use_police(0);
 
 	// scene
@@ -167,6 +142,7 @@ void Game::createUI(int width, int height)
 	home_page.add_layer(9); // options sexe
 	home_page.add_layer(10); // avatar
 	home_page.add_layer(11); // choix de couleur
+	home_page.add_layer(12); // user inputs (pseudo, connexion, chercher un adversaire)
 	
 	Layer& h_layer0 = home_page.get_layer(0);
 	h_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(width, height), width, height);
@@ -228,8 +204,8 @@ void Game::createUI(int width, int height)
 	h_layer4.get_sprite(10)->set_background_img_selected("assets/avatar/cheveux_meche_avant_hover.tga");
 	h_layer4.get_sprite(10)->use_background_img();
 	h_layer4.add_sprite(11, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 72)), glm::vec2(130, 24), width, height);
-	h_layer4.get_sprite(11)->set_background_img("assets/avatar/yeux_manga.tga");
-	h_layer4.get_sprite(11)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer4.get_sprite(11)->set_background_img("assets/avatar/cheveux_mixte.tga");
+	h_layer4.get_sprite(11)->set_background_img_selected("assets/avatar/cheveux_mixte_hover.tga");
 	h_layer4.get_sprite(11)->use_background_img();
 	h_layer4.add_sprite(12, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 96)), glm::vec2(130, 24), width, height);
 	h_layer4.get_sprite(12)->set_background_img("assets/avatar/cheveux_arriere.tga");
@@ -239,8 +215,8 @@ void Game::createUI(int width, int height)
 	Layer& h_layer5 = home_page.get_layer(5);
 	h_layer5.set_visibility(false);
 	h_layer5.add_sprite(13, glm::vec2(610, 728 - (140 + 48 * 2 + 12)), glm::vec2(130, 24), width, height);
-	h_layer5.get_sprite(13)->set_background_img("assets/avatar/yeux_manga.tga");
-	h_layer5.get_sprite(13)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer5.get_sprite(13)->set_background_img("assets/avatar/cheveux_mixte.tga");
+	h_layer5.get_sprite(13)->set_background_img_selected("assets/avatar/cheveux_mixte_hover.tga");
 	h_layer5.get_sprite(13)->use_background_img();
 	h_layer5.add_sprite(14, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 24)), glm::vec2(130, 24), width, height);
 	h_layer5.get_sprite(14)->set_background_img("assets/avatar/cheveux_mi_long.tga");
@@ -255,8 +231,8 @@ void Game::createUI(int width, int height)
 	h_layer5.get_sprite(16)->set_background_img_selected("assets/avatar/cheveux_au_bol_hover.tga");
 	h_layer5.get_sprite(16)->use_background_img();
 	h_layer5.add_sprite(17, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 96)), glm::vec2(130, 24), width, height);
-	h_layer5.get_sprite(17)->set_background_img("assets/avatar/cheveux_raide.tga");
-	h_layer5.get_sprite(17)->set_background_img_selected("assets/avatar/cheveux_raide_hover.tga");
+	h_layer5.get_sprite(17)->set_background_img("assets/avatar/queue_cheval.tga");
+	h_layer5.get_sprite(17)->set_background_img_selected("assets/avatar/queue_cheval_hover.tga");
 	h_layer5.get_sprite(17)->use_background_img();
 
 	Layer& h_layer6 = home_page.get_layer(6);
@@ -269,65 +245,74 @@ void Game::createUI(int width, int height)
 	h_layer6.get_sprite(19)->set_background_img("assets/avatar/yeux_amande.tga");
 	h_layer6.get_sprite(19)->set_background_img_selected("assets/avatar/yeux_amande_hover.tga");
 	h_layer6.get_sprite(19)->use_background_img();
-	h_layer6.add_sprite(20, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 48)), glm::vec2(130, 24), width, height);
-	h_layer6.get_sprite(20)->set_background_img("assets/avatar/yeux_gros.tga");
-	h_layer6.get_sprite(20)->set_background_img_selected("assets/avatar/yeux_gros_hover.tga");
-	h_layer6.get_sprite(20)->use_background_img();
 
 	Layer& h_layer7 = home_page.get_layer(7);
 	h_layer7.set_visibility(false);
-	h_layer7.add_sprite(21, glm::vec2(610, 728 - (140 + 48 * 3 + 12)), glm::vec2(130, 24), width, height);
-	h_layer7.get_sprite(21)->set_background_img("assets/avatar/yeux_manga.tga");
-	h_layer7.get_sprite(21)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer7.add_sprite(20, glm::vec2(610, 728 - (140 + 48 * 3 + 12)), glm::vec2(130, 24), width, height);
+	h_layer7.get_sprite(20)->set_background_img("assets/avatar/yeux_manga.tga");
+	h_layer7.get_sprite(20)->set_background_img_selected("assets/avatar/yeux_manga_hover.tga");
+	h_layer7.get_sprite(20)->use_background_img();
+	h_layer7.add_sprite(21, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer7.get_sprite(21)->set_background_img("assets/avatar/yeux_egypte.tga");
+	h_layer7.get_sprite(21)->set_background_img_selected("assets/avatar/yeux_egypte_hover.tga");
 	h_layer7.get_sprite(21)->use_background_img();
-	h_layer7.add_sprite(22, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 24)), glm::vec2(130, 24), width, height);
-	h_layer7.get_sprite(22)->set_background_img("assets/avatar/yeux_egypte.tga");
-	h_layer7.get_sprite(22)->set_background_img_selected("assets/avatar/yeux_egypte_hover.tga");
+	h_layer7.add_sprite(22, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 48)), glm::vec2(130, 24), width, height);
+	h_layer7.get_sprite(22)->set_background_img("assets/avatar/yeux_mascara.tga");
+	h_layer7.get_sprite(22)->set_background_img_selected("assets/avatar/yeux_mascara_hover.tga");
 	h_layer7.get_sprite(22)->use_background_img();
-	h_layer7.add_sprite(23, glm::vec2(610, 728 - (140 + 48 * 3 + 12 + 48)), glm::vec2(130, 24), width, height);
-	h_layer7.get_sprite(23)->set_background_img("assets/avatar/yeux_mascara.tga");
-	h_layer7.get_sprite(23)->set_background_img_selected("assets/avatar/yeux_mascara_hover.tga");
-	h_layer7.get_sprite(23)->use_background_img();
 
 	Layer& h_layer8 = home_page.get_layer(8);
 	h_layer8.set_visibility(false);
-	h_layer8.add_sprite(24, glm::vec2(610, 728 - (140 + 48 * 4 + 12)), glm::vec2(130, 24), width, height);
-	h_layer8.get_sprite(24)->set_background_img("assets/avatar/bouche_petite.tga");
-	h_layer8.get_sprite(24)->set_background_img_selected("assets/avatar/bouche_petite_hover.tga");
+	h_layer8.add_sprite(23, glm::vec2(610, 728 - (140 + 48 * 4 + 12)), glm::vec2(130, 24), width, height);
+	h_layer8.get_sprite(23)->set_background_img("assets/avatar/bouche_petite.tga");
+	h_layer8.get_sprite(23)->set_background_img_selected("assets/avatar/bouche_petite_hover.tga");
+	h_layer8.get_sprite(23)->use_background_img();
+	h_layer8.add_sprite(24, glm::vec2(610, 728 - (140 + 48 * 4 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer8.get_sprite(24)->set_background_img("assets/avatar/bouche_moyenne.tga");
+	h_layer8.get_sprite(24)->set_background_img_selected("assets/avatar/bouche_moyenne_hover.tga");
 	h_layer8.get_sprite(24)->use_background_img();
-	h_layer8.add_sprite(25, glm::vec2(610, 728 - (140 + 48 * 4 + 12 + 24)), glm::vec2(130, 24), width, height);
-	h_layer8.get_sprite(25)->set_background_img("assets/avatar/bouche_moyenne.tga");
-	h_layer8.get_sprite(25)->set_background_img_selected("assets/avatar/bouche_moyenne_hover.tga");
+	h_layer8.add_sprite(25, glm::vec2(610, 728 - (140 + 48 * 4 + 12 + 48)), glm::vec2(130, 24), width, height);
+	h_layer8.get_sprite(25)->set_background_img("assets/avatar/bouche_grande.tga");
+	h_layer8.get_sprite(25)->set_background_img_selected("assets/avatar/bouche_grande_hover.tga");
 	h_layer8.get_sprite(25)->use_background_img();
-	h_layer8.add_sprite(26, glm::vec2(610, 728 - (140 + 48 * 4 + 12 + 48)), glm::vec2(130, 24), width, height);
-	h_layer8.get_sprite(26)->set_background_img("assets/avatar/bouche_grande.tga");
-	h_layer8.get_sprite(26)->set_background_img_selected("assets/avatar/bouche_grande_hover.tga");
-	h_layer8.get_sprite(26)->use_background_img();
 
 	Layer& h_layer9 = home_page.get_layer(9);
 	h_layer9.set_visibility(false);
-	h_layer9.add_sprite(27, glm::vec2(610, 728 - (140 + 48 * 5 + 12)), glm::vec2(130, 24), width, height);
-	h_layer9.get_sprite(27)->set_background_img("assets/avatar/sexe_homme.tga");
-	h_layer9.get_sprite(27)->set_background_img_selected("assets/avatar/sexe_homme_hover.tga");
+	h_layer9.add_sprite(26, glm::vec2(610, 728 - (140 + 48 * 5 + 12)), glm::vec2(130, 24), width, height);
+	h_layer9.get_sprite(26)->set_background_img("assets/avatar/sexe_homme.tga");
+	h_layer9.get_sprite(26)->set_background_img_selected("assets/avatar/sexe_homme_hover.tga");
+	h_layer9.get_sprite(26)->use_background_img();
+	h_layer9.get_sprite(26)->select();
+	h_layer9.add_sprite(27, glm::vec2(610, 728 - (140 + 48 * 5 + 12 + 24)), glm::vec2(130, 24), width, height);
+	h_layer9.get_sprite(27)->set_background_img("assets/avatar/sexe_femme.tga");
+	h_layer9.get_sprite(27)->set_background_img_selected("assets/avatar/sexe_femme_hover.tga");
 	h_layer9.get_sprite(27)->use_background_img();
-	h_layer9.get_sprite(27)->select();
-	h_layer9.add_sprite(28, glm::vec2(610, 728 - (140 + 48 * 5 + 12 + 24)), glm::vec2(130, 24), width, height);
-	h_layer9.get_sprite(28)->set_background_img("assets/avatar/sexe_femme.tga");
-	h_layer9.get_sprite(28)->set_background_img_selected("assets/avatar/sexe_femme_hover.tga");
-	h_layer9.get_sprite(28)->use_background_img();
 
 	Layer& h_layer10 = home_page.get_layer(10);
-	h_layer10.add_sprite(29, glm::vec2(250, 728 - (140 + 48 * 5 + 12 + 24)), glm::vec2(300, 300), width, height);
-	h_layer10.get_sprite(29)->set_background_img_gl(graphics.avatarFBO->getAttachments()[0].id);
-	h_layer10.get_sprite(29)->use_background_img_gl();
+	h_layer10.add_sprite(28, glm::vec2(250, 728 - (140 + 48 * 5 + 12 + 24)), glm::vec2(300, 300), width, height);
+	h_layer10.get_sprite(28)->set_background_img_gl(graphics.avatarFBO->getAttachments()[0].id);
+	h_layer10.get_sprite(28)->use_background_img_gl();
 
 	Layer& h_layer11 = home_page.get_layer(11);
-	h_layer11.add_sprite(30, glm::vec2(225, 728 - 285), glm::vec2(50, 50), width, height);
-	h_layer11.get_sprite(30)->set_background_img("assets/avatar/couleur_left.tga");
+	h_layer11.add_sprite(29, glm::vec2(225, 728 - 285), glm::vec2(50, 50), width, height);
+	h_layer11.get_sprite(29)->set_background_img("assets/avatar/couleur_left.tga");
+	h_layer11.get_sprite(29)->use_background_img();
+	h_layer11.add_sprite(30, glm::vec2(525, 728 - 285), glm::vec2(50, 50), width, height);
+	h_layer11.get_sprite(30)->set_background_img("assets/avatar/couleur_right.tga");
 	h_layer11.get_sprite(30)->use_background_img();
-	h_layer11.add_sprite(31, glm::vec2(525, 728 - 285), glm::vec2(50, 50), width, height);
-	h_layer11.get_sprite(31)->set_background_img("assets/avatar/couleur_right.tga");
+	h_layer11.add_sprite(31, glm::vec2(1050 - 60, 728 - 65), glm::vec2(50, 50), width, height);
+	h_layer11.get_sprite(31)->set_background_img("assets/off.tga");
 	h_layer11.get_sprite(31)->use_background_img();
+
+	Layer& h_layer12 = home_page.get_layer(12);
+	h_layer12.add_sprite(32, glm::vec2(525 - 75, 728 - (140 + 48 * 7 - 12)), glm::vec2(150, 30), width, height);
+	h_layer12.get_sprite(32)->set_background_img("assets/pseudo.tga");
+	h_layer12.get_sprite(32)->set_background_img_selected("assets/pseudo_hover.tga");
+	h_layer12.get_sprite(32)->use_background_img();
+	h_layer12.add_sprite(33, glm::vec2(525 - 75, 728 - (140 + 48 * 8 - 12)), glm::vec2(150, 30), width, height);
+	h_layer12.get_sprite(33)->set_background_img("assets/connexion.tga");
+	h_layer12.get_sprite(33)->set_background_img_selected("assets/connexion_hover.tga");
+	h_layer12.get_sprite(33)->use_background_img();
 
 	// game page
 	m_ui.add_page();
@@ -435,6 +420,20 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 	m_ui.get_page(m_ui.get_active_page()).draw();
+
+	// draw text
+	if (m_ui.get_active_page() == 0) {
+		textRenderer->print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
+		// draw cursor
+		if (m_writer.m_cursor.m_focus == 0)
+		{
+			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+			m_writer.m_cursor.draw(cursor_shape, delta);
+		}
+	}
+	else if (m_ui.get_active_page() == 1) {
+		textRenderer->print(m_writer.m_textInput[1], 0, 0, 1, glm::vec3(0));
+	}
 
 	// mouse
 	if (m_mouse && m_mouse->is_active())
@@ -643,7 +642,7 @@ Writer& Game::get_writer()
 	return m_writer;
 }
 
-void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, float delta)
+void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int screenH, float delta)
 {
 	int* mouse_pos = m_mouse->get_position();
 	int* mouse_size = m_mouse->get_size();
@@ -671,7 +670,7 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			for (int i{ 2 }; i < 7; ++i)
 				home_page.get_layer(2).get_sprite(i)->use_background_img();
 		}
-		if (sprite_id >= 7 && sprite_id <= 28) // hovered a face feature option
+		if (sprite_id >= 7 && sprite_id <= 27) // hovered a face feature option
 		{
 			// change sprite texture to selected/hover texture
 			Layer& layer{home_page.get_layer(hovered->get_layer_id())};
@@ -686,13 +685,13 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 					home_page.get_layer(4).get_sprite(i)->use_background_img();
 				else if (i >= 13 && i <= 17) // layer 5
 					home_page.get_layer(5).get_sprite(i)->use_background_img();
-				else if (i >= 18 && i <= 20) // layer 6
+				else if (i >= 18 && i <= 19) // layer 6
 					home_page.get_layer(6).get_sprite(i)->use_background_img();
-				else if (i >= 21 && i <= 23) // layer 7
+				else if (i >= 20 && i <= 22) // layer 7
 					home_page.get_layer(7).get_sprite(i)->use_background_img();
-				else if (i >= 24 && i <= 26) // layer 8
+				else if (i >= 23 && i <= 25) // layer 8
 					home_page.get_layer(8).get_sprite(i)->use_background_img();
-				else if (i == 27 || i == 28) // layer 9
+				else if (i == 26 || i == 27) // layer 9
 					home_page.get_layer(9).get_sprite(i)->use_background_img();
 			}
 		}
@@ -707,17 +706,17 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 					home_page.get_layer(4).get_sprite(i)->use_background_img();
 				else if (i >= 13 && i <= 17) // layer 5
 					home_page.get_layer(5).get_sprite(i)->use_background_img();
-				else if (i >= 18 && i <= 20) // layer 6
+				else if (i >= 18 && i <= 19) // layer 6
 					home_page.get_layer(6).get_sprite(i)->use_background_img();
-				else if (i >= 21 && i <= 23) // layer 7
+				else if (i >= 20 && i <= 22) // layer 7
 					home_page.get_layer(7).get_sprite(i)->use_background_img();
-				else if (i >= 24 && i <= 26) // layer 8
+				else if (i >= 23 && i <= 25) // layer 8
 					home_page.get_layer(8).get_sprite(i)->use_background_img();
-				else if (i == 27 || i == 28) // layer 9
+				else if (i == 26 || i == 27) // layer 9
 					home_page.get_layer(9).get_sprite(i)->use_background_img();
 			}
 		}
-		if (sprite_id == 30 || sprite_id == 31) // hovered a color picker arrow
+		if (sprite_id == 29 || sprite_id == 30) // hovered a color picker arrow
 		{
 			// bloom
 			home_page.get_layer(11).get_sprite(sprite_id)->set_bloom_strength(1.5f);
@@ -725,8 +724,26 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 		else
 		{
 			// reset bloom
+			home_page.get_layer(11).get_sprite(29)->set_bloom_strength(1.0f);
 			home_page.get_layer(11).get_sprite(30)->set_bloom_strength(1.0f);
+		}
+		if (sprite_id == 31) // hovered close game button
+		{
+			// bloom
+			home_page.get_layer(11).get_sprite(sprite_id)->set_bloom_strength(100'000.0f);
+		}
+		else
+		{
+			// reset bloom
 			home_page.get_layer(11).get_sprite(31)->set_bloom_strength(1.0f);
+		}
+		if (sprite_id == 33) // hovered connexion button
+		{
+			home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
+		}
+		else
+		{
+			home_page.get_layer(12).get_sprite(33)->use_background_img();
 		}
 		if (sprite_id >= 2 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on a face feature
 		{
@@ -744,6 +761,10 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 				}
 			}
 
+			// stop focus pseudo input
+			home_page.get_layer(12).get_sprite(32)->use_background_img();
+			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+
 			// show options
 			if (sprite_id == 2)
 			{
@@ -751,12 +772,12 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 					home_page.get_layer(3).set_visibility(false);
 				else
 					home_page.get_layer(3).set_visibility(true);
-				for(int i{4}; i < 9; ++i)
+				for(int i{4}; i < 10; ++i)
 					home_page.get_layer(i).set_visibility(false);
 			}
 			else if (sprite_id == 3)
 			{
-				if (home_page.get_layer(9).get_sprite(27)->is_selected())
+				if (home_page.get_layer(9).get_sprite(26)->is_selected())
 				{
 					if(home_page.get_layer(4).m_visible)
 						home_page.get_layer(4).set_visibility(false);
@@ -766,7 +787,7 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 						if (i != 4)
 							home_page.get_layer(i).set_visibility(false);
 				}
-				else if (home_page.get_layer(9).get_sprite(28)->is_selected())
+				else if (home_page.get_layer(9).get_sprite(27)->is_selected())
 				{
 					if(home_page.get_layer(5).m_visible)
 						home_page.get_layer(5).set_visibility(true);
@@ -779,7 +800,7 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			}
 			else if (sprite_id == 4)
 			{
-				if (home_page.get_layer(9).get_sprite(27)->is_selected())
+				if (home_page.get_layer(9).get_sprite(26)->is_selected())
 				{
 					if (home_page.get_layer(6).m_visible)
 						home_page.get_layer(6).set_visibility(false);
@@ -789,7 +810,7 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 						if (i != 6)
 							home_page.get_layer(i).set_visibility(false);
 				}
-				else if (home_page.get_layer(9).get_sprite(28)->is_selected())
+				else if (home_page.get_layer(9).get_sprite(27)->is_selected())
 				{
 					if (home_page.get_layer(7).m_visible)
 						home_page.get_layer(7).set_visibility(true);
@@ -820,7 +841,7 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 						home_page.get_layer(i).set_visibility(false);
 			}
 		}
-		else if (sprite_id >= 7 && sprite_id <= 28 && inputs.test(2) && inputs.test(9)) // clicked on a face feature option
+		else if (sprite_id >= 7 && sprite_id <= 27 && inputs.test(2) && inputs.test(9)) // clicked on a face feature option
 		{
 			// select option
 			hovered->select();
@@ -842,36 +863,36 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 					home_page.get_layer(5).get_sprite(i)->unselect();
 				}
 			}
-			else if (sprite_id >= 18 && sprite_id <= 20)
+			else if (sprite_id >= 18 && sprite_id <= 19)
 			{
-				for (int i{ 18 }; i <= 20; ++i)
+				for (int i{ 18 }; i <= 19; ++i)
 				{
 					if (i == sprite_id)
 						continue;
 					home_page.get_layer(6).get_sprite(i)->unselect();
 				}
 			}
-			else if (sprite_id >= 21 && sprite_id <= 23)
+			else if (sprite_id >= 20 && sprite_id <= 22)
 			{
-				for (int i{ 21 }; i <= 23; ++i)
+				for (int i{ 20 }; i <= 22; ++i)
 				{
 					if (i == sprite_id)
 						continue;
 					home_page.get_layer(7).get_sprite(i)->unselect();
 				}
 			}
-			else if (sprite_id >= 24 && sprite_id <= 26)
+			else if (sprite_id >= 23 && sprite_id <= 25)
 			{
-				for (int i{ 24 }; i <= 26; ++i)
+				for (int i{ 23 }; i <= 25; ++i)
 				{
 					if (i == sprite_id)
 						continue;
 					home_page.get_layer(8).get_sprite(i)->unselect();
 				}
 			}
-			else if (sprite_id >= 27 && sprite_id <= 28)
+			else if (sprite_id >= 26 && sprite_id <= 27)
 			{
-				for (int i{ 27 }; i <= 28; ++i)
+				for (int i{ 26 }; i <= 27; ++i)
 				{
 					if (i == sprite_id)
 						continue;
@@ -883,13 +904,13 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			home_page.get_layer(hovered->get_layer_id()).set_visibility(false);
 
 			// set gender
-			if (sprite_id == 27)
+			if (sprite_id == 26)
 			{
 				m_avatar.m_gender = Avatar::GENDER::MALE;
 				// unselect all female features and select corresponding male ones
 				swap_gender_features(Avatar::GENDER::FEMALE, Avatar::GENDER::MALE);
 			}
-			else if (sprite_id == 28)
+			else if (sprite_id == 27)
 			{
 				m_avatar.m_gender = Avatar::GENDER::FEMALE;
 				// unselect all male features and select corresponding female ones
@@ -897,11 +918,11 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			}
 
 			// set mouth
-			else if (sprite_id == 26)
-				m_avatar.m_mouth = Avatar::MOUTH::GRANDE;
 			else if (sprite_id == 25)
-				m_avatar.m_mouth = Avatar::MOUTH::MOYENNE;
+				m_avatar.m_mouth = Avatar::MOUTH::GRANDE;
 			else if (sprite_id == 24)
+				m_avatar.m_mouth = Avatar::MOUTH::MOYENNE;
+			else if (sprite_id == 23)
 				m_avatar.m_mouth = Avatar::MOUTH::PETITE;
 			else
 			{
@@ -912,8 +933,6 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 						m_avatar.m_eyes = Avatar::EYES::MANGA;
 					else if (sprite_id == 19)
 						m_avatar.m_eyes = Avatar::EYES::AMANDE;
-					else if (sprite_id == 20)
-						m_avatar.m_eyes = Avatar::EYES::GROS;
 
 					// set male hair
 					else if (sprite_id == 8)
@@ -923,23 +942,23 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 					else if (sprite_id == 10)
 						m_avatar.m_hair = Avatar::HAIR::MECHE_AVANT;
 					else if (sprite_id == 11)
-						m_avatar.m_hair = Avatar::HAIR::MANGA;
+						m_avatar.m_hair = Avatar::HAIR::MIXTE;
 					else if (sprite_id == 12)
 						m_avatar.m_hair = Avatar::HAIR::ARRIERE;
 				}
 				else
 				{
 					// set female eyes
-					if (sprite_id == 21)
+					if (sprite_id == 20)
 						m_avatar.m_eyes = Avatar::EYES::MANGA;
-					else if (sprite_id == 22)
+					else if (sprite_id == 21)
 						m_avatar.m_eyes = Avatar::EYES::EGYPTE;
-					else if (sprite_id == 23)
+					else if (sprite_id == 22)
 						m_avatar.m_eyes = Avatar::EYES::MASCARA;
 
 					// set female hair
 					else if (sprite_id == 13)
-						m_avatar.m_hair = Avatar::HAIR::MANGA;
+						m_avatar.m_hair = Avatar::HAIR::MIXTE;
 					else if (sprite_id == 14)
 						m_avatar.m_hair = Avatar::HAIR::MI_LONG;
 					else if (sprite_id == 15)
@@ -947,26 +966,26 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 					else if (sprite_id == 16)
 						m_avatar.m_hair = Avatar::HAIR::AU_BOL;
 					else if (sprite_id == 17)
-						m_avatar.m_hair = Avatar::HAIR::RAIDE;
+						m_avatar.m_hair = Avatar::HAIR::PONYTAIL;
 				}
 			}
 		}
-		else if ((sprite_id == 30 || sprite_id == 31) && inputs.test(2) && inputs.test(9)) // color picker
+		else if ((sprite_id == 29 || sprite_id == 30) && inputs.test(2) && inputs.test(9)) // color picker
 		{
 			if (home_page.get_layer(2).get_sprite(2)->is_selected()) // change skin color
 			{
-				if (sprite_id == 30)
+				if (sprite_id == 29)
 				{
 					m_avatar.m_skin_color_id--;
 					if (m_avatar.m_skin_color_id == -1)
 					{
-						m_avatar.m_skin_color_id = m_avatar.m_skin_hue.size() - 1;
+						m_avatar.m_skin_color_id = m_avatar.m_color.size() - 1;
 					}
 				}
 				else
 				{
 					m_avatar.m_skin_color_id++;
-					if (m_avatar.m_skin_color_id >= m_avatar.m_skin_hue.size())
+					if (m_avatar.m_skin_color_id >= m_avatar.m_color.size())
 					{
 						m_avatar.m_skin_color_id = 0;
 					}
@@ -974,18 +993,18 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			}
 			else if (home_page.get_layer(2).get_sprite(3)->is_selected()) // change hair color
 			{
-				if (sprite_id == 30)
+				if (sprite_id == 29)
 				{
 					m_avatar.m_hair_color_id--;
 					if (m_avatar.m_hair_color_id == -1)
 					{
-						m_avatar.m_hair_color_id = m_avatar.m_hair_hue.size() - 1;
+						m_avatar.m_hair_color_id = m_avatar.m_color.size() - 2;
 					}
 				}
 				else
 				{
 					m_avatar.m_hair_color_id++;
-					if (m_avatar.m_hair_color_id >= m_avatar.m_hair_hue.size())
+					if (m_avatar.m_hair_color_id >= m_avatar.m_color.size() - 1)
 					{
 						m_avatar.m_hair_color_id = 0;
 					}
@@ -993,23 +1012,27 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			}
 			else if (home_page.get_layer(2).get_sprite(4)->is_selected()) // change eyes color
 			{
-				if (sprite_id == 30)
+				if (sprite_id == 29)
 				{
 					m_avatar.m_eyes_color_id--;
 					if (m_avatar.m_eyes_color_id == -1)
 					{
-						m_avatar.m_eyes_color_id = m_avatar.m_eyes_hue.size() - 1;
+						m_avatar.m_eyes_color_id = m_avatar.m_color.size() - 2;
 					}
 				}
 				else
 				{
 					m_avatar.m_eyes_color_id++;
-					if (m_avatar.m_eyes_color_id >= m_avatar.m_eyes_hue.size())
+					if (m_avatar.m_eyes_color_id >= m_avatar.m_color.size() - 1)
 					{
 						m_avatar.m_eyes_color_id = 0;
 					}
 				}
 			}
+
+			// stop focus pseudo input
+			home_page.get_layer(12).get_sprite(32)->use_background_img();
+			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
 
 			// hide face feature options
 			home_page.get_layer(3).set_visibility(false);
@@ -1020,8 +1043,23 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			home_page.get_layer(8).set_visibility(false);
 			home_page.get_layer(9).set_visibility(false);
 		}
+		else if (sprite_id == 31 && inputs.test(2) && inputs.test(9)) // clicked on quit game
+		{
+			SDL_Event event;
+			event.type = SDL_QUIT;
+			SDL_PushEvent(&event);
+		}
+		else if (sprite_id == 32 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
+		{
+			home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
+			m_writer.m_cursor.m_focus = 0; // 0 = pseudo, 1 = chat, 2 = not writting
+		}
 		else if (inputs.test(2) && inputs.test(9))
 		{
+			// stop focus pseudo input
+			home_page.get_layer(12).get_sprite(32)->use_background_img();
+			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+			
 			// hide face feature options
 			home_page.get_layer(3).set_visibility(false);
 			home_page.get_layer(4).set_visibility(false);
@@ -1030,6 +1068,12 @@ void Game::updateUI(const std::bitset<10>& inputs, int screenW, int screenH, flo
 			home_page.get_layer(7).set_visibility(false);
 			home_page.get_layer(8).set_visibility(false);
 			home_page.get_layer(9).set_visibility(false);
+		}
+		if (m_writer.m_cursor.m_focus == 0)
+		{
+			int boundX = home_page.get_layer(12).get_sprite(32)->get_position().x + home_page.get_layer(12).get_sprite(32)->get_size().x;
+			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+			m_writer.write(text_input, inputs, delta, boundX, cursor_shape);
 		}
 	}
 	else // game
@@ -1044,7 +1088,7 @@ void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
 	if (from == Avatar::GENDER::MALE)
 	{
 		if (m_avatar.m_hair == Avatar::HAIR::ARRIERE)
-			m_avatar.m_hair = Avatar::HAIR::RAIDE;
+			m_avatar.m_hair = Avatar::HAIR::PONYTAIL;
 		else if (m_avatar.m_hair == Avatar::HAIR::DECOIFFE)
 			m_avatar.m_hair = Avatar::HAIR::AU_BOL;
 		else if (m_avatar.m_hair == Avatar::HAIR::HERISSON)
@@ -1058,7 +1102,7 @@ void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
 			m_avatar.m_hair = Avatar::HAIR::MECHE_AVANT;
 		else if (m_avatar.m_hair == Avatar::HAIR::MI_LONG)
 			m_avatar.m_hair = Avatar::HAIR::HERISSON;
-		else if (m_avatar.m_hair == Avatar::HAIR::RAIDE)
+		else if (m_avatar.m_hair == Avatar::HAIR::PONYTAIL)
 			m_avatar.m_hair = Avatar::HAIR::ARRIERE;
 		else if (m_avatar.m_hair == Avatar::HAIR::AU_BOL)
 			m_avatar.m_hair = Avatar::HAIR::DECOIFFE;
@@ -1068,15 +1112,13 @@ void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
 	{
 		if (m_avatar.m_eyes == Avatar::EYES::AMANDE)
 			m_avatar.m_eyes = Avatar::EYES::EGYPTE;
-		else if (m_avatar.m_eyes == Avatar::EYES::GROS)
-			m_avatar.m_eyes = Avatar::EYES::MASCARA;
 	}
 	else
 	{
 		if (m_avatar.m_eyes == Avatar::EYES::EGYPTE)
 			m_avatar.m_eyes = Avatar::EYES::AMANDE;
 		else if (m_avatar.m_eyes == Avatar::EYES::MASCARA)
-			m_avatar.m_eyes = Avatar::EYES::GROS;
+			m_avatar.m_eyes = Avatar::EYES::AMANDE;
 	}
 }
 

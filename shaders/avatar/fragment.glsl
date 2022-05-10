@@ -6,7 +6,6 @@ in vec2 texCoords;
 
 uniform sampler2D image;
 uniform float teinte; // HSL color space
-uniform float saturation; // HSL color space
 
 vec3 hsl2rgb( in vec3 c )
 {
@@ -82,9 +81,14 @@ void main()
 {
 	vec4 image_sample = texture(image, texCoords);
 	float alpha = image_sample.a;
-	if(alpha == 0.0f)
-		discard;
-	float L = rgb2hsl(image_sample.rgb).z;
-	vec3 RGB = hsl2rgb(vec3(teinte, saturation, L));
-	color = vec4(RGB, 1.0f);
+	float L = rgb2hsl(image_sample.rgb).b;
+	vec3 RGB;
+	float H = teinte * 360.0f;
+	if(H >= 335.0f && H <= 350) {
+		RGB = hsl2rgb(vec3(teinte, 0.5f, L));
+	}
+	else{
+		RGB = hsl2rgb(vec3(teinte, 1.0f, L));
+	}
+	color = vec4(RGB, alpha);
 }
