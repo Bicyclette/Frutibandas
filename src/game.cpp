@@ -143,6 +143,7 @@ void Game::createUI(int width, int height)
 	home_page.add_layer(10); // avatar
 	home_page.add_layer(11); // choix de couleur
 	home_page.add_layer(12); // user inputs (pseudo, connexion, chercher un adversaire)
+	home_page.add_layer(13); // chercher adversaire
 	
 	Layer& h_layer0 = home_page.get_layer(0);
 	h_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(width, height), width, height);
@@ -303,16 +304,26 @@ void Game::createUI(int width, int height)
 	h_layer11.add_sprite(31, glm::vec2(1050 - 60, 728 - 65), glm::vec2(50, 50), width, height);
 	h_layer11.get_sprite(31)->set_background_img("assets/off.tga");
 	h_layer11.get_sprite(31)->use_background_img();
+	h_layer11.add_sprite(32, glm::vec2(902, 728 - 72), glm::vec2(60, 60), width, height);
+	h_layer11.get_sprite(32)->set_background_img("assets/internet_off.tga");
+	h_layer11.get_sprite(32)->set_bloom_strength(100.0f);
+	h_layer11.get_sprite(32)->use_background_img();
 
 	Layer& h_layer12 = home_page.get_layer(12);
-	h_layer12.add_sprite(32, glm::vec2(525 - 75, 728 - (140 + 48 * 7 - 12)), glm::vec2(150, 30), width, height);
-	h_layer12.get_sprite(32)->set_background_img("assets/pseudo.tga");
-	h_layer12.get_sprite(32)->set_background_img_selected("assets/pseudo_hover.tga");
-	h_layer12.get_sprite(32)->use_background_img();
-	h_layer12.add_sprite(33, glm::vec2(525 - 75, 728 - (140 + 48 * 8 - 12)), glm::vec2(150, 30), width, height);
-	h_layer12.get_sprite(33)->set_background_img("assets/connexion.tga");
-	h_layer12.get_sprite(33)->set_background_img_selected("assets/connexion_hover.tga");
+	h_layer12.add_sprite(33, glm::vec2(525 - 75, 728 - (140 + 48 * 7 - 12)), glm::vec2(150, 30), width, height);
+	h_layer12.get_sprite(33)->set_background_img("assets/pseudo.tga");
+	h_layer12.get_sprite(33)->set_background_img_selected("assets/pseudo_hover.tga");
 	h_layer12.get_sprite(33)->use_background_img();
+	h_layer12.add_sprite(34, glm::vec2(525 - 75, 728 - (140 + 48 * 8 - 24)), glm::vec2(150, 24), width, height);
+	h_layer12.get_sprite(34)->set_background_img("assets/connexion.tga");
+	h_layer12.get_sprite(34)->set_background_img_selected("assets/connexion_hover.tga");
+	h_layer12.get_sprite(34)->use_background_img();
+
+	Layer& h_layer13 = home_page.get_layer(13);
+	h_layer13.add_sprite(35, glm::vec2(525 - 75, 246), glm::vec2(150, 24), width, height);
+	h_layer13.get_sprite(35)->set_background_img("assets/jouer.tga");
+	h_layer13.get_sprite(35)->set_background_img_selected("assets/jouer_hover.tga");
+	h_layer13.get_sprite(35)->use_background_img();
 
 	// game page
 	m_ui.add_page();
@@ -423,16 +434,31 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 
 	// draw text
 	if (m_ui.get_active_page() == 0) {
-		textRenderer->print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
-		// draw cursor
-		if (m_writer.m_cursor.m_focus == 0)
+		g_connected_mutex.lock();
+		if (!g_connected && !g_try_connection)
 		{
-			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
-			m_writer.m_cursor.draw(cursor_shape, delta);
+			textRenderer->print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
+			// draw cursor
+			if (m_writer.m_cursor.m_focus == 0)
+			{
+				glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+				m_writer.m_cursor.draw(cursor_shape, delta);
+			}
 		}
+		else if(g_try_connection)
+		{
+			textRenderer->print("connexion en cours...", 525 - 82, 272, 1, glm::vec3(0.676f, 0.337f, 0.078f));
+		}
+		g_connected_mutex.unlock();
 	}
 	else if (m_ui.get_active_page() == 1) {
 		textRenderer->print(m_writer.m_textInput[1], 0, 0, 1, glm::vec3(0));
+		// draw cursor
+		if (m_writer.m_cursor.m_focus == 1)
+		{
+			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[1], 0, 0, 1, m_writer.m_cursor.m_pos);
+			m_writer.m_cursor.draw(cursor_shape, delta);
+		}
 	}
 
 	// mouse
@@ -656,6 +682,57 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		Page& home_page{m_ui.get_page(0)};
 		int sprite_id{ hovered->get_id() };
 
+		// display connection status
+		bool connected2server;
+		g_connected_mutex.lock();
+		connected2server = g_connected;
+		g_connected_mutex.unlock();
+		if (connected2server) {
+			g_try_connection = false;
+			home_page.get_layer(11).get_sprite(32)->set_background_img("assets/internet_on.tga");
+		}
+		else {
+			home_page.get_layer(11).get_sprite(32)->set_background_img("assets/internet_off.tga");
+		}
+		if (g_try_connection)
+		{
+			// check connection result
+			std::string message;
+			g_msg2client_mutex.lock();
+			if (!g_msg2client_queue.empty())
+			{
+				message = g_msg2client_queue.front();
+				g_msg2client_queue.pop();
+				g_msg2client_mutex.unlock();
+				int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
+				if (code == 0)
+				{
+					int result = std::atoi(message.substr(message.find_first_of(':') + 1).c_str());
+					if (result == 0) // connection failed
+					{
+						g_try_connection = false;
+					}
+				}
+			}
+			else
+			{
+				g_msg2client_mutex.unlock();
+				home_page.get_layer(12).set_visibility(false);
+				home_page.get_layer(13).set_visibility(false);
+			}
+		}
+		else
+		{
+			if (connected2server) {
+				home_page.get_layer(12).set_visibility(false);
+				home_page.get_layer(13).set_visibility(true);
+			}
+			else {
+				home_page.get_layer(12).set_visibility(true);
+				home_page.get_layer(13).set_visibility(false);
+			}
+		}
+
 		if (sprite_id >= 2 && sprite_id <= 6) // hovered a face feature
 		{
 			// change sprite texture to selected/hover texture
@@ -737,13 +814,21 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			// reset bloom
 			home_page.get_layer(11).get_sprite(31)->set_bloom_strength(1.0f);
 		}
-		if (sprite_id == 33) // hovered connexion button
+		if (sprite_id == 34) // hovered connexion button
 		{
 			home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
 		}
 		else
 		{
-			home_page.get_layer(12).get_sprite(33)->use_background_img();
+			home_page.get_layer(12).get_sprite(34)->use_background_img();
+		}
+		if (sprite_id == 35) // hovered play button
+		{
+			home_page.get_layer(13).get_sprite(sprite_id)->use_background_img_selected();
+		}
+		else
+		{
+			home_page.get_layer(13).get_sprite(35)->use_background_img();
 		}
 		if (sprite_id >= 2 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on a face feature
 		{
@@ -762,7 +847,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			}
 
 			// stop focus pseudo input
-			home_page.get_layer(12).get_sprite(32)->use_background_img();
+			home_page.get_layer(12).get_sprite(33)->use_background_img();
 			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
 
 			// show options
@@ -1031,7 +1116,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			}
 
 			// stop focus pseudo input
-			home_page.get_layer(12).get_sprite(32)->use_background_img();
+			home_page.get_layer(12).get_sprite(33)->use_background_img();
 			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
 
 			// hide face feature options
@@ -1049,15 +1134,33 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			event.type = SDL_QUIT;
 			SDL_PushEvent(&event);
 		}
-		else if (sprite_id == 32 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
+		else if (sprite_id == 33 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
 		{
 			home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
 			m_writer.m_cursor.m_focus = 0; // 0 = pseudo, 1 = chat, 2 = not writting
 		}
+		else if (sprite_id == 34 && inputs.test(2) && inputs.test(9)) // clicked on connect
+		{
+			g_try_connection = true;
+			g_msg2server_mutex.lock();
+			g_msg2server_queue.emplace("0:" + m_writer.m_textInput[0]);
+			g_msg2server_mutex.unlock();
+			
+			// stop focus pseudo input
+			home_page.get_layer(12).get_sprite(33)->use_background_img();
+			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+		}
+		else if (sprite_id == 35 && inputs.test(2) && inputs.test(9)) // clicked on play
+		{
+			g_search_opponent = true;
+			g_msg2server_mutex.lock();
+			g_msg2server_queue.emplace("1");
+			g_msg2server_mutex.unlock();
+		}
 		else if (inputs.test(2) && inputs.test(9))
 		{
 			// stop focus pseudo input
-			home_page.get_layer(12).get_sprite(32)->use_background_img();
+			home_page.get_layer(12).get_sprite(33)->use_background_img();
 			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
 			
 			// hide face feature options
@@ -1071,7 +1174,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		}
 		if (m_writer.m_cursor.m_focus == 0)
 		{
-			int boundX = home_page.get_layer(12).get_sprite(32)->get_position().x + home_page.get_layer(12).get_sprite(32)->get_size().x;
+			int boundX = home_page.get_layer(12).get_sprite(33)->get_position().x + home_page.get_layer(12).get_sprite(33)->get_size().x;
 			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
 			m_writer.write(text_input, inputs, delta, boundX, cursor_shape);
 		}

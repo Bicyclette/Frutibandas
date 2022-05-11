@@ -15,8 +15,10 @@ class NetworkClient
 		bool disconnect();
 		bool has_received_data();
 		void print_data();
+		void send_data(std::string data);
+		int service();
 
-	private:
+	public:
 		ENetHost* m_client;
 		ENetAddress m_address; // IP & port of the server the client will connect to
 		ENetPeer* m_peer; // the server the client is connected to

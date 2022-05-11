@@ -6,6 +6,8 @@
 #include <utility>
 #include <cmath>
 #include <thread>
+#include <mutex>
+#include <queue>
 #include <map>
 #include <iterator>
 #include "scene.hpp"
@@ -593,7 +595,6 @@ class Game
 		std::map<std::string, std::shared_ptr<Object>> loadedAssets;
 		Graphics graphics;
 		std::shared_ptr<Character> character;
-		NetworkClient m_client;
     
     private:
 
@@ -626,5 +627,14 @@ class Game
 		std::string m_pseudo_orange;
 		std::string m_pseudo_banane;
 };
+
+inline std::queue<std::string> g_msg2server_queue;
+inline std::queue<std::string> g_msg2client_queue;
+inline std::mutex g_msg2server_mutex;
+inline std::mutex g_msg2client_mutex;
+inline bool g_connected{ false };
+inline std::mutex g_connected_mutex;
+inline bool g_try_connection{ false };
+inline bool g_search_opponent{ false };
 
 #endif

@@ -9,9 +9,9 @@ NetworkClient::NetworkClient() :
 		throw std::exception("An error occured while initializing ENet !");
 	}
 	atexit(enet_deinitialize);
-
+	
 	// create client
-	m_client = enet_host_create(nullptr, 1, 2, 0, 0);
+	m_client = enet_host_create(nullptr, 1, 1, 0, 0);
 	if (m_client == nullptr)
 	{
 		enet_deinitialize();
@@ -29,7 +29,7 @@ bool NetworkClient::connect(std::string server_ip, int port)
 	enet_address_set_host(&m_address, server_ip.c_str());
 	m_address.port = port;
 
-	m_peer = enet_host_connect(m_client, &m_address, 2, 0);
+	m_peer = enet_host_connect(m_client, &m_address, 1, 0);
 	if (m_peer == nullptr)
 	{
 		enet_host_destroy(m_client);
@@ -80,4 +80,15 @@ void NetworkClient::print_data()
 {
 	std::string data = reinterpret_cast<char*>(m_event.packet->data);
 	std::cout << data << std::endl;
+}
+
+void NetworkClient::send_data(std::string data)
+{
+	ENetPacket* packet = enet_packet_create(data.c_str(), data.size() + 1, ENET_PACKET_FLAG_RELIABLE);
+	enet_peer_send(m_peer, 0, packet);
+}
+
+int NetworkClient::service()
+{
+	return enet_host_service(m_client, &m_event, 0);
 }

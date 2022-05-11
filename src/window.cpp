@@ -129,7 +129,7 @@ char* WindowManager::get_text_input()
 	return m_textInput;
 }
 
-bool WindowManager::isAlive()
+bool& WindowManager::isAlive()
 {
 	return alive;
 }

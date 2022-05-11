@@ -50,7 +50,7 @@ class WindowManager
 		std::array<int, 3> & getMouseData();
 		std::bitset<10>& getUserInputs();
 		char* get_text_input();
-		bool isAlive();
+		bool& isAlive();
 		void checkEvents(bool writing = false);
 		void resetEvents();
 

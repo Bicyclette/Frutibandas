@@ -8,6 +8,95 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
+#define SERVER "127.0.0.1"
+#define PORT 7777
+
+void network_thread(bool& run)
+{
+	NetworkClient client;
+	
+	while (run)
+	{
+		std::string message;
+		g_msg2server_mutex.lock();
+		if (!g_msg2server_queue.empty()) {
+			message = g_msg2server_queue.front();
+			g_msg2server_queue.pop();
+		}
+		else {
+			g_msg2server_mutex.unlock();
+			continue;
+		}
+		g_msg2server_mutex.unlock();
+
+		// processing
+		int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
+
+		if (code == 0) {
+			if (client.connect(SERVER, PORT)) {
+				g_msg2client_mutex.lock();
+				g_msg2client_queue.emplace("0:1");
+				g_msg2client_mutex.unlock();
+				g_connected_mutex.lock();
+				g_connected = true;
+				g_connected_mutex.unlock();
+				// send nickname
+				client.send_data("nn" + message.substr(message.find_first_of(':') + 1));
+			}
+			else {
+				g_msg2client_mutex.lock();
+				g_msg2client_queue.emplace("0:0");
+				g_msg2client_mutex.unlock();
+			}
+		}
+
+		// connected to server
+		while (g_connected)
+		{
+			std::string message;
+			g_msg2server_mutex.lock();
+			if (!g_msg2server_queue.empty()) {
+				message = g_msg2server_queue.front();
+				g_msg2server_queue.pop();
+				g_msg2server_mutex.unlock();
+				
+				// processing
+				int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
+				switch (code)
+				{
+					case 1:
+						client.send_data("so");
+						break;
+					default:
+						break;
+				};
+			}
+			else{
+				g_msg2server_mutex.unlock();
+			}
+
+			if (client.service())
+			{
+				if (client.m_event.type == ENET_EVENT_TYPE_RECEIVE)
+				{
+					std::cout << "A packet of length ";
+					std::cout << client.m_event.packet->dataLength;
+					std::cout << " containing ";
+					std::cout << client.m_event.packet->data;
+					std::cout << " was received from";
+					std::cout << client.m_event.peer->address.host << ':';
+					std::cout << client.m_event.peer->address.port;
+					std::cout << " on channel ";
+					std::cout << client.m_event.channelID;
+				}
+			}
+		}
+
+		// disconnect
+		client.disconnect();
+	}
+}
+
 void render(std::unique_ptr<WindowManager> client, std::unique_ptr<Game> game)
 {
     // IMGUI data
@@ -50,6 +139,9 @@ int main(int argc, char* argv[])
 {
 	std::unique_ptr<WindowManager> client{std::make_unique<WindowManager>("Frutibandas")};
 	std::unique_ptr<Game> game{std::make_unique<Game>(client->getWidth(), client->getHeight())};
+	// network thread
+	std::thread net_thread(network_thread, std::ref(client->isAlive()));
+	// render game
 	render(std::move(client), std::move(game));
 
 	return 0;
