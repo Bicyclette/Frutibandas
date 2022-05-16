@@ -94,7 +94,8 @@ Graphics::Graphics(int width, int height) :
     },
     motionBlurFBO{std::make_unique<Framebuffer>(true, false, true)},
 	userInterfaceFBO{ std::make_unique<Framebuffer>(true, false, true) },
-	avatarFBO{std::make_unique<Framebuffer>(true, false, true)},
+	avatarFBO{ std::make_unique<Framebuffer>(true, false, true) },
+	opponentAvatarFBO{std::make_unique<Framebuffer>(true, false, true)},
 	compositeFBO{
 		std::make_unique<Framebuffer>(true, false, true),
 		std::make_unique<Framebuffer>(true, false, true)
@@ -219,6 +220,9 @@ Graphics::Graphics(int width, int height) :
 
 	// AVATAR FBO
 	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
+	
+	// OPPONENT AVATAR FBO
+	opponentAvatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// COMPOSITING
 	compositeFBO[0]->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);
@@ -570,6 +574,7 @@ void Graphics::resizeScreen(int width, int height)
     motionBlurFBO = std::make_unique<Framebuffer>(true, false, true);
 	userInterfaceFBO = std::make_unique<Framebuffer>(true, false, true);
 	avatarFBO = std::make_unique<Framebuffer>(true, false, true);
+	opponentAvatarFBO = std::make_unique<Framebuffer>(true, false, true);
 	compositeFBO = std::array<std::unique_ptr<Framebuffer>, 2>{
 		std::make_unique<Framebuffer>(true, false, true),
 		std::make_unique<Framebuffer>(true, false, true)
@@ -641,6 +646,9 @@ void Graphics::resizeScreen(int width, int height)
 
 	// AVATAR FBO
 	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
+
+	// OPPONENT AVATAR FBO
+	opponentAvatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// COMPOSITING
 	compositeFBO[0]->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, width, height);

@@ -200,7 +200,7 @@ void WindowManager::checkEvents(bool writing)
 		userInputs.set(0);
 	}
 
-	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_TAB)])
+	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_RETURN)])
 	{
 		userInputs.set(5);
 	}

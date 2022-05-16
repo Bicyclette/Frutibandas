@@ -8,10 +8,10 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "127.0.0.1"
+#define SERVER "92.88.236.2"
 #define PORT 7777
 
-void network_thread(bool& run)
+void network_thread(bool& run, Writer& writer)
 {
 	NetworkClient client;
 	
@@ -40,8 +40,11 @@ void network_thread(bool& run)
 				g_connected_mutex.lock();
 				g_connected = true;
 				g_connected_mutex.unlock();
-				// send nickname
-				client.send_data("nn" + message.substr(message.find_first_of(':') + 1));
+				// send nickname and profile picture
+				std::string nn("nn" + message.substr(message.find_first_of(':') + 1, message.find_last_of(':') - 2));
+				std::string pp("pp" + message.substr(message.find_last_of(':') + 1));
+				client.send_data(nn);
+				client.send_data(pp);
 			}
 			else {
 				g_msg2client_mutex.lock();
@@ -65,7 +68,18 @@ void network_thread(bool& run)
 				switch (code)
 				{
 					case 1:
-						client.send_data("so");
+						client.send_data("so"); // search opponent
+						break;
+					case 2:
+						client.send_data("sso"); // stop stearch opponent
+						break;
+					case 3:
+						client.send_data("gu"); // give up
+						break;
+					case 4:
+						if (!message.substr(2).empty()) {
+							client.send_data("gc:" + message.substr(2)); // game chat
+						}
 						break;
 					default:
 						break;
@@ -79,15 +93,31 @@ void network_thread(bool& run)
 			{
 				if (client.m_event.type == ENET_EVENT_TYPE_RECEIVE)
 				{
-					std::cout << "A packet of length ";
-					std::cout << client.m_event.packet->dataLength;
-					std::cout << " containing ";
-					std::cout << client.m_event.packet->data;
-					std::cout << " was received from";
-					std::cout << client.m_event.peer->address.host << ':';
-					std::cout << client.m_event.peer->address.port;
-					std::cout << " on channel ";
-					std::cout << client.m_event.channelID;
+					std::string message(reinterpret_cast<char*>(client.m_event.packet->data));
+					std::string type(message.substr(0, message.find_first_of(':')));
+					if (type == "g0") { // game init
+						g_game_init_mutex.lock();
+						g_game_found = true;
+						g_game_init = message.substr(message.find_first_of(':')+1);
+						g_game_init_mutex.unlock();
+					}
+					else if (type == "gc") { // game chat
+						std::string data = message.substr(message.find_first_of(':') + 1);
+						int messageLength{std::atoi(data.substr(0, data.find_first_of(':')).c_str())};
+						if(messageLength > 0){
+							std::string chatMsg = data.substr(data.find_first_of(':') + 1);
+							if (writer.m_chatLog.size() == 7)
+							{
+								for (int i{ 0 }; i < 6; ++i) {
+									writer.m_chatLog[i] = writer.m_chatLog[i + 1];
+								}
+								writer.m_chatLog[6] = chatMsg;
+							}
+							else {
+								writer.m_chatLog.push_back(chatMsg);
+							}
+						}
+					}
 				}
 			}
 		}
@@ -140,7 +170,7 @@ int main(int argc, char* argv[])
 	std::unique_ptr<WindowManager> client{std::make_unique<WindowManager>("Frutibandas")};
 	std::unique_ptr<Game> game{std::make_unique<Game>(client->getWidth(), client->getHeight())};
 	// network thread
-	std::thread net_thread(network_thread, std::ref(client->isAlive()));
+	std::thread net_thread(network_thread, std::ref(client->isAlive()), std::ref(game->get_writer()));
 	// render game
 	render(std::move(client), std::move(game));
 

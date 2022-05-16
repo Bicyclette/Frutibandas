@@ -100,6 +100,7 @@ class Graphics
         std::unique_ptr<Framebuffer> motionBlurFBO;
 		std::unique_ptr<Framebuffer> userInterfaceFBO;
 		std::unique_ptr<Framebuffer> avatarFBO;
+		std::unique_ptr<Framebuffer> opponentAvatarFBO;
 		std::array<std::unique_ptr<Framebuffer>, 2> compositeFBO;
 
 		TONE_MAPPING scene_tone_mapping;
