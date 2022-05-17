@@ -145,7 +145,7 @@ struct Avatar
 		},
 		m_skin_color_id(3),
 		m_hair_color_id(3),
-		m_eyes_color_id(11),
+		m_eyes_color_id(0),
 		m_shaderHSL("shaders/avatar/HSL/vertex.glsl", "shaders/avatar/HSL/fragment.glsl"),
 		m_shaderRGB("shaders/avatar/RGB/vertex.glsl", "shaders/avatar/RGB/fragment.glsl"),
 		m_projection(glm::ortho(0.0f, 512.0f, 0.0f, 512.0f)),
@@ -355,20 +355,19 @@ struct Avatar
 
 struct Cards
 {
-	const std::string m_description[13] = {
-		"Détruit définitivement une case du plateau et tout ce qui se trouve dessus.",
-		"Le joueur a le droit de faire 2 mouvements au lieu d'un seul",
-		"Si l'adversaire joue une carte au prochain tour, vous capturez cette carte.\nAttention, si l'adversaire ne joue aucune carte, la confiscation est perdue.",
-		"3 nouveaux bandas rejoignent votre équipe sur des cases vides",
-		"Inverse la direction jouée par l'adversiare au prochain tour",
-		"Transforme un bandas en pierre bloquante. La pierre est détruite si la case sur\nlaquelle elle se trouve est détruite.",
-		"Court sur une colonne du plateau et élimine tous les bandas touchés.",
-		"Un bandas change de couleur et d'équipe.",
-		"Vos bandas se déplaceront de 2 cases au lieu d'1 ce tour-ci.",
-		"Vous passez un tour.",
-		"Choisissez un bandas de votre équipe et il sera le seul à se déplacer pendant\nla phase de mouvement.",
-		"La case libre ciblée est piégée. Si un bandas marche dessus, lui et la case seront\ndétruits. Votre adversaire ne voit pas le piège avant qu'un bandas n'y mette le pied dessus.",
-		"Carte adverse."
+	const std::array<Texture, 12> m_description = {
+		createTexture("assets/cartes/enclume_desc.tga", TEXTURE_TYPE::DIFFUSE, true),			// 0
+		createTexture("assets/cartes/celerite_desc.tga", TEXTURE_TYPE::DIFFUSE, true),			// 1
+		createTexture("assets/cartes/confiscation_desc.tga", TEXTURE_TYPE::DIFFUSE, true),		// 2
+		createTexture("assets/cartes/renfort_desc.tga", TEXTURE_TYPE::DIFFUSE, true),			// 3
+		createTexture("assets/cartes/desordre_desc.tga", TEXTURE_TYPE::DIFFUSE, true),			// 4
+		createTexture("assets/cartes/petrification_desc.tga", TEXTURE_TYPE::DIFFUSE, true),		// 5
+		createTexture("assets/cartes/vachette_desc.tga", TEXTURE_TYPE::DIFFUSE, true),			// 6
+		createTexture("assets/cartes/conversion_desc.tga", TEXTURE_TYPE::DIFFUSE, true),		// 7
+		createTexture("assets/cartes/charge_desc.tga", TEXTURE_TYPE::DIFFUSE, true),			// 8
+		createTexture("assets/cartes/entracte_desc.tga", TEXTURE_TYPE::DIFFUSE, true),			// 9
+		createTexture("assets/cartes/solo_desc.tga", TEXTURE_TYPE::DIFFUSE, true),				// 10
+		createTexture("assets/cartes/piege_desc.tga", TEXTURE_TYPE::DIFFUSE, true)				// 11
 	};
 
 	const std::array<Texture, 13> m_tex = {
@@ -390,44 +389,60 @@ struct Cards
 	// -1 if no card on the slot
 	// positive numbers are the index to fetch data in the arrays "m_tex" and "description"
 	int m_slot[16] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
-
 	std::array<std::unique_ptr<Sprite>, 16> m_sprite;
 
 	Cards()
 	{
-		m_sprite[0] = std::make_unique<Sprite>(0, glm::vec2(19, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[0] = std::make_unique<Sprite>(100, glm::vec2(19, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[0]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[1] = std::make_unique<Sprite>(0, glm::vec2(125, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[1] = std::make_unique<Sprite>(101, glm::vec2(125, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[1]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[2] = std::make_unique<Sprite>(0, glm::vec2(19, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[2] = std::make_unique<Sprite>(102, glm::vec2(19, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[2]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[3] = std::make_unique<Sprite>(0, glm::vec2(125, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[3] = std::make_unique<Sprite>(103, glm::vec2(125, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[3]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[4] = std::make_unique<Sprite>(0, glm::vec2(19, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[4] = std::make_unique<Sprite>(104, glm::vec2(19, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[4]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[5] = std::make_unique<Sprite>(0, glm::vec2(125, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[5] = std::make_unique<Sprite>(105, glm::vec2(125, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[5]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[6] = std::make_unique<Sprite>(0, glm::vec2(19, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[6] = std::make_unique<Sprite>(106, glm::vec2(19, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[6]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[7] = std::make_unique<Sprite>(0, glm::vec2(125, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[7] = std::make_unique<Sprite>(107, glm::vec2(125, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[7]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
 		
-		m_sprite[8] = std::make_unique<Sprite>(0, glm::vec2(839, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[8] = std::make_unique<Sprite>(200, glm::vec2(839, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[8]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[9] = std::make_unique<Sprite>(0, glm::vec2(944, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[9] = std::make_unique<Sprite>(201, glm::vec2(944, 728 - 197 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[9]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[10] = std::make_unique<Sprite>(0, glm::vec2(839, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[10] = std::make_unique<Sprite>(202, glm::vec2(839, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[10]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[11] = std::make_unique<Sprite>(0, glm::vec2(944, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[11] = std::make_unique<Sprite>(203, glm::vec2(944, 728 - 320 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[11]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[12] = std::make_unique<Sprite>(0, glm::vec2(839, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[12] = std::make_unique<Sprite>(204, glm::vec2(839, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[12]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[13] = std::make_unique<Sprite>(0, glm::vec2(944, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[13] = std::make_unique<Sprite>(205, glm::vec2(944, 728 - 444 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[13]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[14] = std::make_unique<Sprite>(0, glm::vec2(839, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[14] = std::make_unique<Sprite>(206, glm::vec2(839, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[14]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
-		m_sprite[15] = std::make_unique<Sprite>(0, glm::vec2(944, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
+		m_sprite[15] = std::make_unique<Sprite>(207, glm::vec2(944, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[15]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
+	}
+
+	bool hovered_card(int mouseX, int mouseY, int& card_id)
+	{
+		bool hovered{ false };
+		for (auto& sprite : m_sprite)
+		{
+			if (!sprite->is_selectable())
+				continue;
+			glm::vec2 pos{ sprite->get_position() };
+			glm::vec2 size{ sprite->get_size() };
+			if (mouseX >= pos.x && mouseX <= (pos.x + size.x) && mouseY >= pos.y && mouseY <= (pos.y + size.y)) {
+				card_id = sprite->get_id();
+				hovered = true;
+			}
+		}
+		return hovered;
 	}
 
 	void draw()

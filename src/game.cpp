@@ -390,6 +390,12 @@ void Game::createUI(int width, int height)
 	g_layer2.get_sprite(8)->set_background_img_selected("assets/chat_input_hover.tga");
 	g_layer2.get_sprite(8)->use_background_img();
 
+	Layer& g_layer3 = game_page.get_layer(3);
+	g_layer3.set_visibility(false);
+	g_layer3.add_sprite(9, glm::vec2(238, 728 - 559 - 164), glm::vec2(577, 164), width, height);
+	g_layer3.get_sprite(9)->set_background_img_gl(-1);
+	g_layer3.get_sprite(9)->use_background_img_gl();
+
 	// active page
 	m_ui.set_active_page(0);
 }
@@ -554,6 +560,9 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 					case 1:
 						m_avatar_opponent.m_eyes = Avatar::EYES::AMANDE;
 						break;
+					case 2:
+						m_avatar_opponent.m_eyes = Avatar::EYES::GROS;
+						break;
 					default:
 						break;
 					};
@@ -588,10 +597,10 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 					case 0:
 						m_avatar_opponent.m_eyes = Avatar::EYES::MANGA;
 						break;
-					case 2:
+					case 3:
 						m_avatar_opponent.m_eyes = Avatar::EYES::EGYPTE;
 						break;
-					case 3:
+					case 4:
 						m_avatar_opponent.m_eyes = Avatar::EYES::MASCARA;
 						break;
 					default:
@@ -678,6 +687,9 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 {
 	// avatar horizontal mirror
 	bool mirrorX = (m_fruit == 0) ? true : false ;
+	if (m_ui.get_active_page() == 0) {
+		mirrorX = false;
+	}
 	// draw avatar
 	graphics.avatarFBO->bind();
 	glViewport(0, 0, 512, 512);
@@ -739,18 +751,21 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		// draw board
 		m_board.draw_tiles();
 		m_board.draw_fruits();
-		// draw chat input
-		textRenderer->print(m_writer.m_textInput[1], 240+13, 728-698-12, 1, glm::vec3(0));
-		// draw cursor
-		if (m_writer.m_cursor.m_focus == 1)
+		if (!m_ui.get_page(1).get_layer(3).m_visible)
 		{
-			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[1], 240+13, 728-698-12, 1, m_writer.m_cursor.m_pos);
-			m_writer.m_cursor.draw(cursor_shape, delta);
-		}
-		// draw conversation
-		for (int i{ 1 }; i <= m_writer.m_chatLog.size(); ++i)
-		{
-			textRenderer->print(m_writer.m_chatLog[i-1], 240+13, 728-568-16*i, 1, glm::vec3(0));
+			// draw chat input
+			textRenderer->print(m_writer.m_textInput[1], 240 + 13, 728 - 698 - 12, 1, glm::vec3(0));
+			// draw cursor
+			if (m_writer.m_cursor.m_focus == 1)
+			{
+				glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[1], 240 + 13, 728 - 698 - 12, 1, m_writer.m_cursor.m_pos);
+				m_writer.m_cursor.draw(cursor_shape, delta);
+			}
+			// draw conversation
+			for (int i{ 1 }; i <= m_writer.m_chatLog.size(); ++i)
+			{
+				textRenderer->print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 16 * i, 1, glm::vec3(0));
+			}
 		}
 	}
 
@@ -966,6 +981,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 	int* mouse_size = m_mouse->get_size();
 	m_mouse->use_normal();
 	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos[0], mouse_pos[1]);
+	int card_id{ -1 };
 
 	if (!hovered)
 		return;
@@ -1484,6 +1500,9 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				case Avatar::EYES::AMANDE:
 					data += "1.";
 					break;
+				case Avatar::EYES::GROS:
+					data += "2.";
+					break;
 				default:
 					break;
 				};
@@ -1518,10 +1537,10 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 					data += "0.";
 					break;
 				case Avatar::EYES::EGYPTE:
-					data += "2.";
+					data += "3.";
 					break;
 				case Avatar::EYES::MASCARA:
-					data += "3.";
+					data += "4.";
 					break;
 				default:
 					break;
@@ -1637,6 +1656,56 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		{
 			game_page.get_layer(1).get_sprite(7)->use_background_img();
 			m_mouse->use_normal();
+		}
+		if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id)) // hovered a card
+		{
+			if (m_fruit == 0 && (card_id >= 100 && card_id <= 102)) { // orange card
+				m_mouse->use_hover();
+				int desc_id;
+				switch (card_id) {
+				case 100:
+					desc_id = m_cards.m_slot[0];
+					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					break;
+				case 101:
+					desc_id = m_cards.m_slot[1];
+					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					break;
+				case 102:
+					desc_id = m_cards.m_slot[2];
+					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					break;
+				default:
+					break;
+				};
+				game_page.get_layer(3).set_visibility(true);
+			}
+			else if (m_fruit == 1 && (card_id >= 200 && card_id <= 202)) { // banana card
+				m_mouse->use_hover();
+				int desc_id;
+				switch (card_id) {
+				case 200:
+					desc_id = m_cards.m_slot[8];
+					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					break;
+				case 201:
+					desc_id = m_cards.m_slot[9];
+					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					break;
+				case 202:
+					desc_id = m_cards.m_slot[10];
+					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					break;
+				default:
+					break;
+				};
+				game_page.get_layer(3).set_visibility(true);
+			}
+		}
+		else
+		{
+			m_mouse->use_normal();
+			game_page.get_layer(3).set_visibility(false);
 		}
 		if (sprite_id == 7 && inputs.test(2) && inputs.test(9)) // clicked on abandon
 		{
