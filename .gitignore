@@ -1,6 +1,7 @@
 ### C++ ###
 # application dependant
 build/
+cmake-build-debug/
 
 # Prerequisites
 *.d

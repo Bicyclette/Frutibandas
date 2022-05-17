@@ -1,6 +1,7 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -537,7 +538,7 @@ struct Board
 	{
 		// si on est en cours d'animation, on update la position du sprite
 		// en fonction d'animationTime avec sprite->setPos();
-		// et on envoit les données d'animation au sprite avec le rapport animationTime / animationLength
+		// et on envoit les donnÃ©es d'animation au sprite avec le rapport animationTime / animationLength
 		// seulement si animationTime est positif ou nul
 		glm::vec2 start_orange(525 - (49 * 4), 645);
 		glm::vec2 start_banane(525 - (49 * 4), 645 + 24);
@@ -627,7 +628,7 @@ struct Cursor
 	}
 
 	int m_focus; // 0 = pseudo, 1 = chat, 2 = not writing
-	int m_pos;
+	size_t m_pos;
 	float m_blink;
 	bool m_blink_ctrl;
 	Shader m_shader;
