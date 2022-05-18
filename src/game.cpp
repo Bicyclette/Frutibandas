@@ -705,6 +705,15 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		m_avatar_opponent.draw(!mirrorX);
+
+		if (m_fruit == 0) {
+			m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(graphics.avatarFBO->getAttachments()[0].id);			// orange
+			m_ui.get_page(1).get_layer(0).get_sprite(2)->set_background_img_gl(graphics.opponentAvatarFBO->getAttachments()[0].id);	// banane
+		}
+		else {
+			m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(graphics.opponentAvatarFBO->getAttachments()[0].id);	// orange
+			m_ui.get_page(1).get_layer(0).get_sprite(2)->set_background_img_gl(graphics.avatarFBO->getAttachments()[0].id);			// banane
+		}
 	}
 
 	// draw UI
