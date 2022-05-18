@@ -70,12 +70,12 @@ void Writer::write_aux(WRITE_ACTION writeAction, std::string& character, float d
 	}
 	else if (writeAction == WRITE_ACTION::CURSOR_LEFT)
 	{
-		m_cursor.m_pos = std::max((size_t) 0, m_cursor.m_pos - 1);
+		m_cursor.m_pos = my_max((size_t) 0, m_cursor.m_pos - 1);
 	}
 	else if (writeAction == WRITE_ACTION::CURSOR_RIGHT)
 	{
 		if (m_cursor.m_pos < m_textInput[m_cursor.m_focus].size())
-			m_cursor.m_pos = std::min(m_textInput[m_cursor.m_focus].size(), m_cursor.m_pos + 1);
+			m_cursor.m_pos = my_min(m_textInput[m_cursor.m_focus].size(), m_cursor.m_pos + 1);
 	}
 
 	m_lastWriteAction = writeAction;

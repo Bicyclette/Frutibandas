@@ -1,6 +1,7 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -19,6 +20,7 @@
 #include "user_interface.hpp"
 #include "network_client.hpp"
 #include "mouse.hpp"
+#include "helpers.hpp"
 
 // eye colors
 #define JAUNE	55 / 360.0f

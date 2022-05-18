@@ -153,7 +153,7 @@ Graphics::Graphics(int width, int height) :
 		sample *= randomFloats(generator);
 
 		float scale = static_cast<float>(i) / static_cast<float>(ssaoSampleCount);
-		scale = lerp(0.1f, 1.0f, scale * scale);
+		scale = my_lerp(0.1f, 1.0f, scale * scale);
 		sample *= scale;
 		aoKernel.push_back(sample);
 	}
