@@ -70,12 +70,12 @@ void Writer::write_aux(WRITE_ACTION writeAction, std::string& character, float d
 	}
 	else if (writeAction == WRITE_ACTION::CURSOR_LEFT)
 	{
-		m_cursor.m_pos = max(0, m_cursor.m_pos - 1);
+		m_cursor.m_pos = std::max((size_t) 0, m_cursor.m_pos - 1);
 	}
 	else if (writeAction == WRITE_ACTION::CURSOR_RIGHT)
 	{
 		if (m_cursor.m_pos < m_textInput[m_cursor.m_focus].size())
-			m_cursor.m_pos = min(m_textInput[m_cursor.m_focus].size(), m_cursor.m_pos + 1);
+			m_cursor.m_pos = std::min(m_textInput[m_cursor.m_focus].size(), m_cursor.m_pos + 1);
 	}
 
 	m_lastWriteAction = writeAction;
@@ -139,8 +139,8 @@ void Game::createUI(int width, int height)
 
 	Page& home_page = m_ui.get_page(0);
 	home_page.add_layer(0);
-	home_page.add_layer(1); // emphase sur le nom de la partie du visage en cours d'édition
-	home_page.add_layer(2); // menu déroulant "partie du visage"
+	home_page.add_layer(1); // emphase sur le nom de la partie du visage en cours d'Ã©dition
+	home_page.add_layer(2); // menu dÃ©roulant "partie du visage"
 	home_page.add_layer(3); // options visage
 	home_page.add_layer(4); // options cheveux (homme)
 	home_page.add_layer(5); // options cheveux (femme)
