@@ -1719,6 +1719,8 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		if (sprite_id == 7 && inputs.test(2) && inputs.test(9)) // clicked on abandon
 		{
 			g_game_found = false;
+			// stop playing music
+			scenes[0].getSoundSource(0).stop_sound();
 			// move to home page
 			m_ui.set_active_page(0);
 			// use police of size 20
