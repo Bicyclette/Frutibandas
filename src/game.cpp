@@ -1913,17 +1913,6 @@ void Game::set_animationTimer_move_up()
 			}
 		}
 	}
-	/*
-	// print animationTimer
-	for (int i{ 0 }; i < 8; ++i)
-	{
-		for (int j{ 0 }; j < 8; ++j)
-		{
-			std::cout << m_board.m_fruit[i][j].m_animationTimer << ", ";
-		}
-		std::cout << std::endl;
-	}
-	*/
 }
 
 void Game::set_animationTimer_move_down()
