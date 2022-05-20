@@ -125,7 +125,7 @@ Game::Game(int clientWidth, int clientHeight) :
 	scenes[0].setActiveCamera(0);
 
 	// audio
-	scenes[0].addSoundSource(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), 90.0f, 180.0f, 1.0f, true);
+	scenes[0].addSoundSource(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), 90.0f, 180.0f, 0.5f, true);
 	scenes[0].addAudioFile("assets/sound/el_gato_montes.wav");
 
 	// init
@@ -759,16 +759,29 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		m_cards.draw();
 		// draw board
 		m_board.draw_tiles();
-		if (m_move == MOVE::UP) {
+		if (m_move != MOVE::UNDEFINED)
+		{
 			m_animationTimer += delta;
 			m_board.draw_fruits(m_move, delta);
 			if (m_animationTimer >= 0.0f) {
-				m_board.update_up(m_fruit);
+				if (m_move == MOVE::UP) {
+					m_board.update_up(m_fruit);
+				}
+				else if (m_move == MOVE::DOWN) {
+					m_board.update_down(m_fruit);
+				}
+				else if (m_move == MOVE::RIGHT) {
+					m_board.update_right(m_fruit);
+				}
+				else if (m_move == MOVE::LEFT) {
+					m_board.update_left(m_fruit);
+				}
 				m_animationTimer = 0.0f;
 				m_move = MOVE::UNDEFINED;
 			}
 		}
-		else {
+		else
+		{
 			m_board.draw_fruits();
 		}
 		if (!m_ui.get_page(1).get_layer(3).m_visible)
@@ -1917,17 +1930,200 @@ void Game::set_animationTimer_move_up()
 
 void Game::set_animationTimer_move_down()
 {
-
+	int impulse_origin{ -1 };
+	int enemy = (m_fruit == 0) ? 1 : 0;
+	float min_timer{ 42.0f };
+	for (int line{ 0 }; line <= 7; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			// set timer for team
+			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+			{
+				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				impulse_origin = line;
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+			{
+				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (impulse_origin - line);
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+		}
+	}
+	for (int line{ 0 }; line <= 7; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			// set timer for enemy
+			if (m_board.m_fruit[line][col].m_type == enemy)
+			{
+				int distance{ 0 };
+				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+				int l{ line };
+				while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l >= 0)
+				{
+					l--;
+					distance++;
+					if (m_board.m_fruit[l][col].m_type == m_fruit && l >= 0) {
+						last_met = distance;
+					}
+				}
+				if (last_met > 0) {
+					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (line - impulse_origin);
+				}
+				else {
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				}
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+		}
+	}
+	// set timer for non moving fruits
+	min_timer -= 0.25f;
+	m_animationTimer = min_timer;
+	for (int line{ 0 }; line < 8; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+			{
+				m_board.m_fruit[line][col].m_animationTimer = min_timer;
+			}
+		}
+	}
 }
 
 void Game::set_animationTimer_move_right()
 {
-
+	int impulse_origin{ -1 };
+	int enemy = (m_fruit == 0) ? 1 : 0;
+	float min_timer{ 42.0f };
+	for (int col{ 0 }; col < 8; ++col)
+	{
+		for (int line{ 0 }; line < 8; ++line)
+		{
+			// set timer for team
+			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+			{
+				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				impulse_origin = col;
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+			{
+				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (impulse_origin - col);
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+		}
+	}
+	for (int line{ 0 }; line <= 7; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			// set timer for enemy
+			if (m_board.m_fruit[line][col].m_type == enemy)
+			{
+				int distance{ 0 };
+				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+				int c{ col };
+				while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c >= 0)
+				{
+					c--;
+					distance++;
+					if (m_board.m_fruit[line][c].m_type == m_fruit && c >= 0) {
+						last_met = distance;
+					}
+				}
+				if (last_met > 0) {
+					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (col - impulse_origin);
+				}
+				else {
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				}
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+		}
+	}
+	// set timer for non moving fruits
+	min_timer -= 0.25f;
+	m_animationTimer = min_timer;
+	for (int line{ 0 }; line < 8; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+			{
+				m_board.m_fruit[line][col].m_animationTimer = min_timer;
+			}
+		}
+	}
 }
 
 void Game::set_animationTimer_move_left()
 {
-
+	int impulse_origin{ -1 };
+	int enemy = (m_fruit == 0) ? 1 : 0;
+	float min_timer{ 42.0f };
+	for (int col{ 7 }; col >= 0; --col)
+	{
+		for (int line{ 0 }; line < 8; ++line)
+		{
+			// set timer for team
+			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+			{
+				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				impulse_origin = col;
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+			{
+				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (col - impulse_origin);
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+		}
+	}
+	for (int line{ 0 }; line <= 7; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			// set timer for enemy
+			if (m_board.m_fruit[line][col].m_type == enemy)
+			{
+				int distance{ 0 };
+				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+				int c{ col };
+				while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c <= 7)
+				{
+					c++;
+					distance++;
+					if (m_board.m_fruit[line][c].m_type == m_fruit && c <= 7) {
+						last_met = distance;
+					}
+				}
+				if (last_met > 0) {
+					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (impulse_origin - col);
+				}
+				else {
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				}
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+		}
+	}
+	// set timer for non moving fruits
+	min_timer -= 0.25f;
+	m_animationTimer = min_timer;
+	for (int line{ 0 }; line < 8; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+			{
+				m_board.m_fruit[line][col].m_animationTimer = min_timer;
+			}
+		}
+	}
 }
 
 void Game::directionalShadowPass(int index, float delta, DRAWING_MODE mode)
