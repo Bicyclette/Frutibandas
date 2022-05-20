@@ -759,7 +759,18 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		m_cards.draw();
 		// draw board
 		m_board.draw_tiles();
-		m_board.draw_fruits();
+		if (m_move == MOVE::UP) {
+			m_animationTimer += delta;
+			m_board.draw_fruits(m_move, delta);
+			if (m_animationTimer >= 0.0f) {
+				m_board.update_up(m_fruit);
+				m_animationTimer = 0.0f;
+				m_move = MOVE::UNDEFINED;
+			}
+		}
+		else {
+			m_board.draw_fruits();
+		}
 		if (!m_ui.get_page(1).get_layer(3).m_visible)
 		{
 			// draw chat input
@@ -1628,25 +1639,6 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		{
 			game_page.get_layer(1).get_sprite(sprite_id)->use_background_img_selected();
 			m_mouse->use_hover();
-
-			if (sprite_id == 3)
-			{
-				m_move = MOVE::UP;
-			}
-			else if (sprite_id == 4)
-			{
-				m_move = MOVE::DOWN;
-			}
-			else if (sprite_id == 5)
-			{
-				m_move = MOVE::RIGHT;
-			}
-			else if (sprite_id == 6)
-			{
-				m_move = MOVE::LEFT;
-			}
-
-			set_animationTimer();
 		}
 		else
 		{
@@ -1719,6 +1711,8 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		if (sprite_id == 7 && inputs.test(2) && inputs.test(9)) // clicked on abandon
 		{
 			g_game_found = false;
+			m_animationTimer = 0.0f;
+			m_move = MOVE::UNDEFINED;
 			// stop playing music
 			scenes[0].getSoundSource(0).stop_sound();
 			// move to home page
@@ -1742,6 +1736,27 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		{
 			game_page.get_layer(2).get_sprite(sprite_id)->use_background_img_selected();
 			m_writer.m_cursor.m_focus = 1; // 0 = pseudo, 1 = chat, 2 = not writting
+		}
+		else if (sprite_id >= 3 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on an arrow
+		{
+			if (sprite_id == 3)
+			{
+				m_move = MOVE::UP;
+			}
+			else if (sprite_id == 4)
+			{
+				m_move = MOVE::DOWN;
+			}
+			else if (sprite_id == 5)
+			{
+				m_move = MOVE::RIGHT;
+			}
+			else if (sprite_id == 6)
+			{
+				m_move = MOVE::LEFT;
+			}
+
+			set_animationTimer();
 		}
 		else if (inputs.test(2) && inputs.test(9))
 		{
@@ -1816,62 +1831,114 @@ void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
 
 void Game::set_animationTimer()
 {
-	float animationLength{ 0.25f };
-	float collideStep{ 0.125f };
-	float collide{ 0.0f };
 	if (m_move == MOVE::UP)
 	{
-		std::array<int, 8> initiate;
-		for (int i{ 0 }; i < 8; ++i)
-		{
-			int line{ 7 };
-			while (m_board.m_fruit[line][i].m_type != m_fruit)
-			{
-				line--;
-			}
-			initiate[i] = line;
-		}
-
+		set_animationTimer_move_up();
 	}
 	else if (m_move == MOVE::DOWN)
 	{
-		std::array<int, 8> initiate;
-		for (int i{ 0 }; i < 8; ++i)
-		{
-			int line{ 0 };
-			while (m_board.m_fruit[line][i].m_type != m_fruit)
-			{
-				line++;
-			}
-			initiate[i] = line;
-		}
+		set_animationTimer_move_down();
 	}
 	else if (m_move == MOVE::RIGHT)
 	{
-		std::array<int, 8> initiate;
-		for (int i{ 0 }; i < 8; ++i)
-		{
-			int col{ 0 };
-			while (m_board.m_fruit[i][col].m_type != m_fruit)
-			{
-				col++;
-			}
-			initiate[i] = col;
-		}
+		set_animationTimer_move_right();
 	}
 	else if (m_move == MOVE::LEFT)
 	{
-		std::array<int, 8> initiate;
-		for (int i{ 0 }; i < 8; ++i)
+		set_animationTimer_move_left();
+	}
+}
+
+void Game::set_animationTimer_move_up()
+{
+	int impulse_origin{ -1 };
+	int enemy = (m_fruit == 0) ? 1 : 0;
+	float min_timer{ 42.0f };
+	for (int line{ 7 }; line >= 0; --line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
 		{
-			int col{ 7 };
-			while (m_board.m_fruit[i][col].m_type != m_fruit)
+			// set timer for team
+			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
 			{
-				col--;
+				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				impulse_origin = line;
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
 			}
-			initiate[i] = col;
+			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+			{
+				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (line - impulse_origin);
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
 		}
 	}
+	for (int line{ 7 }; line >= 0; --line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			// set timer for enemy
+			if (m_board.m_fruit[line][col].m_type == enemy)
+			{
+				int distance{ 0 };
+				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+				int l{ line };
+				while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l < 8)
+				{
+					l++;
+					distance++;
+					if (m_board.m_fruit[l][col].m_type == m_fruit && l < 8) {
+						last_met = distance;
+					}
+				}
+				if (last_met > 0) {
+					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (impulse_origin - line);
+				}
+				else {
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+				}
+				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+			}
+		}
+	}
+	// set timer for non moving fruits
+	min_timer -= 0.25f;
+	m_animationTimer = min_timer;
+	for (int line{ 0 }; line < 8; ++line)
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+			{
+				m_board.m_fruit[line][col].m_animationTimer = min_timer;
+			}
+		}
+	}
+	/*
+	// print animationTimer
+	for (int i{ 0 }; i < 8; ++i)
+	{
+		for (int j{ 0 }; j < 8; ++j)
+		{
+			std::cout << m_board.m_fruit[i][j].m_animationTimer << ", ";
+		}
+		std::cout << std::endl;
+	}
+	*/
+}
+
+void Game::set_animationTimer_move_down()
+{
+
+}
+
+void Game::set_animationTimer_move_right()
+{
+
+}
+
+void Game::set_animationTimer_move_left()
+{
+
 }
 
 void Game::directionalShadowPass(int index, float delta, DRAWING_MODE mode)

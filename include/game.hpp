@@ -22,6 +22,15 @@
 #include "mouse.hpp"
 #include "helpers.hpp"
 
+enum class MOVE
+{
+	UNDEFINED,
+	UP,
+	DOWN,
+	RIGHT,
+	LEFT
+};
+
 // eye colors
 #define JAUNE	55 / 360.0f
 #define MARRON	40 / 360.0f
@@ -469,10 +478,11 @@ struct Cards
 struct Fruit
 {
 	// >>>>>>>>>> methods
-	Fruit() : m_type(-1), m_petrified(false) {}
+	Fruit() : m_type(-1), m_petrified(false), m_animationTimer(0.0f) {}
 	// >>>>>>>>>> properties
 	int m_type;	// -1 = none, 0 = orange, 1 = banane
 	bool m_petrified;
+	float m_animationTimer;
 };
 
 struct Tile
@@ -536,17 +546,24 @@ struct Board
 		}
 	}
 
-	void draw_fruits(bool animate = false, float animationTime = 0.0f)
+	void draw_fruits(MOVE move = MOVE::UNDEFINED, float delta = 0.0f)
 	{
-		// si on est en cours d'animation, on update la position du sprite
-		// en fonction d'animationTime avec sprite->setPos();
-		// et on envoit les données d'animation au sprite avec le rapport animationTime / animationLength
-		// seulement si animationTime est positif ou nul
 		glm::vec2 start_orange(525 - (49 * 4), 645);
 		glm::vec2 start_banane(525 - (49 * 4), 645 + 24);
 		for (int i{ 0 }; i < 8; ++i) {
 			for (int j{ 0 }; j < 8; ++j) {
 				glm::vec2 shift(49 * i, -49 * j);
+
+				if (move == MOVE::UP) {
+					m_fruit[j][i].m_animationTimer += delta;
+					if (m_fruit[j][i].m_animationTimer >= 0 && m_fruit[j][i].m_animationTimer <= 0.25f) {
+						shift += (m_fruit[j][i].m_animationTimer * 4.0f) * glm::vec2(0, 49);
+					}
+					else if (m_fruit[j][i].m_animationTimer >= 0.25f) {
+						shift += glm::vec2(0, 49);
+					}
+				}
+
 				if (m_fruit[j][i].m_type == 0)
 				{
 					m_square.set_background_img_gl(m_tex[0].id);
@@ -563,6 +580,56 @@ struct Board
 				}
 			}
 		}
+	}
+
+	void update_up(int fruit)
+	{
+		int enemy = (fruit == 0) ? 1 : 0;
+		for (int line{ 0 }; line < 8; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				if (m_fruit[line][col].m_type == enemy) {
+					//check if there is a pusher down the column
+					int l{ line };
+					while (m_fruit[l][col].m_type == enemy && l < 8) {
+						l++;
+					}
+					if (l == 8) {
+						continue;
+					}
+					else if (m_fruit[l][col].m_type == fruit) {
+						m_fruit[line][col].m_type = -1;
+						if (line - 1 >= 0) {
+							m_fruit[line-1][col].m_type = enemy;
+						}
+					}
+				}
+				else if (m_fruit[line][col].m_type == fruit) {
+					m_fruit[line][col].m_type = -1;
+					if (line - 1 >= 0) {
+						m_fruit[line - 1][col].m_type = fruit;
+					}
+				}
+				// reset animation timer
+				m_fruit[line][col].m_animationTimer = 0.0f;
+			}
+		}
+	}
+
+	void update_down(int fruit)
+	{
+		int enemy = (fruit == 0) ? 1 : 0;
+	}
+
+	void update_right(int fruit)
+	{
+		int enemy = (fruit == 0) ? 1 : 0;
+	}
+
+	void update_left(int fruit)
+	{
+		int enemy = (fruit == 0) ? 1 : 0;
 	}
 
 	Tile m_tile[8][8];
@@ -673,21 +740,11 @@ class Writer
 		void write_aux(WRITE_ACTION writeAction, std::string& character, float delta, int boundX, glm::vec3 cursor_shape);
 };
 
-enum class MOVE
-{
-	UNDEFINED,
-	UP,
-	DOWN,
-	RIGHT,
-	LEFT
-};
-
 class Game
 {
 	public:
 
 		Game(int clientWidth, int clientHeight);
-		void createUI(int screenW, int screenH);
 		void draw(float& delta, double& elapsedTime, int width, int height, DRAWING_MODE mode = DRAWING_MODE::SOLID, bool debug = false, bool debugPhysics = false);
 		void resizeScreen(int clientWidth, int clientHeight);
 		void updateSceneActiveCameraView(int index, const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta);
@@ -714,8 +771,6 @@ class Game
 		int getCursorFocus();
 		Writer& get_writer();
 		void updateUI(std::bitset<10> & inputs, char* text_input, int screenW, int screenH, float delta);
-		void swap_gender_features(Avatar::GENDER from, Avatar::GENDER to);
-		void set_animationTimer();
 
 	private:
 
@@ -746,6 +801,19 @@ class Game
 		void compositingPass();
 		inline void sceneCompositing();
 		inline void uiCompositing();
+
+	private: // game behavior
+		
+		// UI
+		void createUI(int screenW, int screenH);
+		void swap_gender_features(Avatar::GENDER from, Avatar::GENDER to);
+
+		// fruits movement
+		void set_animationTimer();
+		void set_animationTimer_move_up();
+		void set_animationTimer_move_down();
+		void set_animationTimer_move_right();
+		void set_animationTimer_move_left();
 
 	private:
 
