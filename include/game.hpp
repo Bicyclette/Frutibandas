@@ -500,8 +500,31 @@ struct Board
 		m_square(0, glm::vec2(0), glm::vec2(49), 1050, 728),
 		m_rect(0, glm::vec2(0), glm::vec2(49, 55), 1050, 728),
 		m_orange(0, glm::vec2(0), glm::vec2(245), 1050, 728),
-		m_banane(0, glm::vec2(0), glm::vec2(245, 370), 1050, 728)
+		m_banane(0, glm::vec2(0), glm::vec2(245, 370), 1050, 728),
+		minX(0),
+		maxX(7),
+		minY(0),
+		maxY(7)
 	{}
+
+	void print()
+	{
+		for (int line{ 0 }; line < 8; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				int t = m_fruit[line][col].m_type;
+				if (t > -1) {
+					std::cout << ' ' << m_fruit[line][col].m_type << ' ';
+
+				}
+				else {
+					std::cout << m_fruit[line][col].m_type << ' ';
+				}
+			}
+			std::cout << std::endl;
+		}
+	}
 
 	int orange_count()
 	{
@@ -527,9 +550,11 @@ struct Board
 
 	void draw_tiles()
 	{
+		//update_board();
+
 		glm::vec2 start(525-(49*4), 645);
-		for (int i{ 0 }; i < 8; ++i) {
-			for (int j{ 0 }; j < 8; ++j) {
+		for (int i{ minX }; i <= maxX; ++i) {
+			for (int j{ minY }; j <= maxY; ++j) {
 				if (!m_tile[j][i].m_alive) { continue; }
 				glm::vec2 shift(49 * i, -49 * j);
 				if (j == 7) {	// bottom line
@@ -613,8 +638,16 @@ struct Board
 		}
 	}
 
-	void update_up(int fruit)
+	void update_up(int fruit, bool invTeam)
 	{
+		if (invTeam) {
+			if (fruit == 0) {
+				fruit = 1;
+			}
+			else {
+				fruit = 0;
+			}
+		}
 		int enemy = (fruit == 0) ? 1 : 0;
 		for (int line{ 0 }; line < 8; ++line)
 		{
@@ -648,8 +681,16 @@ struct Board
 		}
 	}
 
-	void update_down(int fruit)
+	void update_down(int fruit, bool invTeam)
 	{
+		if (invTeam) {
+			if (fruit == 0) {
+				fruit = 1;
+			}
+			else {
+				fruit = 0;
+			}
+		}
 		int enemy = (fruit == 0) ? 1 : 0;
 		for (int line{ 7 }; line >= 0; --line)
 		{
@@ -683,8 +724,16 @@ struct Board
 		}
 	}
 
-	void update_right(int fruit)
+	void update_right(int fruit, bool invTeam)
 	{
+		if (invTeam) {
+			if (fruit == 0) {
+				fruit = 1;
+			}
+			else {
+				fruit = 0;
+			}
+		}
 		int enemy = (fruit == 0) ? 1 : 0;
 		for (int line{ 0 }; line < 8; ++line)
 		{
@@ -718,8 +767,16 @@ struct Board
 		}
 	}
 
-	void update_left(int fruit)
+	void update_left(int fruit, bool invTeam)
 	{
+		if (invTeam) {
+			if (fruit == 0) {
+				fruit = 1;
+			}
+			else {
+				fruit = 0;
+			}
+		}
 		int enemy = (fruit == 0) ? 1 : 0;
 		for (int line{ 0 }; line < 8; ++line)
 		{
@@ -731,7 +788,7 @@ struct Board
 					while (m_fruit[line][c].m_type == enemy && c <= 7) {
 						c++;
 					}
-					if (c == -1) {
+					if (c == 8) {
 						continue;
 					}
 					else if (m_fruit[line][c].m_type == fruit) {
@@ -753,6 +810,40 @@ struct Board
 		}
 	}
 
+	void update_board()
+	{
+		int boundLeft{8};
+		int boundRight{-1};
+		int boundUp{8};
+		int boundDown{-1};
+		for (int line{ 0 }; line < 8; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				int t{ m_fruit[line][col].m_type };
+				if (t != -1)
+				{
+					if (col < boundLeft) {
+						boundLeft = col;
+					}
+					if (col > boundRight) {
+						boundRight = col;
+					}
+					if (line > boundDown) {
+						boundDown = line;
+					}
+					if (line < boundUp) {
+						boundUp = line;
+					}
+				}
+			}
+		}
+		minX = boundLeft;
+		maxX = boundRight;
+		minY = boundUp;
+		maxY = boundDown;
+	}
+
 	Tile m_tile[8][8];
 	Fruit m_fruit[8][8];
 	std::array<Texture, 4> m_tex = {
@@ -765,6 +856,10 @@ struct Board
 	Sprite m_rect;
 	Sprite m_orange;
 	Sprite m_banane;
+	int minX;
+	int maxX;
+	int minY;
+	int maxY;
 };
 
 struct Cursor
@@ -893,6 +988,10 @@ class Game
 		void vehicleUpdateUpVector();
 		int getCursorFocus();
 		Writer& get_writer();
+		MOVE& get_move();
+		void set_turn(int turn);
+		int getTeam();
+		void set_winner(int winner);
 		void updateUI(std::bitset<10> & inputs, char* text_input, int screenW, int screenH, float delta);
 
 	private:
@@ -925,18 +1024,18 @@ class Game
 		inline void sceneCompositing();
 		inline void uiCompositing();
 
-	private: // game behavior
+	public: // game behavior
 		
 		// UI
 		void createUI(int screenW, int screenH);
 		void swap_gender_features(Avatar::GENDER from, Avatar::GENDER to);
 
 		// fruits movement
-		void set_animationTimer();
-		void set_animationTimer_move_up();
-		void set_animationTimer_move_down();
-		void set_animationTimer_move_right();
-		void set_animationTimer_move_left();
+		void set_animationTimer(bool inverseTeam);
+		void set_animationTimer_move_up(bool inverseTeam);
+		void set_animationTimer_move_down(bool inverseTeam);
+		void set_animationTimer_move_right(bool inverseTeam);
+		void set_animationTimer_move_left(bool inverseTeam);
 
 	private:
 
@@ -947,6 +1046,7 @@ class Game
 		Board m_board;
 		UI m_ui;
 		int m_fruit; // 0 => orange, 1 => banane, -1 => undefined
+		bool m_inverseTeam;
 		int m_turn;
 		int m_remaining_time;
 		int m_winner;
@@ -967,5 +1067,7 @@ inline bool g_search_opponent{ false };
 inline bool g_game_found{ false };
 inline std::string g_game_init{""};
 inline std::mutex g_game_init_mutex;
+inline std::mutex g_fruit_move_mutex;
+inline std::mutex g_turn_mutex;
 
 #endif

@@ -87,6 +87,7 @@ Game::Game(int clientWidth, int clientHeight) :
 	graphics(clientWidth, clientHeight),
     textRenderer(std::make_unique<Text>(clientWidth, clientHeight)),
 	m_fruit(-1),
+	m_inverseTeam(false),
 	m_turn(-1),
 	m_remaining_time(360),
 	m_winner(-1),
@@ -345,11 +346,12 @@ void Game::createUI(int width, int height)
 	
 	Page& game_page = m_ui.get_page(1);
 	game_page.add_layer(0);	// game layout + avatar
-	game_page.add_layer(1);	// arrows + abandon button
-	game_page.add_layer(2);	// chat
-	game_page.add_layer(3);	// card description
-	game_page.add_layer(4);	// card announcer
-	game_page.add_layer(5);	// message pop up (disconnected, win game, lost game, enemy abandonned)
+	game_page.add_layer(1);	// arrows
+	game_page.add_layer(2);	// abandon button
+	game_page.add_layer(3);	// chat
+	game_page.add_layer(4);	// card description
+	game_page.add_layer(5);	// card announcer
+	game_page.add_layer(6);	// message pop up (disconnected, win game, lost game, enemy abandonned)
 
 	Layer& g_layer0 = game_page.get_layer(0);
 	g_layer0.add_sprite(0, glm::vec2(0), glm::vec2(width, height), width, height);
@@ -379,22 +381,24 @@ void Game::createUI(int width, int height)
 	g_layer1.get_sprite(6)->set_background_img("assets/arrow_left.tga");
 	g_layer1.get_sprite(6)->set_background_img_selected("assets/arrow_left_hover.tga");
 	g_layer1.get_sprite(6)->use_background_img();
-	g_layer1.add_sprite(7, glm::vec2(1050-120, 0), glm::vec2(120, 30), width, height);
-	g_layer1.get_sprite(7)->set_background_img("assets/abandonner.tga");
-	g_layer1.get_sprite(7)->set_background_img_selected("assets/abandonner_hover.tga");
-	g_layer1.get_sprite(7)->use_background_img();
 
 	Layer& g_layer2 = game_page.get_layer(2);
-	g_layer2.add_sprite(8, glm::vec2(240, 728 - 698 - 20), glm::vec2(572, 25), width, height);
-	g_layer2.get_sprite(8)->set_background_img("assets/chat_input.tga");
-	g_layer2.get_sprite(8)->set_background_img_selected("assets/chat_input_hover.tga");
-	g_layer2.get_sprite(8)->use_background_img();
+	g_layer2.add_sprite(7, glm::vec2(1050-120, 0), glm::vec2(120, 30), width, height);
+	g_layer2.get_sprite(7)->set_background_img("assets/abandonner.tga");
+	g_layer2.get_sprite(7)->set_background_img_selected("assets/abandonner_hover.tga");
+	g_layer2.get_sprite(7)->use_background_img();
 
 	Layer& g_layer3 = game_page.get_layer(3);
-	g_layer3.set_visibility(false);
-	g_layer3.add_sprite(9, glm::vec2(238, 728 - 559 - 164), glm::vec2(577, 164), width, height);
-	g_layer3.get_sprite(9)->set_background_img_gl(-1);
-	g_layer3.get_sprite(9)->use_background_img_gl();
+	g_layer3.add_sprite(8, glm::vec2(240, 728 - 698 - 20), glm::vec2(572, 25), width, height);
+	g_layer3.get_sprite(8)->set_background_img("assets/chat_input.tga");
+	g_layer3.get_sprite(8)->set_background_img_selected("assets/chat_input_hover.tga");
+	g_layer3.get_sprite(8)->use_background_img();
+
+	Layer& g_layer4 = game_page.get_layer(4);
+	g_layer4.set_visibility(false);
+	g_layer4.add_sprite(9, glm::vec2(238, 728 - 559 - 164), glm::vec2(577, 164), width, height);
+	g_layer4.get_sprite(9)->set_background_img_gl(-1);
+	g_layer4.get_sprite(9)->use_background_img_gl();
 
 	// active page
 	m_ui.set_active_page(0);
@@ -656,13 +660,14 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 				{
 					fruits.push_back(fruit);
 				}
-				for (int i{ 0 }; i < 8; ++i)
+				for (int line{ 0 }; line < 8; ++line)
 				{
-					for (int j{ 0 }; j < 8; ++j)
+					for (int col{ 0 }; col < 8; ++col)
 					{
-						m_board.m_fruit[j][i].m_type = std::atoi(fruits[j*8+i].c_str());
+						m_board.m_fruit[line][col].m_type = std::atoi(fruits[line*8+col].c_str());
 					}
 				}
+				m_board.print();
 
 				// reset init data
 				g_game_init.clear();
@@ -722,6 +727,19 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+	if (m_ui.get_active_page() == 1)
+	{
+		int player_turn;
+		g_turn_mutex.lock();
+		player_turn = m_turn;
+		g_turn_mutex.unlock();
+		if (player_turn != m_fruit) {
+			m_ui.get_page(1).get_layer(1).set_visibility(false);
+		}
+		else {
+			m_ui.get_page(1).get_layer(1).set_visibility(true);
+		}
+	}
 	m_ui.get_page(m_ui.get_active_page()).draw();
 
 	// draw text and game data
@@ -759,32 +777,40 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		m_cards.draw();
 		// draw board
 		m_board.draw_tiles();
-		if (m_move != MOVE::UNDEFINED)
+		MOVE mv;
+		g_fruit_move_mutex.lock();
+		mv = m_move;
+		g_fruit_move_mutex.unlock();
+		if (mv != MOVE::UNDEFINED)
 		{
 			m_animationTimer += delta;
-			m_board.draw_fruits(m_move, delta);
+			m_board.draw_fruits(mv, delta);
 			if (m_animationTimer >= 0.0f) {
-				if (m_move == MOVE::UP) {
-					m_board.update_up(m_fruit);
+				if (mv == MOVE::UP) {
+					m_board.update_up(m_fruit, m_inverseTeam);
 				}
-				else if (m_move == MOVE::DOWN) {
-					m_board.update_down(m_fruit);
+				else if (mv == MOVE::DOWN) {
+					m_board.update_down(m_fruit, m_inverseTeam);
 				}
-				else if (m_move == MOVE::RIGHT) {
-					m_board.update_right(m_fruit);
+				else if (mv == MOVE::RIGHT) {
+					m_board.update_right(m_fruit, m_inverseTeam);
 				}
-				else if (m_move == MOVE::LEFT) {
-					m_board.update_left(m_fruit);
+				else if (mv == MOVE::LEFT) {
+					m_board.update_left(m_fruit, m_inverseTeam);
 				}
+				m_board.print(); // PRINT BOARD
 				m_animationTimer = 0.0f;
+				g_fruit_move_mutex.lock();
 				m_move = MOVE::UNDEFINED;
+				g_fruit_move_mutex.unlock();
+				m_inverseTeam = false;
 			}
 		}
 		else
 		{
 			m_board.draw_fruits();
 		}
-		if (!m_ui.get_page(1).get_layer(3).m_visible)
+		if (!m_ui.get_page(1).get_layer(4).m_visible)
 		{
 			// draw chat input
 			textRenderer->print(m_writer.m_textInput[1], 240 + 13, 728 - 698 - 12, 1, glm::vec3(0));
@@ -1006,6 +1032,28 @@ int Game::getCursorFocus()
 Writer& Game::get_writer()
 {
 	return m_writer;
+}
+
+MOVE& Game::get_move()
+{
+	return m_move;
+}
+
+void Game::set_turn(int turn)
+{
+	g_turn_mutex.lock();
+	m_turn = turn;
+	g_turn_mutex.unlock();
+}
+
+int Game::getTeam()
+{
+	return m_fruit;
+}
+
+void Game::set_winner(int winner)
+{
+	m_winner = winner;
 }
 
 void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int screenH, float delta)
@@ -1663,12 +1711,12 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		}
 		if (sprite_id == 7) // hovered abandon
 		{
-			game_page.get_layer(1).get_sprite(sprite_id)->use_background_img_selected();
+			game_page.get_layer(2).get_sprite(sprite_id)->use_background_img_selected();
 			m_mouse->use_hover();
 		}
 		else
 		{
-			game_page.get_layer(1).get_sprite(7)->use_background_img();
+			game_page.get_layer(2).get_sprite(7)->use_background_img();
 			m_mouse->use_normal();
 		}
 		if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id)) // hovered a card
@@ -1679,20 +1727,20 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				switch (card_id) {
 				case 100:
 					desc_id = m_cards.m_slot[0];
-					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
 					break;
 				case 101:
 					desc_id = m_cards.m_slot[1];
-					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
 					break;
 				case 102:
 					desc_id = m_cards.m_slot[2];
-					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
 					break;
 				default:
 					break;
 				};
-				game_page.get_layer(3).set_visibility(true);
+				game_page.get_layer(4).set_visibility(true);
 			}
 			else if (m_fruit == 1 && (card_id >= 200 && card_id <= 202)) { // banana card
 				m_mouse->use_hover();
@@ -1700,26 +1748,26 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				switch (card_id) {
 				case 200:
 					desc_id = m_cards.m_slot[8];
-					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
 					break;
 				case 201:
 					desc_id = m_cards.m_slot[9];
-					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
 					break;
 				case 202:
 					desc_id = m_cards.m_slot[10];
-					game_page.get_layer(3).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
+					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
 					break;
 				default:
 					break;
 				};
-				game_page.get_layer(3).set_visibility(true);
+				game_page.get_layer(4).set_visibility(true);
 			}
 		}
 		else
 		{
 			m_mouse->use_normal();
-			game_page.get_layer(3).set_visibility(false);
+			game_page.get_layer(4).set_visibility(false);
 		}
 		if (sprite_id == 7 && inputs.test(2) && inputs.test(9)) // clicked on abandon
 		{
@@ -1728,6 +1776,8 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			m_move = MOVE::UNDEFINED;
 			// stop playing music
 			scenes[0].getSoundSource(0).stop_sound();
+			// clear chatLog
+			m_writer.m_chatLog.clear();
 			// move to home page
 			m_ui.set_active_page(0);
 			// use police of size 20
@@ -1740,46 +1790,55 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 
 			// stop focus chat input
 			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-			game_page.get_layer(2).get_sprite(8)->use_background_img();
+			game_page.get_layer(3).get_sprite(8)->use_background_img();
 			m_mouse->use_normal();
 			// reset cursor position to pseudo input data
 			m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
 		}
 		else if (sprite_id == 8 && inputs.test(2) && inputs.test(9)) // clicked on chat
 		{
-			game_page.get_layer(2).get_sprite(sprite_id)->use_background_img_selected();
+			game_page.get_layer(3).get_sprite(sprite_id)->use_background_img_selected();
 			m_writer.m_cursor.m_focus = 1; // 0 = pseudo, 1 = chat, 2 = not writting
 		}
 		else if (sprite_id >= 3 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on an arrow
 		{
+			std::string data("5:");
+
 			if (sprite_id == 3)
 			{
-				m_move = MOVE::UP;
+				//m_move = MOVE::UP;
+				data += "1";
 			}
 			else if (sprite_id == 4)
 			{
-				m_move = MOVE::DOWN;
+				//m_move = MOVE::DOWN;
+				data += "2";
 			}
 			else if (sprite_id == 5)
 			{
-				m_move = MOVE::RIGHT;
+				//m_move = MOVE::RIGHT;
+				data += "3";
 			}
 			else if (sprite_id == 6)
 			{
-				m_move = MOVE::LEFT;
+				//m_move = MOVE::LEFT;
+				data += "4";
 			}
 
-			set_animationTimer();
+			// send message to server
+			g_msg2server_mutex.lock();
+			g_msg2server_queue.emplace(data);
+			g_msg2server_mutex.unlock();
 		}
 		else if (inputs.test(2) && inputs.test(9))
 		{
 			// stop focus chat input
-			game_page.get_layer(2).get_sprite(8)->use_background_img();
+			game_page.get_layer(3).get_sprite(8)->use_background_img();
 			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
 		}
 		if (m_writer.m_cursor.m_focus == 1 && !inputs.test(5))
 		{
-			int boundX = game_page.get_layer(2).get_sprite(8)->get_position().x + game_page.get_layer(2).get_sprite(8)->get_size().x - 10;
+			int boundX = game_page.get_layer(3).get_sprite(8)->get_position().x + game_page.get_layer(3).get_sprite(8)->get_size().x - 10;
 			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[1], 240+13, 728-698-12, 1, m_writer.m_cursor.m_pos);
 			m_writer.write(text_input, inputs, delta, boundX, cursor_shape);
 		}
@@ -1842,29 +1901,38 @@ void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
 	}
 }
 
-void Game::set_animationTimer()
+void Game::set_animationTimer(bool inverseTeam)
 {
+	m_inverseTeam = inverseTeam;
 	if (m_move == MOVE::UP)
 	{
-		set_animationTimer_move_up();
+		set_animationTimer_move_up(inverseTeam);
 	}
 	else if (m_move == MOVE::DOWN)
 	{
-		set_animationTimer_move_down();
+		set_animationTimer_move_down(inverseTeam);
 	}
 	else if (m_move == MOVE::RIGHT)
 	{
-		set_animationTimer_move_right();
+		set_animationTimer_move_right(inverseTeam);
 	}
 	else if (m_move == MOVE::LEFT)
 	{
-		set_animationTimer_move_left();
+		set_animationTimer_move_left(inverseTeam);
 	}
 }
 
-void Game::set_animationTimer_move_up()
+void Game::set_animationTimer_move_up(bool inverseTeam)
 {
 	int impulse_origin{ -1 };
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
+		}
+	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
 	for (int line{ 7 }; line >= 0; --line)
@@ -1926,11 +1994,27 @@ void Game::set_animationTimer_move_up()
 			}
 		}
 	}
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
+		}
+	}
 }
 
-void Game::set_animationTimer_move_down()
+void Game::set_animationTimer_move_down(bool inverseTeam)
 {
 	int impulse_origin{ -1 };
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
+		}
+	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
 	for (int line{ 0 }; line <= 7; ++line)
@@ -1992,11 +2076,27 @@ void Game::set_animationTimer_move_down()
 			}
 		}
 	}
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
+		}
+	}
 }
 
-void Game::set_animationTimer_move_right()
+void Game::set_animationTimer_move_right(bool inverseTeam)
 {
 	int impulse_origin{ -1 };
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
+		}
+	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
 	for (int col{ 0 }; col < 8; ++col)
@@ -2058,11 +2158,27 @@ void Game::set_animationTimer_move_right()
 			}
 		}
 	}
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
+		}
+	}
 }
 
-void Game::set_animationTimer_move_left()
+void Game::set_animationTimer_move_left(bool inverseTeam)
 {
 	int impulse_origin{ -1 };
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
+		}
+	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
 	for (int col{ 7 }; col >= 0; --col)
@@ -2122,6 +2238,14 @@ void Game::set_animationTimer_move_left()
 			{
 				m_board.m_fruit[line][col].m_animationTimer = min_timer;
 			}
+		}
+	}
+	if (inverseTeam) {
+		if (m_fruit == 0) {
+			m_fruit = 1;
+		}
+		else {
+			m_fruit = 0;
 		}
 	}
 }

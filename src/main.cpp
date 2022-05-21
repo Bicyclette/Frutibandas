@@ -11,7 +11,7 @@
 #define SERVER "92.88.236.2"
 #define PORT 7777
 
-void network_thread(bool& run, Writer& writer)
+void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr<Game> & g)
 {
 	NetworkClient client;
 	
@@ -81,6 +81,9 @@ void network_thread(bool& run, Writer& writer)
 							client.send_data("gc:" + message.substr(2)); // game chat
 						}
 						break;
+					case 5:
+						client.send_data("mv:" + message.substr(2)); // move
+						break;
 					default:
 						break;
 				};
@@ -118,6 +121,41 @@ void network_thread(bool& run, Writer& writer)
 							}
 						}
 					}
+					else if (type == "mv") { // move
+						int dir = std::atoi(&message[3]);
+						int who = std::atoi(&message[5]);
+						g_fruit_move_mutex.lock();
+						if (dir == 1) {
+							move = MOVE::UP;
+						}
+						else if (dir == 2) {
+							move = MOVE::DOWN;
+						}
+						else if (dir == 3) {
+							move = MOVE::RIGHT;
+						}
+						else if (dir == 4) {
+							move = MOVE::LEFT;
+						}
+						g_fruit_move_mutex.unlock();
+						if (who == g->getTeam()) {
+							g->set_animationTimer(false);
+						}
+						else {
+							g->set_animationTimer(true);
+						}
+					}
+					else if (type == "t") { // turn change
+						int turn = std::atoi(message.substr(2).c_str());
+						std::cout << "next turn is : " << turn << std::endl;
+						g->set_turn(turn);
+					}
+					else if (type == "win") { // a player won the match
+						int winner = std::atoi(message.substr(4).c_str());
+						std::cout << "winner is : " << winner << std::endl;
+						g->set_winner(winner);
+						g->set_turn(-1);
+					}
 				}
 			}
 		}
@@ -127,7 +165,7 @@ void network_thread(bool& run, Writer& writer)
 	}
 }
 
-void render(std::unique_ptr<WindowManager> client, std::unique_ptr<Game> game)
+void render(std::unique_ptr<WindowManager> client, std::shared_ptr<Game> game)
 {
     // IMGUI data
     EDITOR_UI_SETTINGS editor_settings;
@@ -167,12 +205,12 @@ void render(std::unique_ptr<WindowManager> client, std::unique_ptr<Game> game)
 
 int main(int argc, char* argv[])
 {
-	std::unique_ptr<WindowManager> client{std::make_unique<WindowManager>("Frutibandas")};
-	std::unique_ptr<Game> game{std::make_unique<Game>(client->getWidth(), client->getHeight())};
+	std::unique_ptr<WindowManager> client{ std::make_unique<WindowManager>("Frutibandas") };
+	std::shared_ptr<Game> game{ std::make_shared<Game>(client->getWidth(), client->getHeight()) };
 	// network thread
-	std::thread net_thread(network_thread, std::ref(client->isAlive()), std::ref(game->get_writer()));
+	std::thread net_thread(network_thread, std::ref(client->isAlive()), std::ref(game->get_writer()), std::ref(game->get_move()), std::ref(game));
 	// render game
-	render(std::move(client), std::move(game));
+	render(std::move(client), game);
 
 	return 0;
 }
