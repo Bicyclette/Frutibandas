@@ -891,7 +891,9 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		m_mouse->draw();
 	}
 
-	bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
+	if (m_ui.get_active_page() == 0) {
+		bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
+	}
 }
 
 void Game::resizeScreen(int clientWidth, int clientHeight)
@@ -2068,14 +2070,16 @@ void Game::print_remaining_time()
 	bool is_my_turn = (m_turn == m_fruit) ? true : false;
 	g_turn_mutex.unlock();
 
-	float on_off = ((m_half_sec*2.0f) <= 0.5f) ? 0.25f : 0.35f;
+	float on_off = ((m_half_sec*2.0f) <= 0.5f) ? 0.5f : 1.0f;
+	glm::vec3 red(0.996f, 0.0f, 0.008f);
+	glm::vec3 green(0.008f, 0.69f, 0.067f);
 	if (m_fruit == 0) {
-		m_timer.draw(m_remaining_time / 600.0f, glm::vec3(0.148f, 0.702f, 0.197f) * 0.2f, on_off, 0, is_my_turn);
-		m_timer.draw(rte / 600.0f, glm::vec3(0.779f, 0.124f, 0.124f) * 0.4f, on_off, 1, !is_my_turn);
+		m_timer.draw(m_remaining_time / 600.0f, green, on_off, 0, is_my_turn);
+		m_timer.draw(rte / 600.0f, red, on_off, 1, !is_my_turn);
 	}
 	else {
-		m_timer.draw(rte / 600.0f, glm::vec3(0.779f, 0.124f, 0.124f) * 0.4f, on_off, 0, !is_my_turn);
-		m_timer.draw(m_remaining_time / 600.0f, glm::vec3(0.148f, 0.702f, 0.197f) * 0.2f, on_off, 1, is_my_turn);
+		m_timer.draw(rte / 600.0f, red, on_off, 0, !is_my_turn);
+		m_timer.draw(m_remaining_time / 600.0f, green, on_off, 1, is_my_turn);
 	}
 }
 

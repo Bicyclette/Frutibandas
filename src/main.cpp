@@ -155,7 +155,9 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						else if (turn == 1) {
 							std::cout << "banana is playing" << std::endl;
 						}
-						g->set_turn(turn);
+						g_turn_mutex.lock();
+						g->m_turn = turn;
+						g_turn_mutex.unlock();
 					}
 					else if (type == "win") { // a player won the match
 						int winner = std::atoi(message.substr(4).c_str());
