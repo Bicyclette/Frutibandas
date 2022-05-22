@@ -147,15 +147,36 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 					}
 					else if (type == "t") { // turn change
 						int turn = std::atoi(message.substr(2).c_str());
-						std::cout << "next turn is : " << turn << std::endl;
+						if (turn == 0) {
+							std::cout << "orange is playing" << std::endl;
+						}
+						else if (turn == 1) {
+							std::cout << "banana is playing" << std::endl;
+						}
 						g->set_turn(turn);
 					}
 					else if (type == "win") { // a player won the match
 						int winner = std::atoi(message.substr(4).c_str());
-						std::cout << "winner is : " << winner << std::endl;
 						g->set_winner(winner);
 						g->set_turn(-1);
+						g->getScenes()[0].getSoundSource(0).stop_sound();
+						if (g->m_fruit == winner) {
+							g->m_popup.set_background_img_gl(g->m_popup_tex[0].id);
+							g->getScenes()[0].getSoundSource(0).set_looping(false);
+							g->getScenes()[0].playSound(1, 1);
+						}
+						else {
+							g->m_popup.set_background_img_gl(g->m_popup_tex[1].id);
+							g->getScenes()[0].getSoundSource(0).set_looping(false);
+							g->getScenes()[0].playSound(1, 2);
+						}
 					}
+				}
+				else if (client.m_event.type == ENET_EVENT_TYPE_DISCONNECT)
+				{
+					g_connected_mutex.lock();
+					g_connected = false;
+					g_connected_mutex.unlock();
 				}
 			}
 		}
@@ -211,6 +232,8 @@ int main(int argc, char* argv[])
 	std::thread net_thread(network_thread, std::ref(client->isAlive()), std::ref(game->get_writer()), std::ref(game->get_move()), std::ref(game));
 	// render game
 	render(std::move(client), game);
+	// exit
+	net_thread.join();
 
 	return 0;
 }

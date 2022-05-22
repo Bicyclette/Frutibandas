@@ -93,7 +93,15 @@ Game::Game(int clientWidth, int clientHeight) :
 	m_winner(-1),
 	m_writer(clientWidth, clientHeight),
 	m_move(MOVE::UNDEFINED),
-	m_animationTimer(0.0f)
+	m_animationTimer(0.0f),
+	m_popup(0, glm::vec2(525 - 200, 364 - 75), glm::vec2(400, 150), clientWidth, clientHeight),
+	m_back_home(0, glm::vec2(525 - 75, 378 - 54), glm::vec2(150, 24), clientWidth, clientHeight),
+	m_popup_tex{
+		createTexture("assets/victory.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/defeat.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/retour_accueil.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/retour_accueil_hover.tga", TEXTURE_TYPE::DIFFUSE, true)
+	}
 {
 	// create mouse
 	int mouse_pos[2];
@@ -106,6 +114,12 @@ Game::Game(int clientWidth, int clientHeight) :
 	textRenderer->load_police("assets/fonts/ebrima.ttf", 20);
 	textRenderer->load_police("assets/fonts/ebrima.ttf", 15);
     textRenderer->use_police(0);
+
+	// popup & back_home
+	m_back_home.set_background_img_gl(m_popup_tex[2].id);
+	m_back_home.use_background_img_gl();
+	m_popup.set_background_img_gl(-1);
+	m_popup.use_background_img_gl();
 
 	// scene
 	glm::vec3 camPos;
@@ -126,8 +140,12 @@ Game::Game(int clientWidth, int clientHeight) :
 	scenes[0].setActiveCamera(0);
 
 	// audio
-	scenes[0].addSoundSource(glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), 90.0f, 180.0f, 0.5f, true);
+	scenes[0].addSoundSource(glm::vec3(0, 0, 0));
+	scenes[0].getSoundSource(0).set_volume(0.125f);
+	scenes[0].getSoundSource(0).set_looping(true);
 	scenes[0].addAudioFile("assets/sound/el_gato_montes.wav");
+	scenes[0].addAudioFile("assets/sound/win.wav");
+	scenes[0].addAudioFile("assets/sound/loose.wav");
 
 	// init
 	createUI(clientWidth, clientHeight);
@@ -351,7 +369,6 @@ void Game::createUI(int width, int height)
 	game_page.add_layer(3);	// chat
 	game_page.add_layer(4);	// card description
 	game_page.add_layer(5);	// card announcer
-	game_page.add_layer(6);	// message pop up (disconnected, win game, lost game, enemy abandonned)
 
 	Layer& g_layer0 = game_page.get_layer(0);
 	g_layer0.add_sprite(0, glm::vec2(0), glm::vec2(width, height), width, height);
@@ -664,15 +681,22 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 				{
 					for (int col{ 0 }; col < 8; ++col)
 					{
-						m_board.m_fruit[line][col].m_type = std::atoi(fruits[line*8+col].c_str());
+						m_board.m_fruit[line][col].m_type = std::atoi(fruits[line * 8 + col].c_str());
+						m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+						m_board.m_fruit[line][col].m_petrified = false;
+
+						m_board.m_tile[line][col].m_alive = true;
+						m_board.m_tile[line][col].m_animationTimer = 0.0f;
+						m_board.m_tile[line][col].m_dying = false;
+						m_board.m_tile[line][col].m_trap = false;
 					}
 				}
-				m_board.print();
 
 				// reset init data
 				g_game_init.clear();
 
 				// play sound
+				scenes[activeScene].getSoundSource(0).set_looping(true);
 				scenes[activeScene].playSound(0, 0);
 			}
 		}
@@ -776,7 +800,7 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		// draw cards
 		m_cards.draw();
 		// draw board
-		m_board.draw_tiles();
+		m_board.draw_tiles(delta);
 		MOVE mv;
 		g_fruit_move_mutex.lock();
 		mv = m_move;
@@ -798,12 +822,12 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 				else if (mv == MOVE::LEFT) {
 					m_board.update_left(m_fruit, m_inverseTeam);
 				}
-				m_board.print(); // PRINT BOARD
 				m_animationTimer = 0.0f;
 				g_fruit_move_mutex.lock();
 				m_move = MOVE::UNDEFINED;
 				g_fruit_move_mutex.unlock();
 				m_inverseTeam = false;
+				m_board.update_boundaries();
 			}
 		}
 		else
@@ -825,6 +849,11 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 			{
 				textRenderer->print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 16 * i, 1, glm::vec3(0));
 			}
+		}
+		if (m_winner != -1)
+		{
+			m_popup.draw();
+			m_back_home.draw();
 		}
 	}
 
@@ -1693,6 +1722,41 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 	}
 	else // game
 	{
+		g_connected_mutex.lock();
+		bool server_reachable{g_connected};
+		g_connected_mutex.unlock();
+		if (!server_reachable) {
+			if (m_winner != -1) {
+				m_winner = -1;
+			}
+			g_game_found = false;
+			m_animationTimer = 0.0f;
+			m_move = MOVE::UNDEFINED;
+			// reset board
+			m_board.boundLeft = 0;
+			m_board.boundRight = 7;
+			m_board.boundTop = 0;
+			m_board.boundBottom = 7;
+			m_board.m_dyingTimer = 0.0f;
+			// stop playing music
+			if (scenes[0].getSoundSource(0).is_playing()) {
+				scenes[0].getSoundSource(0).stop_sound();
+			}
+			// clear chatLog
+			m_writer.m_chatLog.clear();
+			// move to home page
+			m_ui.set_active_page(0);
+			// use police of size 20
+			textRenderer->use_police(0);
+
+			// stop focus chat input
+			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+			m_ui.get_page(1).get_layer(3).get_sprite(8)->use_background_img();
+			m_mouse->use_normal();
+			// reset cursor position to pseudo input data
+			m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
+		}
+
 		Page& game_page{ m_ui.get_page(1) };
 		int sprite_id{ hovered->get_id() };
 
@@ -1769,13 +1833,29 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			m_mouse->use_normal();
 			game_page.get_layer(4).set_visibility(false);
 		}
-		if (sprite_id == 7 && inputs.test(2) && inputs.test(9)) // clicked on abandon
+		if (m_winner != -1 && m_back_home.mouse_hover(mouse_pos[0], mouse_pos[1]))
+		{
+			m_back_home.set_background_img_gl(m_popup_tex[3].id);
+		}
+		else
+		{
+			m_back_home.set_background_img_gl(m_popup_tex[2].id);
+		}
+		if ((sprite_id == 7 || (m_winner != -1 && m_back_home.mouse_hover(mouse_pos[0], mouse_pos[1]))) && inputs.test(2) && inputs.test(9)) // clicked on abandon or back home page
 		{
 			g_game_found = false;
 			m_animationTimer = 0.0f;
 			m_move = MOVE::UNDEFINED;
+			// reset board
+			m_board.boundLeft = 0;
+			m_board.boundRight = 7;
+			m_board.boundTop = 0;
+			m_board.boundBottom = 7;
+			m_board.m_dyingTimer = 0.0f;
 			// stop playing music
-			scenes[0].getSoundSource(0).stop_sound();
+			if (scenes[0].getSoundSource(0).is_playing()) {
+				scenes[0].getSoundSource(0).stop_sound();
+			}
 			// clear chatLog
 			m_writer.m_chatLog.clear();
 			// move to home page
@@ -1783,17 +1863,22 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			// use police of size 20
 			textRenderer->use_police(0);
 			// send abandon message to server
-			std::string data("3");
-			g_msg2server_mutex.lock();
-			g_msg2server_queue.emplace(data);
-			g_msg2server_mutex.unlock();
-
+			if (m_winner == -1) {
+				std::string data("3");
+				g_msg2server_mutex.lock();
+				g_msg2server_queue.emplace(data);
+				g_msg2server_mutex.unlock();
+			}
 			// stop focus chat input
 			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
 			game_page.get_layer(3).get_sprite(8)->use_background_img();
 			m_mouse->use_normal();
 			// reset cursor position to pseudo input data
 			m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
+			// reset winner
+			if (m_winner != -1) {
+				m_winner = -1;
+			}
 		}
 		else if (sprite_id == 8 && inputs.test(2) && inputs.test(9)) // clicked on chat
 		{

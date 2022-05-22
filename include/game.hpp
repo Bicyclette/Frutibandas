@@ -488,10 +488,12 @@ struct Fruit
 struct Tile
 {
 	// >>>>>>>>>> methods
-	Tile() : m_alive(true), m_trap(false) {}
+	Tile() : m_alive(true), m_dying(false), m_trap(false), m_animationTimer(0.0f) {}
 	// >>>>>>>>>> properties
 	bool m_alive;
+	bool m_dying;
 	bool m_trap;
+	float m_animationTimer;
 };
 
 struct Board
@@ -501,10 +503,11 @@ struct Board
 		m_rect(0, glm::vec2(0), glm::vec2(49, 55), 1050, 728),
 		m_orange(0, glm::vec2(0), glm::vec2(245), 1050, 728),
 		m_banane(0, glm::vec2(0), glm::vec2(245, 370), 1050, 728),
-		minX(0),
-		maxX(7),
-		minY(0),
-		maxY(7)
+		boundLeft(0),
+		boundRight(7),
+		boundTop(0),
+		boundBottom(7),
+		m_dyingTimer(0.0f)
 	{}
 
 	void print()
@@ -548,23 +551,78 @@ struct Board
 		return count;
 	}
 
-	void draw_tiles()
+	void draw_tiles(float delta = 0.0f)
 	{
-		//update_board();
+		if (m_dyingTimer < 0.0f)
+		{
+			m_dyingTimer += delta;
+			if (m_dyingTimer >= 0.0f) {
+				// set dying tiles to dead
+				// reset animation timers to zero
+				for (int i{ 0 }; i < 8; ++i) {
+					for (int j{ 0 }; j < 8; ++j) {
+						if (m_tile[i][j].m_dying) {
+							m_tile[i][j].m_dying = false;
+							m_tile[i][j].m_alive = false;
+							m_tile[i][j].m_animationTimer = 0.0f;
+						}
+					}
+				}
+				m_dyingTimer = 0.0f;
+			}
+		}
 
 		glm::vec2 start(525-(49*4), 645);
-		for (int i{ minX }; i <= maxX; ++i) {
-			for (int j{ minY }; j <= maxY; ++j) {
-				if (!m_tile[j][i].m_alive) { continue; }
-				glm::vec2 shift(49 * i, -49 * j);
-				if (j == 7) {	// bottom line
-					m_rect.set_background_img_gl(m_tex[3].id);
-					m_rect.use_background_img_gl();
-					m_rect.set_pos(start + shift);
-					m_rect.draw();
+		for (int i{ 0 }; i <= 7; ++i) {
+			for (int j{ 0 }; j <= 7; ++j) {
+				if (!m_tile[j][i].m_alive) {
+					continue;
 				}
-				else {			// elsewhere
-					m_square.set_background_img_gl(m_tex[2].id);
+				glm::vec2 shift(49 * i, -49 * j);
+				if (j == boundBottom) {	// bottom line
+					if(m_tile[j][i].m_alive && !m_tile[j][i].m_dying) {
+						m_rect.set_background_img_gl(m_tex[3].id);
+						m_rect.use_background_img_gl();
+						m_rect.set_pos(start + shift);
+						m_rect.draw();
+					}
+					else if(m_tile[j][i].m_alive && m_tile[j][i].m_dying) {
+						int index;
+						if (m_tile[j][i].m_animationTimer <= 0.0f) {
+							index = 2;
+						}
+						else if (m_tile[j][i].m_animationTimer >= 0.0f && m_tile[j][i].m_animationTimer <= 0.25f) {
+							index = static_cast<int>(4.0f + (m_tile[j][i].m_animationTimer * 4.0f) * 5.0f);
+						}
+						else {
+							index = 10;
+						}
+						m_tile[j][i].m_animationTimer += delta;
+						m_square.set_background_img_gl(m_tex[index].id);
+						m_square.use_background_img_gl();
+						m_square.set_pos(start + shift);
+						m_square.draw();
+					}
+				}
+				else {					// elsewhere
+					if(m_tile[j][i].m_alive && !m_tile[j][i].m_dying)
+					{
+						m_square.set_background_img_gl(m_tex[2].id);
+					}
+					else if (m_tile[j][i].m_alive && m_tile[j][i].m_dying) {
+						int index;
+						if (m_tile[j][i].m_animationTimer <= 0.0f) {
+							index = 2;
+						}
+						else if (m_tile[j][i].m_animationTimer >= 0.0f && m_tile[j][i].m_animationTimer <= 0.25f) {
+							index = static_cast<int>(4.0f + (m_tile[j][i].m_animationTimer * 4.0f) * 5.0f);
+						}
+						else {
+							index = 10;
+						}
+						m_tile[j][i].m_animationTimer += delta;
+						m_square.set_background_img_gl(m_tex[index].id);
+					}
 					m_square.use_background_img_gl();
 					m_square.set_pos(start + shift);
 					m_square.draw();
@@ -649,29 +707,29 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ 0 }; line < 8; ++line)
+		for (int line{ boundTop }; line <= boundBottom; ++line)
 		{
-			for (int col{ 0 }; col < 8; ++col)
+			for (int col{ boundLeft }; col <= boundRight; ++col)
 			{
 				if (m_fruit[line][col].m_type == enemy) {
 					//check if there is a pusher down the column
 					int l{ line };
-					while (m_fruit[l][col].m_type == enemy && l < 8) {
+					while (m_fruit[l][col].m_type == enemy && l <= boundBottom) {
 						l++;
 					}
-					if (l == 8) {
+					if (l == boundBottom + 1) {
 						continue;
 					}
 					else if (m_fruit[l][col].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((line - 1) >= 0) {
+						if ((line - 1) >= boundTop) {
 							m_fruit[line-1][col].m_type = enemy;
 						}
 					}
 				}
 				else if (m_fruit[line][col].m_type == fruit) {
 					m_fruit[line][col].m_type = -1;
-					if ((line - 1) >= 0) {
+					if ((line - 1) >= boundTop) {
 						m_fruit[line - 1][col].m_type = fruit;
 					}
 				}
@@ -692,29 +750,29 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ 7 }; line >= 0; --line)
+		for (int line{ boundBottom }; line >= boundTop; --line)
 		{
-			for (int col{ 0 }; col < 8; ++col)
+			for (int col{ boundLeft }; col <= boundRight; ++col)
 			{
 				if (m_fruit[line][col].m_type == enemy) {
 					//check if there is a pusher up the column
 					int l{ line };
-					while (m_fruit[l][col].m_type == enemy && l >= 0) {
+					while (m_fruit[l][col].m_type == enemy && l >= boundTop) {
 						l--;
 					}
-					if (l == -1) {
+					if (l == boundTop - 1) {
 						continue;
 					}
 					else if (m_fruit[l][col].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((line + 1) <= 7) {
+						if ((line + 1) <= boundBottom) {
 							m_fruit[line + 1][col].m_type = enemy;
 						}
 					}
 				}
 				else if (m_fruit[line][col].m_type == fruit) {
 					m_fruit[line][col].m_type = -1;
-					if ((line + 1) <= 7) {
+					if ((line + 1) <= boundBottom) {
 						m_fruit[line + 1][col].m_type = fruit;
 					}
 				}
@@ -735,29 +793,29 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ 0 }; line < 8; ++line)
+		for (int line{ boundTop }; line <= boundBottom; ++line)
 		{
-			for (int col{ 7 }; col >= 0; --col)
+			for (int col{ boundRight }; col >= boundLeft; --col)
 			{
 				if (m_fruit[line][col].m_type == enemy) {
 					//check if there is a pusher on the left side of the line
 					int c{ col };
-					while (m_fruit[line][c].m_type == enemy && c >= 0) {
+					while (m_fruit[line][c].m_type == enemy && c >= boundLeft) {
 						c--;
 					}
-					if (c == -1) {
+					if (c == boundLeft - 1) {
 						continue;
 					}
 					else if (m_fruit[line][c].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((col + 1) <= 7) {
+						if ((col + 1) <= boundRight) {
 							m_fruit[line][col + 1].m_type = enemy;
 						}
 					}
 				}
 				else if (m_fruit[line][col].m_type == fruit) {
 					m_fruit[line][col].m_type = -1;
-					if ((col + 1) <= 7) {
+					if ((col + 1) <= boundRight) {
 						m_fruit[line][col + 1].m_type = fruit;
 					}
 				}
@@ -778,29 +836,29 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ 0 }; line < 8; ++line)
+		for (int line{ boundTop }; line <= boundBottom; ++line)
 		{
-			for (int col{ 0 }; col <= 7; ++col)
+			for (int col{ boundLeft }; col <= boundRight; ++col)
 			{
 				if (m_fruit[line][col].m_type == enemy) {
 					//check if there is a pusher on the right side of the line
 					int c{ col };
-					while (m_fruit[line][c].m_type == enemy && c <= 7) {
+					while (m_fruit[line][c].m_type == enemy && c <= boundRight) {
 						c++;
 					}
-					if (c == 8) {
+					if (c == boundRight + 1) {
 						continue;
 					}
 					else if (m_fruit[line][c].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((col - 1) >= 0) {
+						if ((col - 1) >= boundLeft) {
 							m_fruit[line][col - 1].m_type = enemy;
 						}
 					}
 				}
 				else if (m_fruit[line][col].m_type == fruit) {
 					m_fruit[line][col].m_type = -1;
-					if ((col - 1) >= 0) {
+					if ((col - 1) >= boundLeft) {
 						m_fruit[line][col - 1].m_type = fruit;
 					}
 				}
@@ -810,56 +868,188 @@ struct Board
 		}
 	}
 
-	void update_board()
+	void update_boundaries()
 	{
-		int boundLeft{8};
-		int boundRight{-1};
-		int boundUp{8};
-		int boundDown{-1};
-		for (int line{ 0 }; line < 8; ++line)
+		int min_x{ 8 };
+		int max_x{ -1 };
+		int min_y{ 8 };
+		int max_y{ -1 };
+		for (int line{ boundTop }; line <= boundBottom; ++line)
 		{
-			for (int col{ 0 }; col < 8; ++col)
+			for (int col{ boundLeft }; col <= boundRight; ++col)
 			{
 				int t{ m_fruit[line][col].m_type };
 				if (t != -1)
 				{
-					if (col < boundLeft) {
-						boundLeft = col;
+					if (col < min_x) {
+						min_x = col;
 					}
-					if (col > boundRight) {
-						boundRight = col;
+					if (col > max_x) {
+						max_x = col;
 					}
-					if (line > boundDown) {
-						boundDown = line;
+					if (line > max_y) {
+						max_y = line;
 					}
-					if (line < boundUp) {
-						boundUp = line;
+					if (line < min_y) {
+						min_y = line;
 					}
 				}
 			}
 		}
-		minX = boundLeft;
-		maxX = boundRight;
-		minY = boundUp;
-		maxY = boundDown;
+
+		// set dying tiles
+		int diff_left = min_x - boundLeft;
+		int diff_right = boundRight - max_x;
+		int diff_top = min_y - boundTop;
+		int diff_bottom = boundBottom - max_y;
+
+		float delay{ 0.0f };
+		if (diff_bottom > 0) {
+			for (int line{ boundBottom }; line > max_y; --line)
+			{
+				int start, end;
+				if (diff_left > 0) {
+					start = boundLeft;
+				}
+				else {
+					start = min_x;
+				}
+				if (diff_right > 0) {
+					end = boundRight;
+				}
+				else {
+					end = max_x;
+				}
+				for (int col{ start }; col <= end; ++col)
+				{
+					m_tile[line][col].m_dying = true;
+					delay -= (col - start) * 0.125f;
+					m_tile[line][col].m_animationTimer += delay;
+				}
+			}
+		}
+		if (diff_right > 0) {
+			for (int col{ boundRight }; col > max_x; --col)
+			{
+				int start, end;
+				if (diff_bottom > 0) {
+					start = boundBottom;
+				}
+				else {
+					start = max_y;
+				}
+				if (diff_top > 0) {
+					end = boundTop;
+				}
+				else {
+					end = min_y;
+				}
+				for (int line{ start }; line >= end; --line)
+				{
+					m_tile[line][col].m_dying = true;
+					if (delay < 0.0f) {
+						delay -= 0.125f;
+					}
+					else {
+						delay -= (start - line) * 0.125f;
+					}
+					m_tile[line][col].m_animationTimer += delay;
+				}
+			}
+		}
+		if (diff_top > 0) {
+			for (int line{ boundTop }; line < min_y; ++line)
+			{
+				int start, end;
+				if (diff_left > 0) {
+					start = boundLeft;
+				}
+				else {
+					start = min_x;
+				}
+				if (diff_right > 0) {
+					end = boundRight;
+				}
+				else {
+					end = max_x;
+				}
+				for (int col{ end }; col >= start; --col)
+				{
+					m_tile[line][col].m_dying = true;
+					if (delay < 0.0f) {
+						delay -= 0.125f;
+					}
+					else {
+						delay -= (end - col) * 0.125f;
+					}
+					m_tile[line][col].m_animationTimer += delay;
+				}
+			}
+		}
+		if (diff_left > 0) {
+			for (int col{ boundLeft }; col < min_x; ++col)
+			{
+				int start, end;
+				if (diff_bottom > 0) {
+					end = boundBottom;
+				}
+				else {
+					end = max_y;
+				}
+				if (diff_top > 0) {
+					start = boundTop;
+				}
+				else {
+					start = min_y;
+				}
+				for (int line{ start }; line <= end; ++line)
+				{
+					m_tile[line][col].m_dying = true;
+					if (delay < 0.0f) {
+						delay -= 0.125f;
+					}
+					else {
+						delay -= (line - start) * 0.125f;
+					}
+					m_tile[line][col].m_animationTimer += delay;
+				}
+			}
+		}
+		if (delay < 0.0f) {
+			m_dyingTimer = delay - 0.25f;
+		}
+
+		// set new boundaries
+		boundLeft = min_x;
+		boundRight = max_x;
+		boundTop = min_y;
+		boundBottom = max_y;
 	}
 
 	Tile m_tile[8][8];
 	Fruit m_fruit[8][8];
-	std::array<Texture, 4> m_tex = {
+	std::array<Texture, 11> m_tex = {
 		createTexture("assets/orange_big.tga", TEXTURE_TYPE::DIFFUSE, true),
 		createTexture("assets/banane_big.tga", TEXTURE_TYPE::DIFFUSE, true),
 		createTexture("assets/board.tga", TEXTURE_TYPE::DIFFUSE, true),
-		createTexture("assets/board_bottom.tga", TEXTURE_TYPE::DIFFUSE, true)
+		createTexture("assets/board_bottom.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/board_dying1.tga", TEXTURE_TYPE::DIFFUSE, true), // 4
+		createTexture("assets/board_dying2.tga", TEXTURE_TYPE::DIFFUSE, true), // 5
+		createTexture("assets/board_dying3.tga", TEXTURE_TYPE::DIFFUSE, true), // 6
+		createTexture("assets/board_dying4.tga", TEXTURE_TYPE::DIFFUSE, true), // 7
+		createTexture("assets/board_dying5.tga", TEXTURE_TYPE::DIFFUSE, true), // 8
+		createTexture("assets/board_dying6.tga", TEXTURE_TYPE::DIFFUSE, true), // 9
+		createTexture("assets/board_dying7.tga", TEXTURE_TYPE::DIFFUSE, true)  // 10
 	};
 	Sprite m_square;
 	Sprite m_rect;
 	Sprite m_orange;
 	Sprite m_banane;
-	int minX;
-	int maxX;
-	int minY;
-	int maxY;
+	int boundLeft;
+	int boundRight;
+	int boundTop;
+	int boundBottom;
+	float m_dyingTimer;
 };
 
 struct Cursor
@@ -1037,7 +1227,7 @@ class Game
 		void set_animationTimer_move_right(bool inverseTeam);
 		void set_animationTimer_move_left(bool inverseTeam);
 
-	private:
+	public:
 
 		Avatar m_avatar;
 		Avatar m_avatar_opponent;
@@ -1053,7 +1243,10 @@ class Game
 		std::string m_pseudo_orange;
 		std::string m_pseudo_banane;
 		MOVE m_move;
-		float m_animationTimer; // set to the max value (abs(-0.125f*shift) + 0.25f) amoung fruits, when it reaches zero after decrement by delta each frame, set m_move to UNDEFINED
+		float m_animationTimer;
+		Sprite m_popup;
+		Sprite m_back_home;
+		std::array<Texture, 4> m_popup_tex;
 };
 
 inline std::queue<std::string> g_msg2server_queue;

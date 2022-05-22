@@ -314,7 +314,7 @@ void Sprite::draw(glm::vec2 translate)
 // top left corner of mouse pointer
 bool Sprite::mouse_hover(int mouseX, int mouseY)
 {
-    return (mouseX >= m_pos.x && mouseX <= (m_pos.x + m_size.x)) && (mouseY <= m_pos.y && mouseY >= (m_pos.y - m_size.y));
+    return (mouseX >= m_pos.x && mouseX <= (m_pos.x + m_size.x) && mouseY >= m_pos.y && mouseY <= (m_pos.y + m_size.y));
 }
 
 void Sprite::resize_screen(int width, int height)
