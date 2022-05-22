@@ -89,7 +89,9 @@ Game::Game(int clientWidth, int clientHeight) :
 	m_fruit(-1),
 	m_inverseTeam(false),
 	m_turn(-1),
-	m_remaining_time(360),
+	m_remaining_time(600.0f),
+	m_remaining_time_enemy(600.0f),
+	m_half_sec(0.0f),
 	m_winner(-1),
 	m_writer(clientWidth, clientHeight),
 	m_move(MOVE::UNDEFINED),
@@ -149,6 +151,16 @@ Game::Game(int clientWidth, int clientHeight) :
 
 	// init
 	createUI(clientWidth, clientHeight);
+}
+
+Game::~Game()
+{
+	m_timer.cleanup();
+	m_writer.m_cursor.cleanup();
+	m_board.cleanup();
+	m_cards.cleanup();
+	m_avatar.cleanup();
+	m_avatar_opponent.cleanup();
 }
 
 void Game::createUI(int width, int height)
@@ -759,9 +771,22 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		g_turn_mutex.unlock();
 		if (player_turn != m_fruit) {
 			m_ui.get_page(1).get_layer(1).set_visibility(false);
+			m_half_sec += delta;
+			if (m_half_sec >= 0.5f) {
+				m_half_sec = 0.0f;
+			}
 		}
-		else {
+		else if(player_turn == m_fruit && m_animationTimer == 0.0f && m_board.m_dyingTimer == 0.0f) {
 			m_ui.get_page(1).get_layer(1).set_visibility(true);
+			m_remaining_time -= delta;
+			if (m_remaining_time <= 0.0f) { m_remaining_time = 0.0f; }
+			m_half_sec += delta;
+			if (m_half_sec >= 0.5f) {
+				m_half_sec = 0.0f;
+				g_msg2server_mutex.lock();
+				g_msg2server_queue.emplace("6:" + std::to_string(m_remaining_time));
+				g_msg2server_mutex.unlock();
+			}
 		}
 	}
 	m_ui.get_page(m_ui.get_active_page()).draw();
@@ -796,7 +821,7 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		textRenderer->print(m_pseudo_banane, 839, 728 - 159 - 27, 1, glm::vec3(0));
 		//print remaining fruits
 		textRenderer->print(std::to_string(m_board.orange_count()), 190, 728 - 52, 1, glm::vec3(0));
-		textRenderer->print(std::to_string(m_board.banane_count()), 863, 728 - 52, 1, glm::vec3(0));
+		textRenderer->print(std::to_string(m_board.banane_count()), 856, 728 - 52, 1, glm::vec3(0));
 		// draw cards
 		m_cards.draw();
 		// draw board
@@ -855,6 +880,8 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 			m_popup.draw();
 			m_back_home.draw();
 		}
+		// remaining time
+		print_remaining_time();
 	}
 
 	// mouse
@@ -1875,9 +1902,10 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			m_mouse->use_normal();
 			// reset cursor position to pseudo input data
 			m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
-			// reset winner
+			// reset winner and remaining time
 			if (m_winner != -1) {
 				m_winner = -1;
+				m_remaining_time = 600.0f;
 			}
 		}
 		else if (sprite_id == 8 && inputs.test(2) && inputs.test(9)) // clicked on chat
@@ -1983,6 +2011,71 @@ void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
 			m_avatar.m_eyes = Avatar::EYES::MANGA;
 		else if (m_avatar.m_eyes == Avatar::EYES::MASCARA)
 			m_avatar.m_eyes = Avatar::EYES::GROS;
+	}
+}
+
+void Game::print_remaining_time()
+{
+	int orange_minutes;
+	int banana_minutes;
+	int orange_sec;
+	int banana_sec;
+	float rte;
+
+	if (m_fruit == 0) {
+		// minutes
+		orange_minutes = static_cast<int>(m_remaining_time / 60.0f);
+		g_rte_mutex.lock();
+		rte = m_remaining_time_enemy;
+		g_rte_mutex.unlock();
+		banana_minutes = static_cast<int>(rte / 60.0f);
+		// sec
+		orange_sec = static_cast<int>(m_remaining_time) - (orange_minutes * 60);
+		banana_sec = static_cast<int>(rte) - (banana_minutes * 60);
+	}
+	else {
+		// minutes
+		g_rte_mutex.lock();
+		rte = m_remaining_time_enemy;
+		g_rte_mutex.unlock();
+		orange_minutes = static_cast<int>(rte / 60.0f);
+		banana_minutes = static_cast<int>(m_remaining_time / 60.0f);
+		// sec
+		orange_sec = static_cast<int>(rte) - (orange_minutes * 60);
+		banana_sec = static_cast<int>(m_remaining_time) - (banana_minutes * 60);
+	}
+	// print
+	std::string om = std::to_string(orange_minutes);
+	std::string bm = std::to_string(banana_minutes);
+	if (orange_minutes < 10) {
+		om = "0" + om;
+	}
+	if (banana_minutes < 10) {
+		bm = "0" + bm;
+	}
+	std::string os = std::to_string(orange_sec);
+	std::string bs = std::to_string(banana_sec);
+	if (orange_sec < 10) {
+		os = "0" + os;
+	}
+	if (banana_sec < 10) {
+		bs = "0" + bs;
+	}
+	textRenderer->print(om + ":" + os, 170, 576, 1, glm::vec3(0));
+	textRenderer->print(bm + ":" + bs, 839, 576, 1, glm::vec3(0));
+
+	g_turn_mutex.lock();
+	bool is_my_turn = (m_turn == m_fruit) ? true : false;
+	g_turn_mutex.unlock();
+
+	float on_off = ((m_half_sec*2.0f) <= 0.5f) ? 0.25f : 0.35f;
+	if (m_fruit == 0) {
+		m_timer.draw(m_remaining_time / 600.0f, glm::vec3(0.148f, 0.702f, 0.197f) * 0.2f, on_off, 0, is_my_turn);
+		m_timer.draw(rte / 600.0f, glm::vec3(0.779f, 0.124f, 0.124f) * 0.4f, on_off, 1, !is_my_turn);
+	}
+	else {
+		m_timer.draw(rte / 600.0f, glm::vec3(0.779f, 0.124f, 0.124f) * 0.4f, on_off, 0, !is_my_turn);
+		m_timer.draw(m_remaining_time / 600.0f, glm::vec3(0.148f, 0.702f, 0.197f) * 0.2f, on_off, 1, is_my_turn);
 	}
 }
 

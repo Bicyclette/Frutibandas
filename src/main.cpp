@@ -84,6 +84,8 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 					case 5:
 						client.send_data("mv:" + message.substr(2)); // move
 						break;
+					case 6:
+						client.send_data("rt:" + message.substr(2)); // remaining time
 					default:
 						break;
 				};
@@ -170,6 +172,12 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 							g->getScenes()[0].getSoundSource(0).set_looping(false);
 							g->getScenes()[0].playSound(1, 2);
 						}
+					}
+					else if (type == "rt") { // remaining time of enemy
+						std::string remaining = message.substr(3);
+						g_rte_mutex.lock();
+						g->m_remaining_time_enemy = std::stof(remaining);
+						g_rte_mutex.unlock();
 					}
 				}
 				else if (client.m_event.type == ENET_EVENT_TYPE_DISCONNECT)

@@ -347,6 +347,16 @@ struct Avatar
 		glBindVertexArray(0);
 	}
 
+	void cleanup()
+	{
+		for (auto& tex : m_tex)
+		{
+			if (tex.id != -1) {
+				glDeleteTextures(1, &tex.id);
+			}
+		}
+	}
+
 	GENDER m_gender; // 0 = male, 1 = female
 	HAIR m_hair;
 	EYES m_eyes;
@@ -471,6 +481,22 @@ struct Cards
 				m_sprite[i]->use_background_color();
 			}
 			m_sprite[i]->draw();
+		}
+	}
+
+	void cleanup()
+	{
+		for (auto& tex : m_tex)
+		{
+			if (tex.id != -1) {
+				glDeleteTextures(1, &tex.id);
+			}
+		}
+		for (auto& tex : m_description)
+		{
+			if (tex.id != -1) {
+				glDeleteTextures(1, &tex.id);
+			}
 		}
 	}
 };
@@ -1026,6 +1052,17 @@ struct Board
 		boundBottom = max_y;
 	}
 
+	void cleanup()
+	{
+		for (auto& tex : m_tex)
+		{
+			if (tex.id != -1)
+			{
+				glDeleteTextures(1, &tex.id);
+			}
+		}
+	}
+
 	Tile m_tile[8][8];
 	Fruit m_fruit[8][8];
 	std::array<Texture, 11> m_tex = {
@@ -1104,6 +1141,15 @@ struct Cursor
 		glDrawArrays(GL_LINE_STRIP, 0, 2);
 	}
 
+	void cleanup()
+	{
+		glBindVertexArray(m_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDeleteBuffers(1, &m_vbo);
+		glBindVertexArray(0);
+		glDeleteVertexArrays(1, &m_vao);
+	}
+
 	int m_focus; // 0 = pseudo, 1 = chat, 2 = not writing
 	size_t m_pos;
 	float m_blink;
@@ -1148,11 +1194,58 @@ class Writer
 		void write_aux(WRITE_ACTION writeAction, std::string& character, float delta, int boundX, glm::vec3 cursor_shape);
 };
 
+struct Timer
+{
+	Timer() :
+		m_shader("shaders/timer/vertex.glsl", "shaders/timer/geometry.glsl", "shaders/timer/fragment.glsl")
+	{
+		glGenVertexArrays(1, &m_vao);
+		glGenBuffers(1, &m_vbo);
+
+		glBindVertexArray(m_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+
+		float data[2] = {0.0f, 0.0f};
+
+		glBufferData(GL_ARRAY_BUFFER, 2, data, GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(0));
+		glEnableVertexAttribArray(0);
+		glBindVertexArray(0);
+	}
+
+	void draw(float ratio, glm::vec3 color, float on_off, int fruit, bool flickering)
+	{
+		glBindVertexArray(m_vao);
+		m_shader.use();
+		m_shader.setFloat("ratio", ratio);
+		m_shader.setBool("flickering", flickering);
+		m_shader.setFloat("on_off", on_off);
+		m_shader.setVec3f("color", color);
+		m_shader.setBool("orange", (fruit == 0) ? true : false);
+		glDrawArrays(GL_POINTS, 0, 1);
+		glBindVertexArray(0);
+	}
+
+	void cleanup()
+	{
+		glBindVertexArray(m_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDeleteBuffers(1, &m_vbo);
+		glBindVertexArray(0);
+		glDeleteVertexArrays(1, &m_vao);
+	}
+
+	GLuint m_vao;
+	GLuint m_vbo;
+	Shader m_shader;
+};
+
 class Game
 {
 	public:
 
 		Game(int clientWidth, int clientHeight);
+		~Game();
 		void draw(float& delta, double& elapsedTime, int width, int height, DRAWING_MODE mode = DRAWING_MODE::SOLID, bool debug = false, bool debugPhysics = false);
 		void resizeScreen(int clientWidth, int clientHeight);
 		void updateSceneActiveCameraView(int index, const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta);
@@ -1219,6 +1312,7 @@ class Game
 		// UI
 		void createUI(int screenW, int screenH);
 		void swap_gender_features(Avatar::GENDER from, Avatar::GENDER to);
+		void print_remaining_time();
 
 		// fruits movement
 		void set_animationTimer(bool inverseTeam);
@@ -1238,7 +1332,9 @@ class Game
 		int m_fruit; // 0 => orange, 1 => banane, -1 => undefined
 		bool m_inverseTeam;
 		int m_turn;
-		int m_remaining_time;
+		float m_remaining_time;
+		float m_remaining_time_enemy;
+		float m_half_sec;
 		int m_winner;
 		std::string m_pseudo_orange;
 		std::string m_pseudo_banane;
@@ -1247,6 +1343,7 @@ class Game
 		Sprite m_popup;
 		Sprite m_back_home;
 		std::array<Texture, 4> m_popup_tex;
+		Timer m_timer;
 };
 
 inline std::queue<std::string> g_msg2server_queue;
@@ -1262,5 +1359,6 @@ inline std::string g_game_init{""};
 inline std::mutex g_game_init_mutex;
 inline std::mutex g_fruit_move_mutex;
 inline std::mutex g_turn_mutex;
+inline std::mutex g_rte_mutex; // remaining time enemy
 
 #endif
