@@ -769,17 +769,21 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 	if (m_ui.get_active_page() == 1)
 	{
 		int player_turn;
+		int winning_team;
 		g_turn_mutex.lock();
 		player_turn = m_turn;
 		g_turn_mutex.unlock();
-		if (player_turn != m_fruit) {
+		g_winner_mutex.lock();
+		winning_team = m_winner;
+		g_winner_mutex.unlock();
+		if (player_turn != m_fruit && winning_team == -1) {
 			m_ui.get_page(1).get_layer(1).set_visibility(false);
 			m_half_sec += delta;
 			if (m_half_sec >= 0.5f) {
 				m_half_sec = 0.0f;
 			}
 		}
-		else if(player_turn == m_fruit && m_animationTimer == 0.0f && m_board.m_dyingTimer == 0.0f) {
+		else if(player_turn == m_fruit && m_animationTimer == 0.0f && m_board.m_dyingTimer == 0.0f && winning_team == -1) {
 			m_ui.get_page(1).get_layer(1).set_visibility(true);
 			m_remaining_time -= delta;
 			if (m_remaining_time <= 0.0f) { m_remaining_time = 0.0f; }
@@ -1911,6 +1915,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			if (m_winner != -1) {
 				m_winner = -1;
 				m_remaining_time = 600.0f;
+				m_remaining_time_enemy = 600.0f;
 			}
 		}
 		else if (sprite_id == 8 && inputs.test(2) && inputs.test(9)) // clicked on chat

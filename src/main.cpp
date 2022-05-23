@@ -165,8 +165,12 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 					}
 					else if (type == "win") { // a player won the match
 						int winner = std::atoi(message.substr(4).c_str());
-						g->set_winner(winner);
-						g->set_turn(-1);
+						g_winner_mutex.lock();
+						g->m_winner = winner;
+						g_winner_mutex.unlock();
+						g_turn_mutex.lock();
+						g->m_turn = -1;
+						g_turn_mutex.unlock();
 						g->getScenes()[0].getSoundSource(0).stop_sound();
 						g->getScenes()[0].getSoundSource(0).set_volume(0.25f);
 						if (g->m_fruit == winner) {

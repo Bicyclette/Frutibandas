@@ -1362,5 +1362,6 @@ inline std::mutex g_fruit_move_mutex;
 inline std::mutex g_turn_mutex;
 inline std::mutex g_rte_mutex; // remaining time enemy
 inline std::mutex g_chosen_card_mutex;
+inline std::mutex g_winner_mutex;
 
 #endif
