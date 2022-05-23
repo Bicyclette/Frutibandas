@@ -143,8 +143,10 @@ Game::Game(int clientWidth, int clientHeight) :
 
 	// audio
 	scenes[0].addSoundSource(glm::vec3(0, 0, 0));
+	
 	scenes[0].getSoundSource(0).set_volume(0.125f);
 	scenes[0].getSoundSource(0).set_looping(true);
+	
 	scenes[0].addAudioFile("assets/sound/el_gato_montes.wav");
 	scenes[0].addAudioFile("assets/sound/win.wav");
 	scenes[0].addAudioFile("assets/sound/loose.wav");
@@ -709,6 +711,7 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 
 				// play sound
 				scenes[activeScene].getSoundSource(0).set_looping(true);
+				scenes[activeScene].getSoundSource(0).set_volume(0.125f);
 				scenes[activeScene].playSound(0, 0);
 			}
 		}
@@ -1944,6 +1947,61 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			g_msg2server_mutex.lock();
 			g_msg2server_queue.emplace(data);
 			g_msg2server_mutex.unlock();
+		}
+		else if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id) && inputs.test(2) && inputs.test(9)) // clicked on a card
+		{
+			g_chosen_card_mutex.lock();
+			int chosen_card = m_chosen_card;
+			g_chosen_card_mutex.unlock();
+
+			if (m_fruit == 0 && (card_id >= 100 && card_id <= 102) && chosen_card == -1) { // orange card
+				int desc_id;
+				switch (card_id) {
+				case 100:
+					chosen_card = m_cards.m_slot[0];
+					break;
+				case 101:
+					chosen_card = m_cards.m_slot[1];
+					break;
+				case 102:
+					chosen_card = m_cards.m_slot[2];
+					break;
+				default:
+					break;
+				};
+				g_chosen_card_mutex.lock();
+				m_chosen_card = chosen_card;
+				std::string data("7:");
+				data += std::to_string(m_chosen_card);
+				g_msg2server_mutex.lock();
+				g_msg2server_queue.emplace(data);
+				g_msg2server_mutex.unlock();
+				g_chosen_card_mutex.unlock();
+			}
+			else if (m_fruit == 1 && (card_id >= 200 && card_id <= 202) && chosen_card == -1) { // banana card
+				int desc_id;
+				switch (card_id) {
+				case 200:
+					chosen_card = m_cards.m_slot[8];
+					break;
+				case 201:
+					chosen_card = m_cards.m_slot[9];
+					break;
+				case 202:
+					chosen_card = m_cards.m_slot[10];
+					break;
+				default:
+					break;
+				};
+				g_chosen_card_mutex.lock();
+				m_chosen_card = chosen_card;
+				std::string data("7:");
+				data += std::to_string(m_chosen_card);
+				g_msg2server_mutex.lock();
+				g_msg2server_queue.emplace(data);
+				g_msg2server_mutex.unlock();
+				g_chosen_card_mutex.unlock();
+			}
 		}
 		else if (inputs.test(2) && inputs.test(9))
 		{

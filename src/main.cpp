@@ -86,6 +86,10 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						break;
 					case 6:
 						client.send_data("rt:" + message.substr(2)); // remaining time
+						break;
+					case 7:
+						client.send_data("c:" + message.substr(2)); // card
+						break;
 					default:
 						break;
 				};
@@ -164,15 +168,16 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						g->set_winner(winner);
 						g->set_turn(-1);
 						g->getScenes()[0].getSoundSource(0).stop_sound();
+						g->getScenes()[0].getSoundSource(0).set_volume(0.25f);
 						if (g->m_fruit == winner) {
 							g->m_popup.set_background_img_gl(g->m_popup_tex[0].id);
 							g->getScenes()[0].getSoundSource(0).set_looping(false);
-							g->getScenes()[0].playSound(1, 1);
+							g->getScenes()[0].playSound(0, 1);
 						}
 						else {
 							g->m_popup.set_background_img_gl(g->m_popup_tex[1].id);
 							g->getScenes()[0].getSoundSource(0).set_looping(false);
-							g->getScenes()[0].playSound(1, 2);
+							g->getScenes()[0].playSound(0, 2);
 						}
 					}
 					else if (type == "rt") { // remaining time of enemy

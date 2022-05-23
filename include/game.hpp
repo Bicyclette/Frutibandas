@@ -1344,6 +1344,7 @@ class Game
 		Sprite m_back_home;
 		std::array<Texture, 4> m_popup_tex;
 		Timer m_timer;
+		int m_chosen_card; // if m_chosen_card != -1 and player click on another card, nothing happens
 };
 
 inline std::queue<std::string> g_msg2server_queue;
@@ -1360,5 +1361,6 @@ inline std::mutex g_game_init_mutex;
 inline std::mutex g_fruit_move_mutex;
 inline std::mutex g_turn_mutex;
 inline std::mutex g_rte_mutex; // remaining time enemy
+inline std::mutex g_chosen_card_mutex;
 
 #endif

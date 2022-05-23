@@ -1,4 +1,4 @@
-#version 460 core
+#version 440 core
 
 uniform sampler2D diffuse;
 uniform int hasDiffuse;

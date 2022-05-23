@@ -1,4 +1,4 @@
-#version 460 core
+#version 440 core
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in ;
 layout(rgba16f, binding = 0) readonly uniform image2D image_in;
 layout(rgba16f, binding = 1) writeonly uniform image2D image_out;
