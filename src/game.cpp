@@ -770,12 +770,16 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 	{
 		int player_turn;
 		int winning_team;
+		MOVE current_move;
 		g_turn_mutex.lock();
 		player_turn = m_turn;
 		g_turn_mutex.unlock();
 		g_winner_mutex.lock();
 		winning_team = m_winner;
 		g_winner_mutex.unlock();
+		g_fruit_move_mutex.lock();
+		current_move = m_move;
+		g_fruit_move_mutex.unlock();
 		if (player_turn != m_fruit && winning_team == -1) {
 			m_ui.get_page(1).get_layer(1).set_visibility(false);
 			m_half_sec += delta;
@@ -783,7 +787,7 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 				m_half_sec = 0.0f;
 			}
 		}
-		else if(player_turn == m_fruit && m_animationTimer == 0.0f && m_board.m_dyingTimer == 0.0f && winning_team == -1) {
+		else if(player_turn == m_fruit && current_move == MOVE::UNDEFINED && m_board.m_steady && winning_team == -1) {
 			m_ui.get_page(1).get_layer(1).set_visibility(true);
 			m_remaining_time -= delta;
 			if (m_remaining_time <= 0.0f) { m_remaining_time = 0.0f; }

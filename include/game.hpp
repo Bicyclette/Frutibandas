@@ -533,7 +533,8 @@ struct Board
 		boundRight(7),
 		boundTop(0),
 		boundBottom(7),
-		m_dyingTimer(0.0f)
+		m_dyingTimer(0.0f),
+		m_steady(true)
 	{}
 
 	void print()
@@ -595,6 +596,7 @@ struct Board
 					}
 				}
 				m_dyingTimer = 0.0f;
+				m_steady = true;
 			}
 		}
 
@@ -1043,6 +1045,7 @@ struct Board
 		}
 		if (delay < 0.0f) {
 			m_dyingTimer = delay - 0.25f;
+			m_steady = false;
 		}
 
 		// set new boundaries
@@ -1087,6 +1090,7 @@ struct Board
 	int boundTop;
 	int boundBottom;
 	float m_dyingTimer;
+	bool m_steady;
 };
 
 struct Cursor
