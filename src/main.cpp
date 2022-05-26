@@ -190,6 +190,19 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						g->m_remaining_time_enemy = std::stof(remaining);
 						g_rte_mutex.unlock();
 					}
+					else if (type == "c") { // enemy player used a card
+						std::istringstream card_stream(message);
+						std::vector<int> info;
+						std::string element;
+						while (getline(card_stream, element, ':'))
+						{
+							info.push_back(std::atoi(element.c_str()));
+						}
+						int card_id = info[1];
+						int line = info[2];
+						int col = info[3];
+						g->use_enemy_card(card_id, line, col);
+					}
 				}
 				else if (client.m_event.type == ENET_EVENT_TYPE_DISCONNECT)
 				{

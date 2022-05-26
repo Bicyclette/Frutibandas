@@ -109,7 +109,7 @@ Game::Game(int clientWidth, int clientHeight) :
 	int mouse_pos[2];
 	SDL_GetMouseState(&mouse_pos[0], &mouse_pos[1]);
 	int mouse_size[2] = { 25,25 };
-	m_mouse = std::make_unique<Mouse>(mouse_pos, mouse_size, "assets/mouse/normal.tga", "assets/mouse/hover.tga", clientWidth, clientHeight);
+	m_mouse = std::make_unique<Mouse>(mouse_pos, mouse_size, "assets/mouse/normal.tga", "assets/mouse/hover.tga", "assets/mouse/viseur.tga", clientWidth, clientHeight);
 	m_mouse->activate();
 
 	// load some fonts and set an active font
@@ -382,7 +382,6 @@ void Game::createUI(int width, int height)
 	game_page.add_layer(2);	// abandon button
 	game_page.add_layer(3);	// chat
 	game_page.add_layer(4);	// card description
-	game_page.add_layer(5);	// card announcer
 
 	Layer& g_layer0 = game_page.get_layer(0);
 	g_layer0.add_sprite(0, glm::vec2(0), glm::vec2(width, height), width, height);
@@ -781,14 +780,14 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		current_move = m_move;
 		g_fruit_move_mutex.unlock();
 		if (player_turn != m_fruit && winning_team == -1) {
-			m_ui.get_page(1).get_layer(1).set_visibility(false);
+			m_ui.get_page(1).get_layer(1).set_visibility(false); // hide arrows
 			m_half_sec += delta;
 			if (m_half_sec >= 0.5f) {
 				m_half_sec = 0.0f;
 			}
 		}
 		else if(player_turn == m_fruit && current_move == MOVE::UNDEFINED && m_board.m_steady && winning_team == -1) {
-			m_ui.get_page(1).get_layer(1).set_visibility(true);
+			m_ui.get_page(1).get_layer(1).set_visibility(true); // show arrows if board is steady (no animation running) and if it's my turn + no winner is set
 			m_remaining_time -= delta;
 			if (m_remaining_time <= 0.0f) { m_remaining_time = 0.0f; }
 			m_half_sec += delta;
@@ -834,6 +833,57 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		textRenderer->print(std::to_string(m_board.orange_count()), 190, 728 - 52, 1, glm::vec3(0));
 		textRenderer->print(std::to_string(m_board.banane_count()), 856, 728 - 52, 1, glm::vec3(0));
 		// draw cards
+		g_show_mutex.lock();
+		bool show_advertiser = m_advertiser.m_show;
+		g_show_mutex.unlock();
+		if (show_advertiser && m_advertiser.m_enemy)
+		{
+			g_chosen_card_mutex.lock();
+			int card_id = m_advertiser.m_chosen_card;
+			g_chosen_card_mutex.unlock();
+			if (m_fruit == 0) {
+				m_cards.m_slot[8] = card_id;
+			}
+			else {
+				m_cards.m_slot[0] = card_id;
+			}
+			m_advertiser.m_delete_enemy_card = true;
+		}
+		else if(!show_advertiser && m_advertiser.m_delete_enemy_card)
+		{
+			g_chosen_card_mutex.lock();
+			int card_id = m_advertiser.m_chosen_card;
+			g_chosen_card_mutex.unlock();
+			m_advertiser.m_delete_enemy_card = false;
+			m_cards.m_enemy_count--;
+			if (m_fruit == 0) {
+				if (m_cards.m_enemy_count == 2) {
+					m_cards.m_slot[10] = -1;
+					m_cards.m_slot[8] = 12;
+
+				}
+				else if (m_cards.m_enemy_count == 1) {
+					m_cards.m_slot[9] = -1;
+					m_cards.m_slot[8] = 12;
+				}
+				else {
+					m_cards.m_slot[8] = -1;
+				}
+			}
+			else {
+				if (m_cards.m_enemy_count == 2) {
+					m_cards.m_slot[2] = -1;
+					m_cards.m_slot[0] = 12;
+				}
+				else if (m_cards.m_enemy_count == 1) {
+					m_cards.m_slot[1] = -1;
+					m_cards.m_slot[0] = 12;
+				}
+				else {
+					m_cards.m_slot[0] = -1;
+				}
+			}
+		}
 		m_cards.draw();
 		// draw board
 		m_board.draw_tiles(delta);
@@ -893,6 +943,9 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		}
 		// remaining time
 		print_remaining_time();
+
+		// draw advertiser
+		m_advertiser.draw(delta);
 	}
 
 	// mouse
@@ -1129,12 +1182,15 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 {
 	int* mouse_pos = m_mouse->get_position();
 	int* mouse_size = m_mouse->get_size();
-	m_mouse->use_normal();
+	if (!m_advertiser.m_grid_select && !m_advertiser.m_fruit_select)
+	{
+		// reset mouse
+		m_mouse->update_size(25, 25);
+		m_mouse->use_normal();
+	}
 	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos[0], mouse_pos[1]);
-	int card_id{ -1 };
 
-	if (!hovered)
-		return;
+	if (!hovered) { return; }
 	if (m_ui.get_active_page() == 0) // home
 	{
 		Page& home_page{m_ui.get_page(0)};
@@ -1762,165 +1818,39 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 	}
 	else // game
 	{
+		g_turn_mutex.lock();
+		int turn = m_turn;
+		g_turn_mutex.unlock();
+		int card_id{ -1 };
 		g_connected_mutex.lock();
 		bool server_reachable{g_connected};
 		g_connected_mutex.unlock();
-		if (!server_reachable) {
-			if (m_winner != -1) {
-				m_winner = -1;
-			}
-			g_game_found = false;
-			m_animationTimer = 0.0f;
-			m_move = MOVE::UNDEFINED;
-			// reset board
-			m_board.boundLeft = 0;
-			m_board.boundRight = 7;
-			m_board.boundTop = 0;
-			m_board.boundBottom = 7;
-			m_board.m_dyingTimer = 0.0f;
-			// stop playing music
-			if (scenes[0].getSoundSource(0).is_playing()) {
-				scenes[0].getSoundSource(0).stop_sound();
-			}
-			// clear chatLog
-			m_writer.m_chatLog.clear();
-			// move to home page
-			m_ui.set_active_page(0);
-			// use police of size 20
-			textRenderer->use_police(0);
+		g_chosen_card_mutex.lock();
+		int chosen_card = m_advertiser.m_chosen_card;
+		g_chosen_card_mutex.unlock();
+		g_show_mutex.lock();
+		bool show_advertiser = m_advertiser.m_show;
+		g_show_mutex.unlock();
 
-			// stop focus chat input
-			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-			m_ui.get_page(1).get_layer(3).get_sprite(8)->use_background_img();
-			m_mouse->use_normal();
-			// reset cursor position to pseudo input data
-			m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
+		if (!server_reachable)
+		{
+			quit_game();
 		}
 
 		Page& game_page{ m_ui.get_page(1) };
 		int sprite_id{ hovered->get_id() };
-
-		if (sprite_id >= 3 && sprite_id <= 6) // hovered arrows
+		if (!m_advertiser.m_grid_select && !m_advertiser.m_fruit_select)
 		{
-			game_page.get_layer(1).get_sprite(sprite_id)->use_background_img_selected();
-			m_mouse->use_hover();
+			hovering(sprite_id);
 		}
 		else
 		{
-			game_page.get_layer(1).get_sprite(3)->use_background_img();
-			game_page.get_layer(1).get_sprite(4)->use_background_img();
-			game_page.get_layer(1).get_sprite(5)->use_background_img();
-			game_page.get_layer(1).get_sprite(6)->use_background_img();
-			m_mouse->use_normal();
-		}
-		if (sprite_id == 7) // hovered abandon
-		{
-			game_page.get_layer(2).get_sprite(sprite_id)->use_background_img_selected();
-			m_mouse->use_hover();
-		}
-		else
-		{
-			game_page.get_layer(2).get_sprite(7)->use_background_img();
-			m_mouse->use_normal();
-		}
-		if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id)) // hovered a card
-		{
-			if (m_fruit == 0 && (card_id >= 100 && card_id <= 102)) { // orange card
-				m_mouse->use_hover();
-				int desc_id;
-				switch (card_id) {
-				case 100:
-					desc_id = m_cards.m_slot[0];
-					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
-					break;
-				case 101:
-					desc_id = m_cards.m_slot[1];
-					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
-					break;
-				case 102:
-					desc_id = m_cards.m_slot[2];
-					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
-					break;
-				default:
-					break;
-				};
-				game_page.get_layer(4).set_visibility(true);
-			}
-			else if (m_fruit == 1 && (card_id >= 200 && card_id <= 202)) { // banana card
-				m_mouse->use_hover();
-				int desc_id;
-				switch (card_id) {
-				case 200:
-					desc_id = m_cards.m_slot[8];
-					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
-					break;
-				case 201:
-					desc_id = m_cards.m_slot[9];
-					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
-					break;
-				case 202:
-					desc_id = m_cards.m_slot[10];
-					game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id);
-					break;
-				default:
-					break;
-				};
-				game_page.get_layer(4).set_visibility(true);
-			}
-		}
-		else
-		{
-			m_mouse->use_normal();
-			game_page.get_layer(4).set_visibility(false);
-		}
-		if (m_winner != -1 && m_back_home.mouse_hover(mouse_pos[0], mouse_pos[1]))
-		{
-			m_back_home.set_background_img_gl(m_popup_tex[3].id);
-		}
-		else
-		{
-			m_back_home.set_background_img_gl(m_popup_tex[2].id);
+			select_grid(inputs, chosen_card);
+			return;
 		}
 		if ((sprite_id == 7 || (m_winner != -1 && m_back_home.mouse_hover(mouse_pos[0], mouse_pos[1]))) && inputs.test(2) && inputs.test(9)) // clicked on abandon or back home page
 		{
-			g_game_found = false;
-			m_animationTimer = 0.0f;
-			m_move = MOVE::UNDEFINED;
-			// reset board
-			m_board.boundLeft = 0;
-			m_board.boundRight = 7;
-			m_board.boundTop = 0;
-			m_board.boundBottom = 7;
-			m_board.m_dyingTimer = 0.0f;
-			// stop playing music
-			if (scenes[0].getSoundSource(0).is_playing()) {
-				scenes[0].getSoundSource(0).stop_sound();
-			}
-			// clear chatLog
-			m_writer.m_chatLog.clear();
-			// move to home page
-			m_ui.set_active_page(0);
-			// use police of size 20
-			textRenderer->use_police(0);
-			// send abandon message to server
-			if (m_winner == -1) {
-				std::string data("3");
-				g_msg2server_mutex.lock();
-				g_msg2server_queue.emplace(data);
-				g_msg2server_mutex.unlock();
-			}
-			// stop focus chat input
-			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-			game_page.get_layer(3).get_sprite(8)->use_background_img();
-			m_mouse->use_normal();
-			// reset cursor position to pseudo input data
-			m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
-			// reset winner and remaining time
-			if (m_winner != -1) {
-				m_winner = -1;
-				m_remaining_time = 600.0f;
-				m_remaining_time_enemy = 600.0f;
-			}
+			quit_game();
 		}
 		else if (sprite_id == 8 && inputs.test(2) && inputs.test(9)) // clicked on chat
 		{
@@ -1933,22 +1863,18 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 
 			if (sprite_id == 3)
 			{
-				//m_move = MOVE::UP;
 				data += "1";
 			}
 			else if (sprite_id == 4)
 			{
-				//m_move = MOVE::DOWN;
 				data += "2";
 			}
 			else if (sprite_id == 5)
 			{
-				//m_move = MOVE::RIGHT;
 				data += "3";
 			}
 			else if (sprite_id == 6)
 			{
-				//m_move = MOVE::LEFT;
 				data += "4";
 			}
 
@@ -1957,12 +1883,8 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			g_msg2server_queue.emplace(data);
 			g_msg2server_mutex.unlock();
 		}
-		else if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id) && inputs.test(2) && inputs.test(9)) // clicked on a card
+		else if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id) && turn == m_fruit && inputs.test(2) && inputs.test(9)) // clicked on a card
 		{
-			g_chosen_card_mutex.lock();
-			int chosen_card = m_chosen_card;
-			g_chosen_card_mutex.unlock();
-
 			if (m_fruit == 0 && (card_id >= 100 && card_id <= 102) && chosen_card == -1) { // orange card
 				int desc_id;
 				switch (card_id) {
@@ -1978,14 +1900,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				default:
 					break;
 				};
-				g_chosen_card_mutex.lock();
-				m_chosen_card = chosen_card;
-				std::string data("7:");
-				data += std::to_string(m_chosen_card);
-				g_msg2server_mutex.lock();
-				g_msg2server_queue.emplace(data);
-				g_msg2server_mutex.unlock();
-				g_chosen_card_mutex.unlock();
+				card_action(chosen_card);
 			}
 			else if (m_fruit == 1 && (card_id >= 200 && card_id <= 202) && chosen_card == -1) { // banana card
 				int desc_id;
@@ -2002,15 +1917,43 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				default:
 					break;
 				};
+				card_action(chosen_card);
+			}
+		}
+		else if (turn != m_fruit && chosen_card != -1 && !show_advertiser)
+		{
+			// si bandeau n'est plus à l'écran, que ce n'est pas notre tour et qu'une carte a été choisie, alors utiliser la carte
+			g_grid_select_mutex.lock();
+			int line = m_board.m_grid_selection[1];
+			int col = m_board.m_grid_selection[0];
+			g_grid_select_mutex.unlock();
+			
+			if (chosen_card == 7) // conversion
+			{
+				m_board.m_fruit[line][col].m_type = (m_board.m_fruit[line][col].m_type == 0) ? 1 : 0;
+				// reset chosen card
 				g_chosen_card_mutex.lock();
-				m_chosen_card = chosen_card;
-				std::string data("7:");
-				data += std::to_string(m_chosen_card);
-				g_msg2server_mutex.lock();
-				g_msg2server_queue.emplace(data);
-				g_msg2server_mutex.unlock();
+				m_advertiser.m_chosen_card = -1;
 				g_chosen_card_mutex.unlock();
 			}
+		}
+		else if (turn == m_fruit && chosen_card != -1 && !show_advertiser)
+		{
+			// si bandeau n'est plus à l'écran, que c'est notre tour de jouer et qu'une carte a été choisie, alors utiliser la carte
+			g_grid_select_mutex.lock();
+			int line = m_board.m_grid_selection[1];
+			int col = m_board.m_grid_selection[0];
+			g_grid_select_mutex.unlock();
+
+			if (chosen_card == 7) // conversion
+			{
+				m_board.m_fruit[line][col].m_type = (m_board.m_fruit[line][col].m_type == 0) ? 1 : 0;
+			}
+
+			// reset chosen card
+			g_chosen_card_mutex.lock();
+			m_advertiser.m_chosen_card = -1;
+			g_chosen_card_mutex.unlock();
 		}
 		else if (inputs.test(2) && inputs.test(9))
 		{
@@ -2037,6 +1980,454 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			m_writer.m_cursor.m_pos = 0;
 		}
 	}
+}
+
+void Game::select_grid(std::bitset<10>& inputs, int card_id)
+{
+	Page& game_page = m_ui.get_page(1);
+	int* mouse_pos = m_mouse->get_position();
+	int* mouse_size = m_mouse->get_size();
+	int center_x = static_cast<int>(mouse_size[0] * 0.5f) + mouse_pos[0];
+	int center_y = mouse_pos[1] - static_cast<int>(mouse_size[1] * 0.5f);
+
+	// board boundaries
+	int start_x = 525 - (49 * 4);
+	int end_x = 525 + (49 * 4);
+	int start_y = 645;
+	int end_y = 645 - (49 * 8);
+
+	if (inputs.test(2) && inputs.test(9))
+	{
+		bool all_good{ false };
+		int x = -1;
+		int y = -1;
+		// get tile x location
+		for (int i = start_x, j = 0; i < end_x; i += 49, ++j)
+		{
+			if (center_x >= i && center_x <= i + 49) { x = j; break; }
+		}
+		// get tile y location
+		for (int i{ start_y }, j = 0; i > end_y; i -= 49, ++j)
+		{
+			if (center_y <= i && center_y >= i - 49) { y = j; break; }
+		}
+		// get info on that location (is there a fruit ? If yes, then what kind of fruit ?)
+		if (m_board.m_tile[y][x].m_alive)
+		{
+			if (m_advertiser.m_grid_select) // enclume, vachette et piège
+			{
+				if (card_id == 11) // piège
+				{
+					// vérification si la case est vide
+					if (m_board.m_fruit[y][x].m_type == -1) {
+						g_grid_select_mutex.lock();
+						m_board.m_grid_selection[0] = x;
+						m_board.m_grid_selection[1] = y;
+						g_grid_select_mutex.unlock();
+						all_good = true;
+					}
+				}
+				else { all_good = true; }
+				m_advertiser.m_grid_select = false;
+			}
+			else if (m_advertiser.m_fruit_select) // solo, conversion et pétrification
+			{
+				if (card_id == 10) // solo
+				{
+					// vérification si la case contient un fruit
+					// et si le fruit est dans notre équipe
+					if (m_board.m_fruit[y][x].m_type == m_fruit) {
+						g_grid_select_mutex.lock();
+						m_board.m_grid_selection[0] = x;
+						m_board.m_grid_selection[1] = y;
+						g_grid_select_mutex.unlock();
+						m_board.m_solo = true;
+						all_good = true;
+					}
+				}
+				else if (card_id == 7) // conversion
+				{
+					// vérification si la case contient un fruit
+					// et si le fruit est dans l'équipe adverse
+					if (m_board.m_fruit[y][x].m_type != -1 && m_board.m_fruit[y][x].m_type != m_fruit) {
+						g_grid_select_mutex.lock();
+						m_board.m_grid_selection[0] = x;
+						m_board.m_grid_selection[1] = y;
+						g_grid_select_mutex.unlock();
+						all_good = true;
+					}
+				}
+				else if (card_id == 5) // pétrification
+				{
+					// vérification si la case contient un fruit
+					if (m_board.m_fruit[y][x].m_type != -1) {
+						g_grid_select_mutex.lock();
+						m_board.m_grid_selection[0] = x;
+						m_board.m_grid_selection[1] = y;
+						g_grid_select_mutex.unlock();
+						all_good = true;
+					}
+				}
+				m_advertiser.m_fruit_select = false;
+			}
+		}
+		else
+		{
+			m_advertiser.m_grid_select = false;
+			m_advertiser.m_fruit_select = false;
+		}
+		// send message to server
+		if (all_good)
+		{
+			m_advertiser.m_enemy = false;
+			g_show_mutex.lock();
+			m_advertiser.m_show = true;
+			g_show_mutex.unlock();
+			std::string data("7:" + std::to_string(card_id) + ":" + std::to_string(y) + ":" + std::to_string(x));
+			g_msg2server_mutex.lock();
+			g_msg2server_queue.emplace(data);
+			g_msg2server_mutex.unlock();
+
+			// delete card
+			if (m_fruit == 0) {
+				if (m_cards.m_slot[0] == card_id) {
+					m_cards.m_slot[0] = -1;
+				}
+				else if (m_cards.m_slot[1] == card_id) {
+					m_cards.m_slot[1] = -1;
+				}
+				else if (m_cards.m_slot[2] == card_id) {
+					m_cards.m_slot[2] = -1;
+				}
+			}
+			else {
+				if (m_cards.m_slot[8] == card_id) {
+					m_cards.m_slot[8] = -1;
+				}
+				else if (m_cards.m_slot[9] == card_id) {
+					m_cards.m_slot[9] = -1;
+				}
+				else if (m_cards.m_slot[10] == card_id) {
+					m_cards.m_slot[10] = -1;
+				}
+			}
+		}
+		else
+		{
+			g_chosen_card_mutex.lock();
+			m_advertiser.m_chosen_card = -1;
+			g_chosen_card_mutex.unlock();
+		}
+	}
+}
+
+void Game::card_action(int card_id)
+{
+	g_chosen_card_mutex.lock();
+	m_advertiser.m_chosen_card = card_id;
+	g_chosen_card_mutex.unlock();
+
+	if (card_id == 0) // enclume
+	{
+		// set mouse appearance to "target"
+		m_mouse->update_size(60, 60);
+		m_mouse->use_visor();
+
+		// declare we are in grid selection mode
+		m_advertiser.m_grid_select = true;
+	}
+	else if (card_id == 5) // pétrification
+	{
+		// set mouse appearance to "target"
+		m_mouse->update_size(60, 60);
+		m_mouse->use_visor();
+
+		// declare we are in grid selection mode
+		m_advertiser.m_fruit_select = true;
+	}
+	else if (card_id == 6) // vachette
+	{
+		// set mouse appearance to "target"
+		m_mouse->update_size(60, 60);
+		m_mouse->use_visor();
+
+		// declare we are in grid selection mode
+		m_advertiser.m_grid_select = true;
+	}
+	else if (card_id == 7) // conversion
+	{
+		// set mouse appearance to "target"
+		m_mouse->update_size(60, 60);
+		m_mouse->use_visor();
+
+		// declare we are in grid selection mode
+		m_advertiser.m_fruit_select = true;
+	}
+	else if (card_id == 10) // solo
+	{
+		// set mouse appearance to "target"
+		m_mouse->update_size(60, 60);
+		m_mouse->use_visor();
+
+		// declare we are in grid selection mode
+		m_advertiser.m_fruit_select = true;
+	}
+	else if (card_id == 11) // piège
+	{
+		// set mouse appearance to "target"
+		m_mouse->update_size(60, 60);
+		m_mouse->use_visor();
+
+		// declare we are in grid selection mode
+		m_advertiser.m_grid_select = true;
+	}
+	else
+	{
+		m_advertiser.m_enemy = false;
+		g_show_mutex.lock();
+		m_advertiser.m_show = true;
+		g_show_mutex.unlock();
+		std::string data("7:" + std::to_string(card_id) + ":-1:-1");
+		g_msg2server_mutex.lock();
+		g_msg2server_queue.emplace(data);
+		g_msg2server_mutex.unlock();
+
+		// delete card
+		if (m_fruit == 0) {
+			if (m_cards.m_slot[0] == card_id) {
+				m_cards.m_slot[0] = -1;
+			}
+			else if (m_cards.m_slot[1] == card_id) {
+				m_cards.m_slot[1] = -1;
+			}
+			else if (m_cards.m_slot[2] == card_id) {
+				m_cards.m_slot[2] = -1;
+			}
+		}
+		else {
+			if (m_cards.m_slot[8] == card_id) {
+				m_cards.m_slot[8] = -1;
+			}
+			else if (m_cards.m_slot[9] == card_id) {
+				m_cards.m_slot[9] = -1;
+			}
+			else if (m_cards.m_slot[10] == card_id) {
+				m_cards.m_slot[10] = -1;
+			}
+		}
+	}
+}
+
+void Game::use_enemy_card(int card_id, int line, int col)
+{
+	std::cout << "use enemy card" << std::endl;
+	if (card_id == 0) // enclume
+	{
+
+	}
+	else if (card_id == 1) // célérité
+	{
+
+	}
+	else if (card_id == 2) // confiscation
+	{
+
+	}
+	else if (card_id == 3) // renfort
+	{
+
+
+	}
+	else if (card_id == 4) // désordre
+	{
+
+	}
+	else if (card_id == 5) // pétrification
+	{
+
+	}
+	else if (card_id == 6) // vachette
+	{
+
+	}
+	else if (card_id == 7) // conversion
+	{
+		g_grid_select_mutex.lock();
+		m_board.m_grid_selection[0] = col;
+		m_board.m_grid_selection[1] = line;
+		g_grid_select_mutex.unlock();
+
+		g_chosen_card_mutex.lock();
+		m_advertiser.m_chosen_card = card_id;
+		g_chosen_card_mutex.unlock();
+		m_advertiser.m_enemy = true;
+		g_show_mutex.lock();
+		m_advertiser.m_show = true;
+		g_show_mutex.unlock();
+	}
+	else if (card_id == 8) // charge
+	{
+		
+	}
+	else if (card_id == 9) // entracte
+	{
+		
+	}
+	else if (card_id == 10) // solo
+	{
+		g_grid_select_mutex.lock();
+		m_board.m_grid_selection[0] = col;
+		m_board.m_grid_selection[1] = line;
+		g_grid_select_mutex.unlock();
+
+		g_chosen_card_mutex.lock();
+		m_advertiser.m_chosen_card = card_id;
+		g_chosen_card_mutex.unlock();
+		m_advertiser.m_enemy = true;
+		g_show_mutex.lock();
+		m_advertiser.m_show = true;
+		g_show_mutex.unlock();
+
+		m_board.m_solo = true;
+	}
+	else if (card_id == 11) // piège
+	{
+
+	}
+}
+
+void Game::hovering(int sprite_id)
+{
+	Page& game_page = m_ui.get_page(1);
+	int* mouse_pos = m_mouse->get_position();
+	int card_id{ -1 };
+
+	if (sprite_id >= 3 && sprite_id <= 6) // hovered arrows
+	{
+		game_page.get_layer(1).get_sprite(sprite_id)->use_background_img_selected();
+		m_mouse->use_hover();
+	}
+	else
+	{
+		game_page.get_layer(1).get_sprite(3)->use_background_img();
+		game_page.get_layer(1).get_sprite(4)->use_background_img();
+		game_page.get_layer(1).get_sprite(5)->use_background_img();
+		game_page.get_layer(1).get_sprite(6)->use_background_img();
+		m_mouse->use_normal();
+	}
+	if (sprite_id == 7) // hovered abandon
+	{
+		game_page.get_layer(2).get_sprite(sprite_id)->use_background_img_selected();
+		m_mouse->use_hover();
+	}
+	else
+	{
+		game_page.get_layer(2).get_sprite(7)->use_background_img();
+		m_mouse->use_normal();
+	}
+	if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id)) // hovered a card
+	{
+		if (m_fruit == 0 && (card_id >= 100 && card_id <= 102)) { // orange card
+			int desc_id;
+			switch (card_id) {
+			case 100:
+				desc_id = m_cards.m_slot[0];
+				break;
+			case 101:
+				desc_id = m_cards.m_slot[1];
+				break;
+			case 102:
+				desc_id = m_cards.m_slot[2];
+				break;
+			default:
+				break;
+			};
+			if (desc_id == -1) { return; }
+			else { game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id); }
+			m_mouse->use_hover();
+			game_page.get_layer(4).set_visibility(true);
+		}
+		else if (m_fruit == 1 && (card_id >= 200 && card_id <= 202)) { // banana card
+			int desc_id;
+			switch (card_id) {
+			case 200:
+				desc_id = m_cards.m_slot[8];
+				break;
+			case 201:
+				desc_id = m_cards.m_slot[9];
+				break;
+			case 202:
+				desc_id = m_cards.m_slot[10];
+				break;
+			default:
+				break;
+			};
+			if (desc_id == -1) { return; }
+			else{ game_page.get_layer(4).get_sprite(9)->set_background_img_gl(m_cards.m_description[desc_id].id); }
+			m_mouse->use_hover();
+			game_page.get_layer(4).set_visibility(true);
+		}
+	}
+	else
+	{
+		m_mouse->use_normal();
+		game_page.get_layer(4).set_visibility(false);
+	}
+	if (m_winner != -1 && m_back_home.mouse_hover(mouse_pos[0], mouse_pos[1]))
+	{
+		m_back_home.set_background_img_gl(m_popup_tex[3].id);
+	}
+	else
+	{
+		m_back_home.set_background_img_gl(m_popup_tex[2].id);
+	}
+}
+
+void Game::quit_game()
+{
+	g_game_found = false;
+	m_animationTimer = 0.0f;
+	m_move = MOVE::UNDEFINED;
+	// reset board
+	m_board.boundLeft = 0;
+	m_board.boundRight = 7;
+	m_board.boundTop = 0;
+	m_board.boundBottom = 7;
+	m_board.m_dyingTimer = 0.0f;
+	// stop playing music
+	if (scenes[0].getSoundSource(0).is_playing()) {
+		scenes[0].getSoundSource(0).stop_sound();
+	}
+	// clear chatLog
+	m_writer.m_chatLog.clear();
+	// move to home page
+	m_ui.set_active_page(0);
+	// use police of size 20
+	textRenderer->use_police(0);
+	// send abandon message to server
+	g_winner_mutex.lock();
+	bool someone_won = (m_winner == -1) ? false : true;
+	g_winner_mutex.unlock();
+	if (someone_won) {
+		std::string data("3");
+		g_msg2server_mutex.lock();
+		g_msg2server_queue.emplace(data);
+		g_msg2server_mutex.unlock();
+	}
+	// stop focus chat input
+	m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+	m_ui.get_page(1).get_layer(3).get_sprite(8)->use_background_img();
+	// reset cursor position to pseudo input data
+	m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
+	// reset winner and remaining time
+	if (someone_won) {
+		m_winner = -1;
+		m_remaining_time = 600.0f;
+		m_remaining_time_enemy = 600.0f;
+	}
+	// reset mouse
+	m_mouse->update_size(25, 25);
+	m_mouse->use_normal();
 }
 
 void Game::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
@@ -2184,65 +2575,108 @@ void Game::set_animationTimer_move_up(bool inverseTeam)
 	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
-	for (int line{ 7 }; line >= 0; --line)
+	
+	g_solo_mutex.lock();
+	bool solo = m_board.m_solo;
+	g_solo_mutex.unlock();
+
+	if (solo)
 	{
-		for (int col{ 0 }; col < 8; ++col)
+		g_grid_select_mutex.lock();
+		int x = m_board.m_grid_selection[0];
+		int y = m_board.m_grid_selection[1];
+		g_grid_select_mutex.unlock();
+		int line = y;
+		while (line >= m_board.boundTop && m_board.m_fruit[line][x].m_type != -1) { line--; }
+		if (line < m_board.boundTop) { line = m_board.boundTop; }
+		else if (m_board.m_fruit[line][x].m_type == -1) { line++; }
+		for (int i = y; i >= line; --i)
 		{
-			// set timer for team
-			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
-			{
-				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				impulse_origin = line;
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
-			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
-			{
-				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (line - impulse_origin);
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
+			m_board.m_fruit[i][x].m_animationTimer = 0.0f -(0.125f * (y - i));
+			min_timer = (m_board.m_fruit[i][x].m_animationTimer < min_timer) ? m_board.m_fruit[i][x].m_animationTimer : min_timer;
 		}
-	}
-	for (int line{ 7 }; line >= 0; --line)
-	{
-		for (int col{ 0 }; col < 8; ++col)
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
+		for (int l{ 0 }; l < 8; ++l)
 		{
-			// set timer for enemy
-			if (m_board.m_fruit[line][col].m_type == enemy)
+			for (int c{ 0 }; c < 8; ++c)
 			{
-				int distance{ 0 };
-				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
-				int l{ line };
-				while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l < 8)
+				if (c == x && (l > y || l < line))
 				{
-					l++;
-					distance++;
-					if (m_board.m_fruit[l][col].m_type == m_fruit && l < 8) {
-						last_met = distance;
-					}
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
 				}
-				if (last_met > 0) {
-					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (impulse_origin - line);
+				else if (c != x)
+				{
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
 				}
-				else {
-					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				}
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
 			}
 		}
 	}
-	// set timer for non moving fruits
-	min_timer -= 0.25f;
-	m_animationTimer = min_timer;
-	for (int line{ 0 }; line < 8; ++line)
+	else
 	{
-		for (int col{ 0 }; col < 8; ++col)
+		for (int line{ 7 }; line >= 0; --line)
 		{
-			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+			for (int col{ 0 }; col < 8; ++col)
 			{
-				m_board.m_fruit[line][col].m_animationTimer = min_timer;
+				// set timer for team
+				if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					impulse_origin = line;
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+				else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer += 0.125f * (line - impulse_origin);
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		for (int line{ 7 }; line >= 0; --line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				// set timer for enemy
+				if (m_board.m_fruit[line][col].m_type == enemy)
+				{
+					int distance{ 0 };
+					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+					int l{ line };
+					while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l < 8)
+					{
+						l++;
+						distance++;
+						if (m_board.m_fruit[l][col].m_type == m_fruit && l < 8) {
+							last_met = distance;
+						}
+					}
+					if (last_met > 0) {
+						m_board.m_fruit[line][col].m_animationTimer = -0.125f * (impulse_origin - line);
+					}
+					else {
+						m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					}
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
+		for (int line{ 0 }; line < 8; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				if (m_board.m_fruit[line][col].m_animationTimer >= 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+				{
+					m_board.m_fruit[line][col].m_animationTimer = min_timer;
+				}
 			}
 		}
 	}
+
+	
 	if (inverseTeam) {
 		if (m_fruit == 0) {
 			m_fruit = 1;
@@ -2266,65 +2700,107 @@ void Game::set_animationTimer_move_down(bool inverseTeam)
 	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
-	for (int line{ 0 }; line <= 7; ++line)
+
+	g_solo_mutex.lock();
+	bool solo = m_board.m_solo;
+	g_solo_mutex.unlock();
+
+	if (solo)
 	{
-		for (int col{ 0 }; col < 8; ++col)
+		g_grid_select_mutex.lock();
+		int x = m_board.m_grid_selection[0];
+		int y = m_board.m_grid_selection[1];
+		g_grid_select_mutex.unlock();
+		int line = y;
+		while (line <= m_board.boundBottom && m_board.m_fruit[line][x].m_type != -1) { line++; }
+		if (line > m_board.boundBottom) { line = m_board.boundBottom; }
+		else if (m_board.m_fruit[line][x].m_type == -1) { line--; }
+		for (int i = y; i <= line; ++i)
 		{
-			// set timer for team
-			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
-			{
-				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				impulse_origin = line;
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
-			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
-			{
-				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (impulse_origin - line);
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
+			m_board.m_fruit[i][x].m_animationTimer = 0.0f - (0.125f * (i - y));
+			min_timer = (m_board.m_fruit[i][x].m_animationTimer < min_timer) ? m_board.m_fruit[i][x].m_animationTimer : min_timer;
 		}
-	}
-	for (int line{ 0 }; line <= 7; ++line)
-	{
-		for (int col{ 0 }; col < 8; ++col)
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
+		for (int l{ 0 }; l < 8; ++l)
 		{
-			// set timer for enemy
-			if (m_board.m_fruit[line][col].m_type == enemy)
+			for (int c{ 0 }; c < 8; ++c)
 			{
-				int distance{ 0 };
-				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
-				int l{ line };
-				while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l >= 0)
+				if (c == x && (l < y || l > line))
 				{
-					l--;
-					distance++;
-					if (m_board.m_fruit[l][col].m_type == m_fruit && l >= 0) {
-						last_met = distance;
-					}
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
 				}
-				if (last_met > 0) {
-					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (line - impulse_origin);
+				else if (c != x)
+				{
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
 				}
-				else {
-					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				}
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
 			}
 		}
 	}
-	// set timer for non moving fruits
-	min_timer -= 0.25f;
-	m_animationTimer = min_timer;
-	for (int line{ 0 }; line < 8; ++line)
+	else
 	{
-		for (int col{ 0 }; col < 8; ++col)
+		for (int line{ 0 }; line <= 7; ++line)
 		{
-			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+			for (int col{ 0 }; col < 8; ++col)
 			{
-				m_board.m_fruit[line][col].m_animationTimer = min_timer;
+				// set timer for team
+				if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					impulse_origin = line;
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+				else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer += 0.125f * (impulse_origin - line);
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		for (int line{ 0 }; line <= 7; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				// set timer for enemy
+				if (m_board.m_fruit[line][col].m_type == enemy)
+				{
+					int distance{ 0 };
+					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+					int l{ line };
+					while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l >= 0)
+					{
+						l--;
+						distance++;
+						if (m_board.m_fruit[l][col].m_type == m_fruit && l >= 0) {
+							last_met = distance;
+						}
+					}
+					if (last_met > 0) {
+						m_board.m_fruit[line][col].m_animationTimer = -0.125f * (line - impulse_origin);
+					}
+					else {
+						m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					}
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
+		for (int line{ 0 }; line < 8; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
+				{
+					m_board.m_fruit[line][col].m_animationTimer = min_timer;
+				}
 			}
 		}
 	}
+
 	if (inverseTeam) {
 		if (m_fruit == 0) {
 			m_fruit = 1;
@@ -2348,65 +2824,107 @@ void Game::set_animationTimer_move_right(bool inverseTeam)
 	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
-	for (int col{ 0 }; col < 8; ++col)
+
+	g_solo_mutex.lock();
+	bool solo = m_board.m_solo;
+	g_solo_mutex.unlock();
+
+	if (solo)
 	{
+		g_grid_select_mutex.lock();
+		int x = m_board.m_grid_selection[0];
+		int y = m_board.m_grid_selection[1];
+		g_grid_select_mutex.unlock();
+		int col = x;
+		while (col <= m_board.boundRight && m_board.m_fruit[y][col].m_type != -1) { col++; }
+		if (col > m_board.boundRight) { col = m_board.boundRight; }
+		else if (m_board.m_fruit[y][col].m_type == -1) { col--; }
+		for (int i = x; i <= col; ++i)
+		{
+			m_board.m_fruit[y][i].m_animationTimer = 0.0f - (0.125f * (i - x));
+			min_timer = (m_board.m_fruit[y][i].m_animationTimer < min_timer) ? m_board.m_fruit[y][i].m_animationTimer : min_timer;
+		}
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
+		for (int l{ 0 }; l < 8; ++l)
+		{
+			for (int c{ 0 }; c < 8; ++c)
+			{
+				if (l == y && (c < x || c > col))
+				{
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
+				}
+				else if (l != y)
+				{
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (int col{ 0 }; col < 8; ++col)
+		{
+			for (int line{ 0 }; line < 8; ++line)
+			{
+				// set timer for team
+				if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					impulse_origin = col;
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+				else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer += 0.125f * (impulse_origin - col);
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		for (int line{ 0 }; line <= 7; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				// set timer for enemy
+				if (m_board.m_fruit[line][col].m_type == enemy)
+				{
+					int distance{ 0 };
+					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+					int c{ col };
+					while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c >= 0)
+					{
+						c--;
+						distance++;
+						if (m_board.m_fruit[line][c].m_type == m_fruit && c >= 0) {
+							last_met = distance;
+						}
+					}
+					if (last_met > 0) {
+						m_board.m_fruit[line][col].m_animationTimer = -0.125f * (col - impulse_origin);
+					}
+					else {
+						m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					}
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
 		for (int line{ 0 }; line < 8; ++line)
 		{
-			// set timer for team
-			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+			for (int col{ 0 }; col < 8; ++col)
 			{
-				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				impulse_origin = col;
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
-			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
-			{
-				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (impulse_origin - col);
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
-		}
-	}
-	for (int line{ 0 }; line <= 7; ++line)
-	{
-		for (int col{ 0 }; col < 8; ++col)
-		{
-			// set timer for enemy
-			if (m_board.m_fruit[line][col].m_type == enemy)
-			{
-				int distance{ 0 };
-				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
-				int c{ col };
-				while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c >= 0)
+				if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
 				{
-					c--;
-					distance++;
-					if (m_board.m_fruit[line][c].m_type == m_fruit && c >= 0) {
-						last_met = distance;
-					}
+					m_board.m_fruit[line][col].m_animationTimer = min_timer;
 				}
-				if (last_met > 0) {
-					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (col - impulse_origin);
-				}
-				else {
-					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				}
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
 			}
 		}
 	}
-	// set timer for non moving fruits
-	min_timer -= 0.25f;
-	m_animationTimer = min_timer;
-	for (int line{ 0 }; line < 8; ++line)
-	{
-		for (int col{ 0 }; col < 8; ++col)
-		{
-			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
-			{
-				m_board.m_fruit[line][col].m_animationTimer = min_timer;
-			}
-		}
-	}
+	
 	if (inverseTeam) {
 		if (m_fruit == 0) {
 			m_fruit = 1;
@@ -2430,65 +2948,107 @@ void Game::set_animationTimer_move_left(bool inverseTeam)
 	}
 	int enemy = (m_fruit == 0) ? 1 : 0;
 	float min_timer{ 42.0f };
-	for (int col{ 7 }; col >= 0; --col)
+
+	g_solo_mutex.lock();
+	bool solo = m_board.m_solo;
+	g_solo_mutex.unlock();
+
+	if (solo)
 	{
+		g_grid_select_mutex.lock();
+		int x = m_board.m_grid_selection[0];
+		int y = m_board.m_grid_selection[1];
+		g_grid_select_mutex.unlock();
+		int col = x;
+		while (col >= m_board.boundLeft && m_board.m_fruit[y][col].m_type != -1) { col--; }
+		if (col < m_board.boundLeft) { col = m_board.boundLeft; }
+		else if (m_board.m_fruit[y][col].m_type == -1) { col++; }
+		for (int i = x; i >= col; --i)
+		{
+			m_board.m_fruit[y][i].m_animationTimer = 0.0f - (0.125f * (x - i));
+			min_timer = (m_board.m_fruit[y][i].m_animationTimer < min_timer) ? m_board.m_fruit[y][i].m_animationTimer : min_timer;
+		}
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
+		for (int l{ 0 }; l < 8; ++l)
+		{
+			for (int c{ 0 }; c < 8; ++c)
+			{
+				if (l == y && (c > x || c < col))
+				{
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
+				}
+				else if (l != y)
+				{
+					m_board.m_fruit[l][c].m_animationTimer = min_timer;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (int col{ 7 }; col >= 0; --col)
+		{
+			for (int line{ 0 }; line < 8; ++line)
+			{
+				// set timer for team
+				if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					impulse_origin = col;
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+				else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
+				{
+					m_board.m_fruit[line][col].m_animationTimer += 0.125f * (col - impulse_origin);
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		for (int line{ 0 }; line <= 7; ++line)
+		{
+			for (int col{ 0 }; col < 8; ++col)
+			{
+				// set timer for enemy
+				if (m_board.m_fruit[line][col].m_type == enemy)
+				{
+					int distance{ 0 };
+					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
+					int c{ col };
+					while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c <= 7)
+					{
+						c++;
+						distance++;
+						if (m_board.m_fruit[line][c].m_type == m_fruit && c <= 7) {
+							last_met = distance;
+						}
+					}
+					if (last_met > 0) {
+						m_board.m_fruit[line][col].m_animationTimer = -0.125f * (impulse_origin - col);
+					}
+					else {
+						m_board.m_fruit[line][col].m_animationTimer = 0.0f;
+					}
+					min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
+				}
+			}
+		}
+		// set timer for non moving fruits
+		min_timer -= 0.25f;
+		m_animationTimer = min_timer;
 		for (int line{ 0 }; line < 8; ++line)
 		{
-			// set timer for team
-			if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin == -1)
+			for (int col{ 0 }; col < 8; ++col)
 			{
-				m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				impulse_origin = col;
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
-			else if (m_board.m_fruit[line][col].m_type == m_fruit && impulse_origin != -1)
-			{
-				m_board.m_fruit[line][col].m_animationTimer += 0.125f * (col - impulse_origin);
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
-			}
-		}
-	}
-	for (int line{ 0 }; line <= 7; ++line)
-	{
-		for (int col{ 0 }; col < 8; ++col)
-		{
-			// set timer for enemy
-			if (m_board.m_fruit[line][col].m_type == enemy)
-			{
-				int distance{ 0 };
-				int last_met{ 0 }; // distance of the last fruit of type m_fruit met
-				int c{ col };
-				while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c <= 7)
+				if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
 				{
-					c++;
-					distance++;
-					if (m_board.m_fruit[line][c].m_type == m_fruit && c <= 7) {
-						last_met = distance;
-					}
+					m_board.m_fruit[line][col].m_animationTimer = min_timer;
 				}
-				if (last_met > 0) {
-					m_board.m_fruit[line][col].m_animationTimer = -0.125f * (impulse_origin - col);
-				}
-				else {
-					m_board.m_fruit[line][col].m_animationTimer = 0.0f;
-				}
-				min_timer = (m_board.m_fruit[line][col].m_animationTimer < min_timer) ? m_board.m_fruit[line][col].m_animationTimer : min_timer;
 			}
 		}
 	}
-	// set timer for non moving fruits
-	min_timer -= 0.25f;
-	m_animationTimer = min_timer;
-	for (int line{ 0 }; line < 8; ++line)
-	{
-		for (int col{ 0 }; col < 8; ++col)
-		{
-			if (m_board.m_fruit[line][col].m_animationTimer == 0.0f && m_board.m_fruit[line][col].m_type == enemy)
-			{
-				m_board.m_fruit[line][col].m_animationTimer = min_timer;
-			}
-		}
-	}
+	
 	if (inverseTeam) {
 		if (m_fruit == 0) {
 			m_fruit = 1;

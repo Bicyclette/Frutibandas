@@ -1,6 +1,6 @@
 #include "mouse.hpp"
 
-Mouse::Mouse(int pos[2], int size[2], std::string img_normal, std::string img_hover, int screenW, int screenH) :
+Mouse::Mouse(int pos[2], int size[2], std::string img_normal, std::string img_hover, std::string img_visor, int screenW, int screenH) :
     m_screen{screenW, screenH},
     m_size{size[0], size[1]},
     m_shader("shaders/mouse/vertex.glsl", "shaders/mouse/fragment.glsl", SHADER_TYPE::MOUSE),
@@ -37,6 +37,7 @@ Mouse::Mouse(int pos[2], int size[2], std::string img_normal, std::string img_ho
     // mouse shape
     m_img.push_back(createTexture(img_normal, TEXTURE_TYPE::DIFFUSE, true));
     m_img.push_back(createTexture(img_hover, TEXTURE_TYPE::DIFFUSE, true));
+    m_img.push_back(createTexture(img_visor, TEXTURE_TYPE::DIFFUSE, true));
 }
 
 Mouse::~Mouse()
@@ -67,6 +68,22 @@ void Mouse::update_position()
     glBufferSubData(GL_ARRAY_BUFFER, 0, 24 * sizeof(float), data);
 }
 
+void Mouse::update_size(int x, int y)
+{
+    m_size[0] = x;
+    m_size[1] = y;
+    float data[24] = {
+        m_pos[0], m_pos[1], 0.0f, 1.0f,
+        m_pos[0], m_pos[1] - m_size[1], 0.0f, 0.0f,
+        m_pos[0] + m_size[0], m_pos[1] - m_size[1], 1.0f, 0.0f,
+        m_pos[0], m_pos[1], 0.0f, 1.0f,
+        m_pos[0] + m_size[0], m_pos[1] - m_size[1], 1.0f, 0.0f,
+        m_pos[0] + m_size[0], m_pos[1], 1.0f, 1.0f
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 24 * sizeof(float), data);
+}
+
 void Mouse::set_bloom_strength(float strength)
 {
     m_bloom_strength = strength;
@@ -80,6 +97,11 @@ void Mouse::use_normal()
 void Mouse::use_hover()
 {
     m_img_index = 1;
+}
+
+void Mouse::use_visor()
+{
+    m_img_index = 2;
 }
 
 void Mouse::draw()

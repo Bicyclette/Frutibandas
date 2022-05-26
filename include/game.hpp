@@ -412,6 +412,7 @@ struct Cards
 	// positive numbers are the index to fetch data in the arrays "m_tex" and "description"
 	int m_slot[16] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 	std::array<std::unique_ptr<Sprite>, 16> m_sprite;
+	int m_enemy_count;
 
 	Cards()
 	{
@@ -448,6 +449,8 @@ struct Cards
 		m_sprite[14]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
 		m_sprite[15] = std::make_unique<Sprite>(207, glm::vec2(944, 728 - 568 - 117), glm::vec2(84, 117), 1050, 728);
 		m_sprite[15]->set_background_color(glm::vec4(0.835f, 0.843f, 0.533f, 1.0f));
+
+		m_enemy_count = 3;
 	}
 
 	bool hovered_card(int mouseX, int mouseY, int& card_id)
@@ -534,7 +537,9 @@ struct Board
 		boundTop(0),
 		boundBottom(7),
 		m_dyingTimer(0.0f),
-		m_steady(true)
+		m_steady(true),
+		m_solo(false),
+		m_grid_selection{ -1, -1 }
 	{}
 
 	void print()
@@ -661,8 +666,6 @@ struct Board
 
 	void draw_fruits(MOVE move = MOVE::UNDEFINED, float delta = 0.0f)
 	{
-		//glm::vec2 start_orange(525 - (49 * 4), 645);
-		//glm::vec2 start_banane(525 - (49 * 4), 645 + 24);
 		glm::vec2 start_orange(525 - (49 * 3) - 245 * 0.5f - 24.0f, 645 + (245*0.5f) - 24.0f);
 		glm::vec2 start_banane(525 - (49 * 3) - 245 * 0.5f - 24.0f, 645 + (24 + 370 * 0.5f) - 36.0f);
 		for (int i{ 0 }; i < 8; ++i) {
@@ -735,34 +738,64 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ boundTop }; line <= boundBottom; ++line)
+		if (m_solo)
 		{
-			for (int col{ boundLeft }; col <= boundRight; ++col)
+			int x = m_grid_selection[0];
+			int y = m_grid_selection[1];
+			// find first gap
+			int line;
+			for (line = y; line > boundTop; --line)
 			{
-				if (m_fruit[line][col].m_type == enemy) {
-					//check if there is a pusher down the column
-					int l{ line };
-					while (m_fruit[l][col].m_type == enemy && l <= boundBottom) {
-						l++;
-					}
-					if (l == boundBottom + 1) {
-						continue;
-					}
-					else if (m_fruit[l][col].m_type == fruit) {
-						m_fruit[line][col].m_type = -1;
-						if ((line - 1) >= boundTop) {
-							m_fruit[line-1][col].m_type = enemy;
+				if (m_fruit[line][x].m_type == -1) {
+					break;
+				}
+			}
+			if (m_fruit[line][x].m_type == -1)
+			{
+				line++;
+			}
+			for (; line <= y; ++line)
+			{
+				if (line - 1 >= boundTop) {
+					m_fruit[line - 1][x].m_type = m_fruit[line][x].m_type;
+				}
+				m_fruit[line][x].m_type = -1;
+			}
+			m_solo = false;
+			m_grid_selection[0] = -1;
+			m_grid_selection[1] = -1;
+		}
+		else
+		{
+			for (int line{ boundTop }; line <= boundBottom; ++line)
+			{
+				for (int col{ boundLeft }; col <= boundRight; ++col)
+				{
+					if (m_fruit[line][col].m_type == enemy) {
+						//check if there is a pusher down the column
+						int l{ line };
+						while (m_fruit[l][col].m_type == enemy && l <= boundBottom) {
+							l++;
+						}
+						if (l == boundBottom + 1) {
+							continue;
+						}
+						else if (m_fruit[l][col].m_type == fruit) {
+							m_fruit[line][col].m_type = -1;
+							if ((line - 1) >= boundTop) {
+								m_fruit[line - 1][col].m_type = enemy;
+							}
 						}
 					}
-				}
-				else if (m_fruit[line][col].m_type == fruit) {
-					m_fruit[line][col].m_type = -1;
-					if ((line - 1) >= boundTop) {
-						m_fruit[line - 1][col].m_type = fruit;
+					else if (m_fruit[line][col].m_type == fruit) {
+						m_fruit[line][col].m_type = -1;
+						if ((line - 1) >= boundTop) {
+							m_fruit[line - 1][col].m_type = fruit;
+						}
 					}
+					// reset animation timer
+					m_fruit[line][col].m_animationTimer = 0.0f;
 				}
-				// reset animation timer
-				m_fruit[line][col].m_animationTimer = 0.0f;
 			}
 		}
 	}
@@ -778,34 +811,64 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ boundBottom }; line >= boundTop; --line)
+		if (m_solo)
 		{
-			for (int col{ boundLeft }; col <= boundRight; ++col)
+			int x = m_grid_selection[0];
+			int y = m_grid_selection[1];
+			// find first gap
+			int line;
+			for (line = y; line < boundBottom; ++line)
 			{
-				if (m_fruit[line][col].m_type == enemy) {
-					//check if there is a pusher up the column
-					int l{ line };
-					while (m_fruit[l][col].m_type == enemy && l >= boundTop) {
-						l--;
-					}
-					if (l == boundTop - 1) {
-						continue;
-					}
-					else if (m_fruit[l][col].m_type == fruit) {
-						m_fruit[line][col].m_type = -1;
-						if ((line + 1) <= boundBottom) {
-							m_fruit[line + 1][col].m_type = enemy;
+				if (m_fruit[line][x].m_type == -1) {
+					break;
+				}
+			}
+			if (m_fruit[line][x].m_type == -1)
+			{
+				line--;
+			}
+			for (; line >= y; --line)
+			{
+				if (line + 1 <= boundBottom) {
+					m_fruit[line + 1][x].m_type = m_fruit[line][x].m_type;
+				}
+				m_fruit[line][x].m_type = -1;
+			}
+			m_solo = false;
+			m_grid_selection[0] = -1;
+			m_grid_selection[1] = -1;
+		}
+		else
+		{
+			for (int line{ boundBottom }; line >= boundTop; --line)
+			{
+				for (int col{ boundLeft }; col <= boundRight; ++col)
+				{
+					if (m_fruit[line][col].m_type == enemy) {
+						//check if there is a pusher up the column
+						int l{ line };
+						while (m_fruit[l][col].m_type == enemy && l >= boundTop) {
+							l--;
+						}
+						if (l == boundTop - 1) {
+							continue;
+						}
+						else if (m_fruit[l][col].m_type == fruit) {
+							m_fruit[line][col].m_type = -1;
+							if ((line + 1) <= boundBottom) {
+								m_fruit[line + 1][col].m_type = enemy;
+							}
 						}
 					}
-				}
-				else if (m_fruit[line][col].m_type == fruit) {
-					m_fruit[line][col].m_type = -1;
-					if ((line + 1) <= boundBottom) {
-						m_fruit[line + 1][col].m_type = fruit;
+					else if (m_fruit[line][col].m_type == fruit) {
+						m_fruit[line][col].m_type = -1;
+						if ((line + 1) <= boundBottom) {
+							m_fruit[line + 1][col].m_type = fruit;
+						}
 					}
+					// reset animation timer
+					m_fruit[line][col].m_animationTimer = 0.0f;
 				}
-				// reset animation timer
-				m_fruit[line][col].m_animationTimer = 0.0f;
 			}
 		}
 	}
@@ -821,34 +884,63 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ boundTop }; line <= boundBottom; ++line)
+		if (m_solo)
 		{
-			for (int col{ boundRight }; col >= boundLeft; --col)
+			int x = m_grid_selection[0];
+			int y = m_grid_selection[1];
+			// find first gap
+			int col;
+			for (col = x; col < boundRight; ++col)
 			{
-				if (m_fruit[line][col].m_type == enemy) {
-					//check if there is a pusher on the left side of the line
-					int c{ col };
-					while (m_fruit[line][c].m_type == enemy && c >= boundLeft) {
-						c--;
-					}
-					if (c == boundLeft - 1) {
-						continue;
-					}
-					else if (m_fruit[line][c].m_type == fruit) {
-						m_fruit[line][col].m_type = -1;
-						if ((col + 1) <= boundRight) {
-							m_fruit[line][col + 1].m_type = enemy;
+				if (m_fruit[y][col].m_type == -1) {
+					break;
+				}
+			}
+			if (m_fruit[y][col].m_type == -1)
+			{
+				col--;
+			}
+			for (; col >= x; --col)
+			{
+				if (col + 1 <= boundRight) {
+					m_fruit[y][col + 1].m_type = m_fruit[y][col].m_type;
+				}
+				m_fruit[y][col].m_type = -1;
+			}
+			m_grid_selection[0] = -1;
+			m_grid_selection[1] = -1;
+		}
+		else
+		{
+			for (int line{ boundTop }; line <= boundBottom; ++line)
+			{
+				for (int col{ boundRight }; col >= boundLeft; --col)
+				{
+					if (m_fruit[line][col].m_type == enemy) {
+						//check if there is a pusher on the left side of the line
+						int c{ col };
+						while (m_fruit[line][c].m_type == enemy && c >= boundLeft) {
+							c--;
+						}
+						if (c == boundLeft - 1) {
+							continue;
+						}
+						else if (m_fruit[line][c].m_type == fruit) {
+							m_fruit[line][col].m_type = -1;
+							if ((col + 1) <= boundRight) {
+								m_fruit[line][col + 1].m_type = enemy;
+							}
 						}
 					}
-				}
-				else if (m_fruit[line][col].m_type == fruit) {
-					m_fruit[line][col].m_type = -1;
-					if ((col + 1) <= boundRight) {
-						m_fruit[line][col + 1].m_type = fruit;
+					else if (m_fruit[line][col].m_type == fruit) {
+						m_fruit[line][col].m_type = -1;
+						if ((col + 1) <= boundRight) {
+							m_fruit[line][col + 1].m_type = fruit;
+						}
 					}
+					// reset animation timer
+					m_fruit[line][col].m_animationTimer = 0.0f;
 				}
-				// reset animation timer
-				m_fruit[line][col].m_animationTimer = 0.0f;
 			}
 		}
 	}
@@ -864,34 +956,63 @@ struct Board
 			}
 		}
 		int enemy = (fruit == 0) ? 1 : 0;
-		for (int line{ boundTop }; line <= boundBottom; ++line)
+		if (m_solo)
 		{
-			for (int col{ boundLeft }; col <= boundRight; ++col)
+			int x = m_grid_selection[0];
+			int y = m_grid_selection[1];
+			// find first gap
+			int col;
+			for (col = x; col > boundLeft; --col)
 			{
-				if (m_fruit[line][col].m_type == enemy) {
-					//check if there is a pusher on the right side of the line
-					int c{ col };
-					while (m_fruit[line][c].m_type == enemy && c <= boundRight) {
-						c++;
-					}
-					if (c == boundRight + 1) {
-						continue;
-					}
-					else if (m_fruit[line][c].m_type == fruit) {
-						m_fruit[line][col].m_type = -1;
-						if ((col - 1) >= boundLeft) {
-							m_fruit[line][col - 1].m_type = enemy;
+				if (m_fruit[y][col].m_type == -1) {
+					break;
+				}
+			}
+			if (m_fruit[y][col].m_type == -1)
+			{
+				col++;
+			}
+			for (; col <= x; ++col)
+			{
+				if (col - 1 >= boundLeft) {
+					m_fruit[y][col - 1].m_type = m_fruit[y][col].m_type;
+				}
+				m_fruit[y][col].m_type = -1;
+			}
+			m_grid_selection[0] = -1;
+			m_grid_selection[1] = -1;
+		}
+		else
+		{
+			for (int line{ boundTop }; line <= boundBottom; ++line)
+			{
+				for (int col{ boundLeft }; col <= boundRight; ++col)
+				{
+					if (m_fruit[line][col].m_type == enemy) {
+						//check if there is a pusher on the right side of the line
+						int c{ col };
+						while (m_fruit[line][c].m_type == enemy && c <= boundRight) {
+							c++;
+						}
+						if (c == boundRight + 1) {
+							continue;
+						}
+						else if (m_fruit[line][c].m_type == fruit) {
+							m_fruit[line][col].m_type = -1;
+							if ((col - 1) >= boundLeft) {
+								m_fruit[line][col - 1].m_type = enemy;
+							}
 						}
 					}
-				}
-				else if (m_fruit[line][col].m_type == fruit) {
-					m_fruit[line][col].m_type = -1;
-					if ((col - 1) >= boundLeft) {
-						m_fruit[line][col - 1].m_type = fruit;
+					else if (m_fruit[line][col].m_type == fruit) {
+						m_fruit[line][col].m_type = -1;
+						if ((col - 1) >= boundLeft) {
+							m_fruit[line][col - 1].m_type = fruit;
+						}
 					}
+					// reset animation timer
+					m_fruit[line][col].m_animationTimer = 0.0f;
 				}
-				// reset animation timer
-				m_fruit[line][col].m_animationTimer = 0.0f;
 			}
 		}
 	}
@@ -1091,6 +1212,9 @@ struct Board
 	int boundBottom;
 	float m_dyingTimer;
 	bool m_steady;
+
+	bool m_solo;
+	std::array<int, 2> m_grid_selection;
 };
 
 struct Cursor
@@ -1244,6 +1368,130 @@ struct Timer
 	Shader m_shader;
 };
 
+inline std::mutex g_show_mutex;
+inline std::mutex g_chosen_card_mutex;
+inline std::mutex g_grid_select_mutex;
+
+struct ADVERTISER
+{
+	ADVERTISER() :
+		m_projection(glm::ortho(0.0f, 1050.0f, 0.0f, 728.0f)),
+		m_shader("shaders/advertiser/vertex.glsl", "shaders/advertiser/fragment.glsl"),
+		m_tex_g{
+			createTexture("assets/advertiser/enclume_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/celerite_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/confiscation_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/renfort_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/desordre_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/petrification_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/vachette_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/conversion_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/charge_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/entracte_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/solo_g.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/piege_g.tga", TEXTURE_TYPE::DIFFUSE, true)
+		},
+		m_tex_r{
+			createTexture("assets/advertiser/enclume_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/celerite_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/confiscation_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/renfort_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/desordre_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/petrification_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/vachette_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/conversion_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/charge_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/entracte_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/solo_r.tga", TEXTURE_TYPE::DIFFUSE, true),
+			createTexture("assets/advertiser/piege_r.tga", TEXTURE_TYPE::DIFFUSE, true)
+	},
+		m_timer(0.0f),
+		m_chosen_card(-1),
+		m_grid_select(false),
+		m_fruit_select(false),
+		m_show(false),
+		m_enemy(false),
+		m_delete_enemy_card(false)
+	{
+		glGenVertexArrays(1, &m_vao);
+		glGenBuffers(1, &m_vbo);
+
+		glBindVertexArray(m_vao);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+
+		glm::vec2 m_pos(-1150.0f, 728.0f * 0.5f - 30.0f);
+		glm::vec2 m_size(1150.0f, 60.0f);
+		float data[24] = {
+			m_pos.x, m_pos.y + m_size.y, 0.0f, 1.0f,
+			m_pos.x, m_pos.y, 0.0f, 0.0f,
+			m_pos.x + m_size.x, m_pos.y, 1.0f, 0.0f,
+			m_pos.x, m_pos.y + m_size.y, 0.0f, 1.0f,
+			m_pos.x + m_size.x, m_pos.y, 1.0f, 0.0f,
+			m_pos.x + m_size.x, m_pos.y + m_size.y, 1.0f, 1.0f
+		};
+
+		glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(0));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glBindVertexArray(0);
+	}
+
+	void draw(float delta)
+	{
+		g_show_mutex.lock();
+		int show = m_show;
+		g_show_mutex.unlock();
+
+		if (show)
+		{
+			g_chosen_card_mutex.lock();
+			int card_id = m_chosen_card;
+			g_chosen_card_mutex.unlock();
+			m_timer += delta;
+			glBindVertexArray(m_vao);
+			m_shader.use();
+			m_shader.setMatrix("proj", m_projection);
+			glActiveTexture(GL_TEXTURE0);
+			if (m_enemy) {
+				glBindTexture(GL_TEXTURE_2D, m_tex_r[card_id].id);
+			}
+			else {
+				glBindTexture(GL_TEXTURE_2D, m_tex_g[card_id].id);
+			}
+			m_shader.setInt("card", 0);
+			m_shader.setFloat("timer", m_timer);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glBindVertexArray(0);
+
+			if(m_timer >= 1.5f)
+			{
+				m_timer = 0.0f;
+				g_show_mutex.lock();
+				m_show = false;
+				g_show_mutex.unlock();
+			}
+		}
+	}
+
+	GLuint m_vao;
+	GLuint m_vbo;
+	glm::mat4 m_projection;
+	Shader m_shader;
+	std::array<Texture, 12> m_tex_g;
+	std::array<Texture, 12> m_tex_r;
+	float m_timer;
+
+	// LOGIC
+	int m_chosen_card; // if m_chosen_card != -1 and player click on another card, nothing happens
+	bool m_grid_select;
+	bool m_fruit_select;
+	bool m_show;
+	bool m_enemy; // enemy card is shown
+	bool m_delete_enemy_card; // after card has been shown, delete the slot it is resting on
+};
+
 class Game
 {
 	public:
@@ -1280,6 +1528,7 @@ class Game
 		int getTeam();
 		void set_winner(int winner);
 		void updateUI(std::bitset<10> & inputs, char* text_input, int screenW, int screenH, float delta);
+		void card_action(int card_id);
 
 	private:
 
@@ -1317,6 +1566,10 @@ class Game
 		void createUI(int screenW, int screenH);
 		void swap_gender_features(Avatar::GENDER from, Avatar::GENDER to);
 		void print_remaining_time();
+		void quit_game();
+		void hovering(int sprite_id);
+		void select_grid(std::bitset<10>& inputs, int card_id);
+		void use_enemy_card(int card_id, int line, int col);
 
 		// fruits movement
 		void set_animationTimer(bool inverseTeam);
@@ -1348,7 +1601,7 @@ class Game
 		Sprite m_back_home;
 		std::array<Texture, 4> m_popup_tex;
 		Timer m_timer;
-		int m_chosen_card; // if m_chosen_card != -1 and player click on another card, nothing happens
+		ADVERTISER m_advertiser;
 };
 
 inline std::queue<std::string> g_msg2server_queue;
@@ -1365,7 +1618,7 @@ inline std::mutex g_game_init_mutex;
 inline std::mutex g_fruit_move_mutex;
 inline std::mutex g_turn_mutex;
 inline std::mutex g_rte_mutex; // remaining time enemy
-inline std::mutex g_chosen_card_mutex;
 inline std::mutex g_winner_mutex;
+inline std::mutex g_solo_mutex;
 
 #endif

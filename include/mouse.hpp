@@ -12,12 +12,14 @@
 class Mouse
 {
 	public:
-		Mouse(int pos[2], int size[2], std::string img_normal, std::string img_hover, int screenW, int screenH);
+		Mouse(int pos[2], int size[2], std::string img_normal, std::string img_hover, std::string img_visor, int screenW, int screenH);
 		~Mouse();
 		void update_position();
+		void update_size(int x, int y);
 		void set_bloom_strength(float strength);
 		void use_normal();
 		void use_hover();
+		void use_visor();
 		void draw();
 		int* get_position(); // bottom left corner
 		int* get_size();
@@ -32,7 +34,7 @@ class Mouse
 		int m_screen[2];
 		int m_pos[2]; // [x,y] top left corner
 		int m_size[2]; // [x,y] size
-		std::vector<struct Texture> m_img; // [0] = normal, [1] = hover
+		std::vector<struct Texture> m_img; // [0] = normal, [1] = hover, [2] = visor
 		int m_img_index;
 		float m_bloom_strength;
 		Shader m_shader;
