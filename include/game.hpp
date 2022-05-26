@@ -541,7 +541,9 @@ struct Board
 		m_solo(false),
 		m_grid_selection{ -1, -1 },
 		m_charge(false),
-		m_charging_team(-1)
+		m_charging_team(-1),
+		m_invert_next_move(false),
+		m_invert_next_move_team(-1)
 	{}
 
 	void print()
@@ -1219,6 +1221,8 @@ struct Board
 	std::array<int, 2> m_grid_selection;
 	bool m_charge;
 	int m_charging_team;
+	bool m_invert_next_move;
+	int m_invert_next_move_team;
 };
 
 struct Cursor

@@ -891,7 +891,7 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 		g_fruit_move_mutex.lock();
 		mv = m_move;
 		g_fruit_move_mutex.unlock();
-		if (mv != MOVE::UNDEFINED)
+		if (mv != MOVE::UNDEFINED && !m_advertiser.m_show)
 		{
 			m_animationTimer += delta;
 			m_board.draw_fruits(mv, delta);
@@ -1883,21 +1883,41 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		{
 			std::string data("5:");
 
-			if (sprite_id == 3)
+			if (sprite_id == 3) // UP
 			{
-				data += "1";
+				if (m_board.m_invert_next_move) {
+					data += "2";
+				}
+				else {
+					data += "1";
+				}
 			}
-			else if (sprite_id == 4)
+			else if (sprite_id == 4) // DOWN
 			{
-				data += "2";
+				if (m_board.m_invert_next_move) {
+					data += "1";
+				}
+				else {
+					data += "2";
+				}
 			}
-			else if (sprite_id == 5)
+			else if (sprite_id == 5) // RIGHT
 			{
-				data += "3";
+				if (m_board.m_invert_next_move) {
+					data += "4";
+				}
+				else {
+					data += "3";
+				}
 			}
-			else if (sprite_id == 6)
+			else if (sprite_id == 6) // LEFT
 			{
-				data += "4";
+				if (m_board.m_invert_next_move) {
+					data += "3";
+				}
+				else {
+					data += "4";
+				}
 			}
 
 			// send message to server
@@ -2256,14 +2276,17 @@ void Game::card_action(int card_id)
 
 void Game::use_enemy_card(int card_id, int line, int col)
 {
-	std::cout << "use enemy card " << card_id << std::endl;
-	g_chosen_card_mutex.lock();
-	m_advertiser.m_chosen_card = card_id;
-	g_chosen_card_mutex.unlock();
-	m_advertiser.m_enemy = true;
-	g_show_mutex.lock();
-	m_advertiser.m_show = true;
-	g_show_mutex.unlock();
+	if (card_id != 4)
+	{
+		std::cout << "use enemy card " << card_id << std::endl;
+		g_chosen_card_mutex.lock();
+		m_advertiser.m_chosen_card = card_id;
+		g_chosen_card_mutex.unlock();
+		m_advertiser.m_enemy = true;
+		g_show_mutex.lock();
+		m_advertiser.m_show = true;
+		g_show_mutex.unlock();
+	}
 	
 	if (card_id == 0) // enclume
 	{
@@ -2279,7 +2302,9 @@ void Game::use_enemy_card(int card_id, int line, int col)
 	}
 	else if (card_id == 4) // désordre
 	{
-		
+		std::cout << "inverted next move ON (client)" << std::endl;
+		m_board.m_invert_next_move = true;
+		m_board.m_invert_next_move_team = m_fruit;
 	}
 	else if (card_id == 5) // pétrification
 	{
@@ -2300,10 +2325,6 @@ void Game::use_enemy_card(int card_id, int line, int col)
 	{
 		m_board.m_charge = true;
 		m_board.m_charging_team = (m_fruit == 0) ? 1 : 0;
-	}
-	else if (card_id == 9) // entracte
-	{
-		
 	}
 	else if (card_id == 10) // solo
 	{
@@ -2566,6 +2587,20 @@ void Game::print_remaining_time()
 
 void Game::set_animationTimer(bool inverseTeam)
 {
+	g_turn_mutex.lock();
+	int turn = m_turn;
+	g_turn_mutex.unlock();
+	if (m_board.m_invert_next_move && m_board.m_invert_next_move_team == m_fruit && turn == m_fruit)
+	{
+		std::cout << "use enemy card : désordre" << std::endl;
+		g_chosen_card_mutex.lock();
+		m_advertiser.m_chosen_card = 4;
+		g_chosen_card_mutex.unlock();
+		m_advertiser.m_enemy = true;
+		g_show_mutex.lock();
+		m_advertiser.m_show = true;
+		g_show_mutex.unlock();
+	}
 	m_inverseTeam = inverseTeam;
 	if (m_move == MOVE::UP)
 	{

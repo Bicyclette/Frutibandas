@@ -130,18 +130,41 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 					else if (type == "mv") { // move
 						int dir = std::atoi(&message[3]);
 						int who = std::atoi(&message[5]);
+						g_turn_mutex.lock();
+						int turn = g->m_turn;
+						g_turn_mutex.unlock();
 						g_fruit_move_mutex.lock();
 						if (dir == 1) {
-							move = MOVE::UP;
+							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
+								//move = MOVE::DOWN;
+							//}
+							//else {
+								move = MOVE::UP;
+							//}
 						}
 						else if (dir == 2) {
-							move = MOVE::DOWN;
+							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
+								//move = MOVE::UP;
+							//}
+							//else {
+								move = MOVE::DOWN;
+							//}
 						}
 						else if (dir == 3) {
-							move = MOVE::RIGHT;
+							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
+								//move = MOVE::LEFT;
+							//}
+							//else {
+								move = MOVE::RIGHT;
+							//}
 						}
 						else if (dir == 4) {
-							move = MOVE::LEFT;
+							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
+								//move = MOVE::RIGHT;
+							//}
+							//else {
+								move = MOVE::LEFT;
+							//}
 						}
 						g_fruit_move_mutex.unlock();
 						if (who == g->getTeam()) {
@@ -149,6 +172,10 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						}
 						else {
 							g->set_animationTimer(true);
+						}
+						if (g->m_board.m_invert_next_move && g->m_fruit == turn) {
+							g->m_board.m_invert_next_move = false;
+							g->m_board.m_invert_next_move_team = -1;
 						}
 					}
 					else if (type == "t") { // turn change
