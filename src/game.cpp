@@ -896,24 +896,46 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 			m_animationTimer += delta;
 			m_board.draw_fruits(mv, delta);
 			if (m_animationTimer >= 0.0f) {
-				if (mv == MOVE::UP) {
-					m_board.update_up(m_fruit, m_inverseTeam);
+				if (m_board.m_charge) {
+					if (mv == MOVE::UP) {
+						m_board.update_up(m_board.m_charging_team, false);
+					}
+					else if (mv == MOVE::DOWN) {
+						m_board.update_down(m_board.m_charging_team, false);
+					}
+					else if (mv == MOVE::RIGHT) {
+						m_board.update_right(m_board.m_charging_team, false);
+					}
+					else if (mv == MOVE::LEFT) {
+						m_board.update_left(m_board.m_charging_team, false);
+					}
+					if (m_board.m_charging_team == m_fruit) { set_animationTimer(false); }
+					else{ set_animationTimer(true); }
+					m_board.m_charge = false;
+					m_board.m_charging_team = -1;
 				}
-				else if (mv == MOVE::DOWN) {
-					m_board.update_down(m_fruit, m_inverseTeam);
+				else
+				{
+					if (mv == MOVE::UP) {
+						m_board.update_up(m_fruit, m_inverseTeam);
+					}
+					else if (mv == MOVE::DOWN) {
+						m_board.update_down(m_fruit, m_inverseTeam);
+					}
+					else if (mv == MOVE::RIGHT) {
+						m_board.update_right(m_fruit, m_inverseTeam);
+					}
+					else if (mv == MOVE::LEFT) {
+						m_board.update_left(m_fruit, m_inverseTeam);
+					}
+					m_animationTimer = 0.0f;
+					g_fruit_move_mutex.lock();
+					m_move = MOVE::UNDEFINED;
+					g_fruit_move_mutex.unlock();
+					m_inverseTeam = false;
+					m_board.update_boundaries();
+					m_board.m_solo = false;
 				}
-				else if (mv == MOVE::RIGHT) {
-					m_board.update_right(m_fruit, m_inverseTeam);
-				}
-				else if (mv == MOVE::LEFT) {
-					m_board.update_left(m_fruit, m_inverseTeam);
-				}
-				m_animationTimer = 0.0f;
-				g_fruit_move_mutex.lock();
-				m_move = MOVE::UNDEFINED;
-				g_fruit_move_mutex.unlock();
-				m_inverseTeam = false;
-				m_board.update_boundaries();
 			}
 		}
 		else
@@ -1930,7 +1952,16 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			
 			if (chosen_card == 7) // conversion
 			{
+				std::cout << "use conversion (enemy card)" << std::endl;
 				m_board.m_fruit[line][col].m_type = (m_board.m_fruit[line][col].m_type == 0) ? 1 : 0;
+				// reset chosen card
+				g_chosen_card_mutex.lock();
+				m_advertiser.m_chosen_card = -1;
+				g_chosen_card_mutex.unlock();
+			}
+			if (chosen_card == 8) // charge
+			{
+				std::cout << "reset charge card to none" << std::endl;
 				// reset chosen card
 				g_chosen_card_mutex.lock();
 				m_advertiser.m_chosen_card = -1;
@@ -1948,6 +1979,11 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			if (chosen_card == 7) // conversion
 			{
 				m_board.m_fruit[line][col].m_type = (m_board.m_fruit[line][col].m_type == 0) ? 1 : 0;
+			}
+			else if (chosen_card == 8) // charge
+			{
+				m_board.m_charge = true;
+				m_board.m_charging_team = m_fruit;
 			}
 
 			// reset chosen card
@@ -2220,35 +2256,38 @@ void Game::card_action(int card_id)
 
 void Game::use_enemy_card(int card_id, int line, int col)
 {
-	std::cout << "use enemy card" << std::endl;
+	std::cout << "use enemy card " << card_id << std::endl;
+	g_chosen_card_mutex.lock();
+	m_advertiser.m_chosen_card = card_id;
+	g_chosen_card_mutex.unlock();
+	m_advertiser.m_enemy = true;
+	g_show_mutex.lock();
+	m_advertiser.m_show = true;
+	g_show_mutex.unlock();
+	
 	if (card_id == 0) // enclume
-	{
-
-	}
-	else if (card_id == 1) // célérité
 	{
 
 	}
 	else if (card_id == 2) // confiscation
 	{
-
+		
 	}
 	else if (card_id == 3) // renfort
 	{
 
-
 	}
 	else if (card_id == 4) // désordre
 	{
-
+		
 	}
 	else if (card_id == 5) // pétrification
 	{
-
+		
 	}
 	else if (card_id == 6) // vachette
 	{
-
+		
 	}
 	else if (card_id == 7) // conversion
 	{
@@ -2256,18 +2295,11 @@ void Game::use_enemy_card(int card_id, int line, int col)
 		m_board.m_grid_selection[0] = col;
 		m_board.m_grid_selection[1] = line;
 		g_grid_select_mutex.unlock();
-
-		g_chosen_card_mutex.lock();
-		m_advertiser.m_chosen_card = card_id;
-		g_chosen_card_mutex.unlock();
-		m_advertiser.m_enemy = true;
-		g_show_mutex.lock();
-		m_advertiser.m_show = true;
-		g_show_mutex.unlock();
 	}
 	else if (card_id == 8) // charge
 	{
-		
+		m_board.m_charge = true;
+		m_board.m_charging_team = (m_fruit == 0) ? 1 : 0;
 	}
 	else if (card_id == 9) // entracte
 	{
@@ -2279,15 +2311,6 @@ void Game::use_enemy_card(int card_id, int line, int col)
 		m_board.m_grid_selection[0] = col;
 		m_board.m_grid_selection[1] = line;
 		g_grid_select_mutex.unlock();
-
-		g_chosen_card_mutex.lock();
-		m_advertiser.m_chosen_card = card_id;
-		g_chosen_card_mutex.unlock();
-		m_advertiser.m_enemy = true;
-		g_show_mutex.lock();
-		m_advertiser.m_show = true;
-		g_show_mutex.unlock();
-
 		m_board.m_solo = true;
 	}
 	else if (card_id == 11) // piège

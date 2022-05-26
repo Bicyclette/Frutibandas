@@ -539,7 +539,9 @@ struct Board
 		m_dyingTimer(0.0f),
 		m_steady(true),
 		m_solo(false),
-		m_grid_selection{ -1, -1 }
+		m_grid_selection{ -1, -1 },
+		m_charge(false),
+		m_charging_team(-1)
 	{}
 
 	void print()
@@ -1215,6 +1217,8 @@ struct Board
 
 	bool m_solo;
 	std::array<int, 2> m_grid_selection;
+	bool m_charge;
+	int m_charging_team;
 };
 
 struct Cursor
