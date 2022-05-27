@@ -870,7 +870,7 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 					m_cards.m_slot[8] = -1;
 				}
 			}
-			else {
+			else if(m_fruit == 1) {
 				if (m_cards.m_enemy_count == 2) {
 					m_cards.m_slot[2] = -1;
 					m_cards.m_slot[0] = 12;
@@ -968,6 +968,21 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 
 		// draw advertiser
 		m_advertiser.draw(delta);
+
+		// draw anvil
+		if (!show_advertiser && m_anvil.m_active)
+		{
+			g_grid_select_mutex.lock();
+			int line = m_board.m_grid_selection[1];
+			int col = m_board.m_grid_selection[0];
+			g_grid_select_mutex.unlock();
+
+			m_anvil.fall(delta, line, col);
+			if (!m_anvil.m_active) {
+				m_board.m_fruit[line][col].m_type = -2;
+				m_board.m_tile[line][col].m_alive = false;
+			}
+		}
 	}
 
 	// mouse
@@ -1942,7 +1957,9 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				default:
 					break;
 				};
-				card_action(chosen_card);
+				if (chosen_card != -1) {
+					card_action(chosen_card);
+				}
 			}
 			else if (m_fruit == 1 && (card_id >= 200 && card_id <= 202) && chosen_card == -1) { // banana card
 				int desc_id;
@@ -1959,7 +1976,9 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				default:
 					break;
 				};
-				card_action(chosen_card);
+				if (chosen_card != -1) {
+					card_action(chosen_card);
+				}
 			}
 		}
 		else if (turn != m_fruit && chosen_card != -1 && !show_advertiser)
@@ -1970,18 +1989,24 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			int col = m_board.m_grid_selection[0];
 			g_grid_select_mutex.unlock();
 			
-			if (chosen_card == 7) // conversion
+			if (chosen_card == 0)
 			{
-				std::cout << "use conversion (enemy card)" << std::endl;
+				m_anvil.m_active = true;
+				// reset chosen card
+				g_chosen_card_mutex.lock();
+				m_advertiser.m_chosen_card = -1;
+				g_chosen_card_mutex.unlock();
+			}
+			else if (chosen_card == 7) // conversion
+			{
 				m_board.m_fruit[line][col].m_type = (m_board.m_fruit[line][col].m_type == 0) ? 1 : 0;
 				// reset chosen card
 				g_chosen_card_mutex.lock();
 				m_advertiser.m_chosen_card = -1;
 				g_chosen_card_mutex.unlock();
 			}
-			if (chosen_card == 8) // charge
+			else if (chosen_card == 8) // charge or enclume
 			{
-				std::cout << "reset charge card to none" << std::endl;
 				// reset chosen card
 				g_chosen_card_mutex.lock();
 				m_advertiser.m_chosen_card = -1;
@@ -1996,7 +2021,11 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			int col = m_board.m_grid_selection[0];
 			g_grid_select_mutex.unlock();
 
-			if (chosen_card == 7) // conversion
+			if (chosen_card == 0)
+			{
+				m_anvil.m_active = true;
+			}
+			else if (chosen_card == 7) // conversion
 			{
 				m_board.m_fruit[line][col].m_type = (m_board.m_fruit[line][col].m_type == 0) ? 1 : 0;
 			}
@@ -2068,7 +2097,7 @@ void Game::select_grid(std::bitset<10>& inputs, int card_id)
 			if (center_y <= i && center_y >= i - 49) { y = j; break; }
 		}
 		// get info on that location (is there a fruit ? If yes, then what kind of fruit ?)
-		if (m_board.m_tile[y][x].m_alive)
+		if ((y >= 0 && y <= 7) && (x >= 0 && x <= 8) && m_board.m_tile[y][x].m_alive)
 		{
 			if (m_advertiser.m_grid_select) // enclume, vachette et piège
 			{
@@ -2083,7 +2112,14 @@ void Game::select_grid(std::bitset<10>& inputs, int card_id)
 						all_good = true;
 					}
 				}
-				else { all_good = true; }
+				else
+				{
+					g_grid_select_mutex.lock();
+					m_board.m_grid_selection[0] = x;
+					m_board.m_grid_selection[1] = y;
+					g_grid_select_mutex.unlock();
+					all_good = true;
+				}
 				m_advertiser.m_grid_select = false;
 			}
 			else if (m_advertiser.m_fruit_select) // solo, conversion et pétrification
@@ -2145,6 +2181,7 @@ void Game::select_grid(std::bitset<10>& inputs, int card_id)
 			g_msg2server_mutex.unlock();
 
 			// delete card
+			std::cout << "fruit = " << m_fruit << " : delete my own card => " << card_id << std::endl;
 			if (m_fruit == 0) {
 				if (m_cards.m_slot[0] == card_id) {
 					m_cards.m_slot[0] = -1;
@@ -2156,7 +2193,7 @@ void Game::select_grid(std::bitset<10>& inputs, int card_id)
 					m_cards.m_slot[2] = -1;
 				}
 			}
-			else {
+			else if (m_fruit == 1) {
 				if (m_cards.m_slot[8] == card_id) {
 					m_cards.m_slot[8] = -1;
 				}
@@ -2248,6 +2285,7 @@ void Game::card_action(int card_id)
 		g_msg2server_queue.emplace(data);
 		g_msg2server_mutex.unlock();
 
+		std::cout << "delete card (card_action else)" << std::endl;
 		// delete card
 		if (m_fruit == 0) {
 			if (m_cards.m_slot[0] == card_id) {
@@ -2290,7 +2328,10 @@ void Game::use_enemy_card(int card_id, int line, int col)
 	
 	if (card_id == 0) // enclume
 	{
-
+		g_grid_select_mutex.lock();
+		m_board.m_grid_selection[0] = col;
+		m_board.m_grid_selection[1] = line;
+		g_grid_select_mutex.unlock();
 	}
 	else if (card_id == 2) // confiscation
 	{
@@ -2701,7 +2742,7 @@ void Game::set_animationTimer_move_up(bool inverseTeam)
 					int distance{ 0 };
 					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
 					int l{ line };
-					while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l < 8)
+					while ((m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit) && l < 8)
 					{
 						l++;
 						distance++;
@@ -2826,7 +2867,7 @@ void Game::set_animationTimer_move_down(bool inverseTeam)
 					int distance{ 0 };
 					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
 					int l{ line };
-					while (m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit && l >= 0)
+					while ((m_board.m_fruit[l][col].m_type == enemy || m_board.m_fruit[l][col].m_type == m_fruit) && l >= 0)
 					{
 						l--;
 						distance++;
@@ -2894,9 +2935,9 @@ void Game::set_animationTimer_move_right(bool inverseTeam)
 		int y = m_board.m_grid_selection[1];
 		g_grid_select_mutex.unlock();
 		int col = x;
-		while (col <= m_board.boundRight && m_board.m_fruit[y][col].m_type != -1) { col++; }
+		while (col <= m_board.boundRight && m_board.m_fruit[y][col].m_type != -1 && m_board.m_fruit[y][col].m_type != -2) { col++; }
 		if (col > m_board.boundRight) { col = m_board.boundRight; }
-		else if (m_board.m_fruit[y][col].m_type == -1) { col--; }
+		else if (m_board.m_fruit[y][col].m_type == -1 || m_board.m_fruit[y][col].m_type == -2) { col--; }
 		for (int i = x; i <= col; ++i)
 		{
 			m_board.m_fruit[y][i].m_animationTimer = 0.0f - (0.125f * (i - x));
@@ -2950,7 +2991,7 @@ void Game::set_animationTimer_move_right(bool inverseTeam)
 					int distance{ 0 };
 					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
 					int c{ col };
-					while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c >= 0)
+					while ((m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit) && c >= 0)
 					{
 						c--;
 						distance++;
@@ -3018,9 +3059,9 @@ void Game::set_animationTimer_move_left(bool inverseTeam)
 		int y = m_board.m_grid_selection[1];
 		g_grid_select_mutex.unlock();
 		int col = x;
-		while (col >= m_board.boundLeft && m_board.m_fruit[y][col].m_type != -1) { col--; }
+		while (col >= m_board.boundLeft && m_board.m_fruit[y][col].m_type != -1 && m_board.m_fruit[y][col].m_type != -2) { col--; }
 		if (col < m_board.boundLeft) { col = m_board.boundLeft; }
-		else if (m_board.m_fruit[y][col].m_type == -1) { col++; }
+		else if (m_board.m_fruit[y][col].m_type == -1 || m_board.m_fruit[y][col].m_type == -2) { col++; }
 		for (int i = x; i >= col; --i)
 		{
 			m_board.m_fruit[y][i].m_animationTimer = 0.0f - (0.125f * (x - i));
@@ -3074,7 +3115,7 @@ void Game::set_animationTimer_move_left(bool inverseTeam)
 					int distance{ 0 };
 					int last_met{ 0 }; // distance of the last fruit of type m_fruit met
 					int c{ col };
-					while (m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit && c <= 7)
+					while ((m_board.m_fruit[line][c].m_type == enemy || m_board.m_fruit[line][c].m_type == m_fruit) && c <= 7)
 					{
 						c++;
 						distance++;

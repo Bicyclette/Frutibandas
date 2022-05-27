@@ -135,36 +135,16 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						g_turn_mutex.unlock();
 						g_fruit_move_mutex.lock();
 						if (dir == 1) {
-							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
-								//move = MOVE::DOWN;
-							//}
-							//else {
-								move = MOVE::UP;
-							//}
+							move = MOVE::UP;
 						}
 						else if (dir == 2) {
-							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
-								//move = MOVE::UP;
-							//}
-							//else {
-								move = MOVE::DOWN;
-							//}
+							move = MOVE::DOWN;
 						}
 						else if (dir == 3) {
-							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
-								//move = MOVE::LEFT;
-							//}
-							//else {
-								move = MOVE::RIGHT;
-							//}
+							move = MOVE::RIGHT;
 						}
 						else if (dir == 4) {
-							//if (g->m_board.m_invert_next_move && turn == g->m_board.m_invert_next_move_team) {
-								//move = MOVE::RIGHT;
-							//}
-							//else {
-								move = MOVE::LEFT;
-							//}
+							move = MOVE::LEFT;
 						}
 						g_fruit_move_mutex.unlock();
 						if (who == g->getTeam()) {

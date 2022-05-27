@@ -474,7 +474,7 @@ struct Cards
 	{
 		for (int i{ 0 }; i < m_sprite.size(); ++i){
 			int slot = m_slot[i];
-			if (slot != -1)
+			if (slot >= 0)
 			{
 				m_sprite[i]->set_background_img_gl(m_tex[slot].id);
 				m_sprite[i]->use_background_img_gl();
@@ -750,17 +750,17 @@ struct Board
 			int line;
 			for (line = y; line > boundTop; --line)
 			{
-				if (m_fruit[line][x].m_type == -1) {
+				if (m_fruit[line][x].m_type == -1 || m_fruit[line][x].m_type == -2) {
 					break;
 				}
 			}
-			if (m_fruit[line][x].m_type == -1)
+			if (m_fruit[line][x].m_type == -1 || m_fruit[line][x].m_type == -2)
 			{
 				line++;
 			}
 			for (; line <= y; ++line)
 			{
-				if (line - 1 >= boundTop) {
+				if (line - 1 >= boundTop && m_fruit[line - 1][x].m_type != -2) {
 					m_fruit[line - 1][x].m_type = m_fruit[line][x].m_type;
 				}
 				m_fruit[line][x].m_type = -1;
@@ -781,19 +781,19 @@ struct Board
 						while (m_fruit[l][col].m_type == enemy && l <= boundBottom) {
 							l++;
 						}
-						if (l == boundBottom + 1) {
+						if (l == boundBottom + 1 || m_fruit[l][col].m_type == -2) {
 							continue;
 						}
 						else if (m_fruit[l][col].m_type == fruit) {
 							m_fruit[line][col].m_type = -1;
-							if ((line - 1) >= boundTop) {
+							if ((line - 1) >= boundTop && m_fruit[line - 1][col].m_type != -2) {
 								m_fruit[line - 1][col].m_type = enemy;
 							}
 						}
 					}
 					else if (m_fruit[line][col].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((line - 1) >= boundTop) {
+						if ((line - 1) >= boundTop && m_fruit[line-1][col].m_type != -2) {
 							m_fruit[line - 1][col].m_type = fruit;
 						}
 					}
@@ -823,17 +823,17 @@ struct Board
 			int line;
 			for (line = y; line < boundBottom; ++line)
 			{
-				if (m_fruit[line][x].m_type == -1) {
+				if (m_fruit[line][x].m_type == -1 || m_fruit[line][x].m_type == -2) {
 					break;
 				}
 			}
-			if (m_fruit[line][x].m_type == -1)
+			if (m_fruit[line][x].m_type == -1 || m_fruit[line][x].m_type == -2)
 			{
 				line--;
 			}
 			for (; line >= y; --line)
 			{
-				if (line + 1 <= boundBottom) {
+				if (line + 1 <= boundBottom && m_fruit[line + 1][x].m_type != -2) {
 					m_fruit[line + 1][x].m_type = m_fruit[line][x].m_type;
 				}
 				m_fruit[line][x].m_type = -1;
@@ -859,14 +859,14 @@ struct Board
 						}
 						else if (m_fruit[l][col].m_type == fruit) {
 							m_fruit[line][col].m_type = -1;
-							if ((line + 1) <= boundBottom) {
+							if ((line + 1) <= boundBottom && m_fruit[line + 1][col].m_type != -2) {
 								m_fruit[line + 1][col].m_type = enemy;
 							}
 						}
 					}
 					else if (m_fruit[line][col].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((line + 1) <= boundBottom) {
+						if ((line + 1) <= boundBottom && m_fruit[line + 1][col].m_type != -2) {
 							m_fruit[line + 1][col].m_type = fruit;
 						}
 					}
@@ -896,17 +896,17 @@ struct Board
 			int col;
 			for (col = x; col < boundRight; ++col)
 			{
-				if (m_fruit[y][col].m_type == -1) {
+				if (m_fruit[y][col].m_type == -1 || m_fruit[y][col].m_type == -2) {
 					break;
 				}
 			}
-			if (m_fruit[y][col].m_type == -1)
+			if (m_fruit[y][col].m_type == -1 || m_fruit[y][col].m_type == -2)
 			{
 				col--;
 			}
 			for (; col >= x; --col)
 			{
-				if (col + 1 <= boundRight) {
+				if (col + 1 <= boundRight && m_fruit[y][col+1].m_type != -2) {
 					m_fruit[y][col + 1].m_type = m_fruit[y][col].m_type;
 				}
 				m_fruit[y][col].m_type = -1;
@@ -931,14 +931,14 @@ struct Board
 						}
 						else if (m_fruit[line][c].m_type == fruit) {
 							m_fruit[line][col].m_type = -1;
-							if ((col + 1) <= boundRight) {
+							if ((col + 1) <= boundRight && m_fruit[line][col + 1].m_type != -2) {
 								m_fruit[line][col + 1].m_type = enemy;
 							}
 						}
 					}
 					else if (m_fruit[line][col].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((col + 1) <= boundRight) {
+						if ((col + 1) <= boundRight && m_fruit[line][col + 1].m_type != -2) {
 							m_fruit[line][col + 1].m_type = fruit;
 						}
 					}
@@ -968,17 +968,17 @@ struct Board
 			int col;
 			for (col = x; col > boundLeft; --col)
 			{
-				if (m_fruit[y][col].m_type == -1) {
+				if (m_fruit[y][col].m_type == -1 || m_fruit[y][col].m_type == -2) {
 					break;
 				}
 			}
-			if (m_fruit[y][col].m_type == -1)
+			if (m_fruit[y][col].m_type == -1 || m_fruit[y][col].m_type == -2)
 			{
 				col++;
 			}
 			for (; col <= x; ++col)
 			{
-				if (col - 1 >= boundLeft) {
+				if (col - 1 >= boundLeft && m_fruit[y][col-1].m_type != -2) {
 					m_fruit[y][col - 1].m_type = m_fruit[y][col].m_type;
 				}
 				m_fruit[y][col].m_type = -1;
@@ -1003,14 +1003,14 @@ struct Board
 						}
 						else if (m_fruit[line][c].m_type == fruit) {
 							m_fruit[line][col].m_type = -1;
-							if ((col - 1) >= boundLeft) {
+							if ((col - 1) >= boundLeft && m_fruit[line][col - 1].m_type != -2) {
 								m_fruit[line][col - 1].m_type = enemy;
 							}
 						}
 					}
 					else if (m_fruit[line][col].m_type == fruit) {
 						m_fruit[line][col].m_type = -1;
-						if ((col - 1) >= boundLeft) {
+						if ((col - 1) >= boundLeft && m_fruit[line][col - 1].m_type != -2) {
 							m_fruit[line][col - 1].m_type = fruit;
 						}
 					}
@@ -1032,7 +1032,7 @@ struct Board
 			for (int col{ boundLeft }; col <= boundRight; ++col)
 			{
 				int t{ m_fruit[line][col].m_type };
-				if (t != -1)
+				if (t != -1 && t != -2)
 				{
 					if (col < min_x) {
 						min_x = col;
@@ -1500,6 +1500,63 @@ struct ADVERTISER
 	bool m_delete_enemy_card; // after card has been shown, delete the slot it is resting on
 };
 
+struct Anvil
+{
+	Anvil() :
+		m_active(false),
+		m_sprite(0, glm::vec2(-1, -1), glm::vec2(49, 49), 1050, 728),
+		m_pos(glm::vec2(-1,-1)),
+		m_timer(0.0f),
+		m_tex(createTexture("assets/anvil.tga", TEXTURE_TYPE::DIFFUSE, true))
+	{
+		m_sprite.set_background_img_gl(m_tex.id);
+		m_sprite.use_background_img_gl();
+	}
+
+	void fall(float delta, int line = -1, int col = -1)
+	{
+		if (line == -1 && col == -1) { return; }
+		m_timer += delta;
+		if (m_timer >= 0.4f) {
+			m_timer = 0.0f;
+			m_active = false;
+			return;
+		}
+		float ratio = m_timer / 0.4f;
+		float arrive = (start_y - 49 * line);
+		m_pos = glm::vec2(start_x + col * 49, 728 - (ratio * (728 - arrive)));
+		m_sprite.set_pos(m_pos);
+		m_sprite.draw();
+	}
+
+	float m_timer;
+	glm::vec2 m_pos;
+	Sprite m_sprite;
+	bool m_active;
+	Texture m_tex;
+
+	// board boundaries
+	const int start_x = 525 - (49 * 4);
+	const int end_x = 525 + (49 * 4);
+	const int start_y = 645;
+	const int end_y = 645 - (49 * 8);
+};
+
+struct Cow
+{
+	Cow() : m_active(false), m_sprite(0, glm::vec2(-1, -1), glm::vec2(49, 49), 1050, 728)
+	{}
+
+	void charge(int line = -1, int col = -1)
+	{
+		if (line == -1 && col == -1) { return; }
+
+	}
+
+	Sprite m_sprite;
+	bool m_active;
+};
+
 class Game
 {
 	public:
@@ -1610,6 +1667,8 @@ class Game
 		std::array<Texture, 4> m_popup_tex;
 		Timer m_timer;
 		ADVERTISER m_advertiser;
+		Anvil m_anvil;
+		Cow m_cow;
 };
 
 inline std::queue<std::string> g_msg2server_queue;
