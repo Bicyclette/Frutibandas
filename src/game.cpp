@@ -2285,7 +2285,6 @@ void Game::card_action(int card_id)
 		g_msg2server_queue.emplace(data);
 		g_msg2server_mutex.unlock();
 
-		std::cout << "delete card (card_action else)" << std::endl;
 		// delete card
 		if (m_fruit == 0) {
 			if (m_cards.m_slot[0] == card_id) {
@@ -2337,10 +2336,6 @@ void Game::use_enemy_card(int card_id, int line, int col)
 	{
 		
 	}
-	else if (card_id == 3) // renfort
-	{
-
-	}
 	else if (card_id == 4) // désordre
 	{
 		std::cout << "inverted next move ON (client)" << std::endl;
@@ -2380,6 +2375,23 @@ void Game::use_enemy_card(int card_id, int line, int col)
 
 	}
 }
+
+void Game::apply_card_renfort(int fruit_renfort, int num_renfort, std::array<glm::ivec2, 3> p)
+{
+	g_chosen_card_mutex.lock();
+	m_advertiser.m_chosen_card = 3;
+	g_chosen_card_mutex.unlock();
+	m_advertiser.m_enemy = (fruit_renfort == m_fruit) ? false : true;
+	g_show_mutex.lock();
+	m_advertiser.m_show = true;
+	g_show_mutex.unlock();
+
+	for (int i{ 0 }; i < num_renfort; ++i)
+	{
+		m_board.m_fruit[p[i][0]][p[i][1]].m_type = fruit_renfort;
+	}
+}
+
 
 void Game::hovering(int sprite_id)
 {

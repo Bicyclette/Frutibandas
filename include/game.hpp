@@ -1635,6 +1635,7 @@ class Game
 		void hovering(int sprite_id);
 		void select_grid(std::bitset<10>& inputs, int card_id);
 		void use_enemy_card(int card_id, int line, int col);
+		void Game::apply_card_renfort(int fruit_renfort, int num_renfort, std::array<glm::ivec2, 3> p);
 
 		// fruits movement
 		void set_animationTimer(bool inverseTeam);

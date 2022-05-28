@@ -198,6 +198,7 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						g_rte_mutex.unlock();
 					}
 					else if (type == "c") { // enemy player used a card
+						std::cout << message << std::endl;
 						std::istringstream card_stream(message);
 						std::vector<int> info;
 						std::string element;
@@ -208,7 +209,19 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						int card_id = info[1];
 						int line = info[2];
 						int col = info[3];
-						g->use_enemy_card(card_id, line, col);
+						if (card_id == 3) // renfort
+						{
+							int num_renfort = info[4];
+							glm::ivec2 p1(info[5], info[6]);
+							glm::ivec2 p2(info[7], info[8]);
+							glm::ivec2 p3(info[9], info[10]);
+							int fruit_renfort = info[11];
+							g->apply_card_renfort(fruit_renfort, num_renfort, { p1, p2, p3 });
+						}
+						else
+						{
+							g->use_enemy_card(card_id, line, col);
+						}
 					}
 				}
 				else if (client.m_event.type == ENET_EVENT_TYPE_DISCONNECT)
