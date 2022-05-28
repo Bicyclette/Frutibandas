@@ -160,6 +160,7 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 					}
 					else if (type == "t") { // turn change
 						int turn = std::atoi(message.substr(2).c_str());
+						std::cout << message << std::endl;
 						if (turn == 0) {
 							std::cout << "orange is playing" << std::endl;
 						}
