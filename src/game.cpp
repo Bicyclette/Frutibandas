@@ -96,14 +96,20 @@ Game::Game(int clientWidth, int clientHeight) :
 	m_writer(clientWidth, clientHeight),
 	m_move(MOVE::UNDEFINED),
 	m_animationTimer(0.0f),
-	m_popup(0, glm::vec2(525 - 200, 364 - 75), glm::vec2(400, 150), clientWidth, clientHeight),
-	m_back_home(0, glm::vec2(525 - 75, 378 - 54), glm::vec2(150, 24), clientWidth, clientHeight),
+	m_popup(0, glm::vec2(184, 728 - 168 - 393), glm::vec2(683, 393), clientWidth, clientHeight),
+	m_popup_button(0, glm::vec2(525 - 90, 728-168-350), glm::vec2(180, 85), clientWidth, clientHeight),
 	m_popup_tex{
 		createTexture("assets/victory.tga", TEXTURE_TYPE::DIFFUSE, true),
 		createTexture("assets/defeat.tga", TEXTURE_TYPE::DIFFUSE, true),
-		createTexture("assets/retour_accueil.tga", TEXTURE_TYPE::DIFFUSE, true),
-		createTexture("assets/retour_accueil_hover.tga", TEXTURE_TYPE::DIFFUSE, true)
-	}
+		createTexture("assets/yes.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/yes_hover.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/interruption.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/interruption_connexion.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/interruption_adversaire_deco.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/ok.tga", TEXTURE_TYPE::DIFFUSE, true),
+		createTexture("assets/ok_hover.tga", TEXTURE_TYPE::DIFFUSE, true)
+	},
+	m_interupt(false)
 {
 	// create mouse
 	int mouse_pos[2];
@@ -118,8 +124,8 @@ Game::Game(int clientWidth, int clientHeight) :
     textRenderer->use_police(0);
 
 	// popup & back_home
-	m_back_home.set_background_img_gl(m_popup_tex[2].id);
-	m_back_home.use_background_img_gl();
+	m_popup_button.set_background_img_gl(m_popup_tex[2].id);
+	m_popup_button.use_background_img_gl();
 	m_popup.set_background_img_gl(-1);
 	m_popup.use_background_img_gl();
 
@@ -765,17 +771,21 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+	int winning_team;
+	g_winner_mutex.lock();
+	winning_team = m_winner;
+	g_winner_mutex.unlock();
+	bool interupt;
+	g_interupt_mutex.lock();
+	interupt = m_interupt;
+	g_interupt_mutex.unlock();
 	if (m_ui.get_active_page() == 1)
 	{
 		int player_turn;
-		int winning_team;
 		MOVE current_move;
 		g_turn_mutex.lock();
 		player_turn = m_turn;
 		g_turn_mutex.unlock();
-		g_winner_mutex.lock();
-		winning_team = m_winner;
-		g_winner_mutex.unlock();
 		g_fruit_move_mutex.lock();
 		current_move = m_move;
 		g_fruit_move_mutex.unlock();
@@ -958,10 +968,10 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 				textRenderer->print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 16 * i, 1, glm::vec3(0));
 			}
 		}
-		if (m_winner != -1)
+		if (winning_team != -1)
 		{
 			m_popup.draw();
-			m_back_home.draw();
+			m_popup_button.draw();
 		}
 		// remaining time
 		print_remaining_time();
@@ -983,6 +993,12 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 				m_board.m_tile[line][col].m_alive = false;
 			}
 		}
+	}
+
+	if (interupt)
+	{
+		m_popup.draw();
+		m_popup_button.draw();
 	}
 
 	// mouse
@@ -1227,6 +1243,10 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 	}
 	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos[0], mouse_pos[1]);
 
+	g_interupt_mutex.lock();
+	bool interupt = m_interupt;
+	g_interupt_mutex.unlock();
+
 	if (!hovered) { return; }
 	if (m_ui.get_active_page() == 0) // home
 	{
@@ -1397,454 +1417,471 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		{
 			home_page.get_layer(14).get_sprite(36)->use_background_img();
 		}
-		if (sprite_id >= 2 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on a face feature
+		if (interupt && m_popup_button.mouse_hover(mouse_pos[0], mouse_pos[1]))
 		{
-			// highlight
-			home_page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (sprite_id - 2))));
-			home_page.get_layer(1).set_visibility(true);
-
-			// select
-			hovered->select();
-			for (int i{ 2 }; i <= 6; ++i)
-			{
-				if (sprite_id != i)
-				{
-					home_page.get_layer(2).get_sprite(i)->unselect();
-				}
-			}
-
-			// stop focus pseudo input
-			home_page.get_layer(12).get_sprite(34)->use_background_img();
-			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-
-			// show options
-			if (sprite_id == 2)
-			{
-				if(home_page.get_layer(3).m_visible)
-					home_page.get_layer(3).set_visibility(false);
-				else
-					home_page.get_layer(3).set_visibility(true);
-				for(int i{4}; i < 10; ++i)
-					home_page.get_layer(i).set_visibility(false);
-			}
-			else if (sprite_id == 3)
-			{
-				if (home_page.get_layer(9).get_sprite(26)->is_selected())
-				{
-					if(home_page.get_layer(4).m_visible)
-						home_page.get_layer(4).set_visibility(false);
-					else
-						home_page.get_layer(4).set_visibility(true);
-					for (int i{ 3 }; i < 10; ++i)
-						if (i != 4)
-							home_page.get_layer(i).set_visibility(false);
-				}
-				else if (home_page.get_layer(9).get_sprite(27)->is_selected())
-				{
-					if(home_page.get_layer(5).m_visible)
-						home_page.get_layer(5).set_visibility(true);
-					else
-						home_page.get_layer(5).set_visibility(true);
-					for (int i{ 3 }; i < 10; ++i)
-						if (i != 5)
-							home_page.get_layer(i).set_visibility(false);
-				}
-			}
-			else if (sprite_id == 4)
-			{
-				if (home_page.get_layer(9).get_sprite(26)->is_selected())
-				{
-					if (home_page.get_layer(6).m_visible)
-						home_page.get_layer(6).set_visibility(false);
-					else
-						home_page.get_layer(6).set_visibility(true);
-					for (int i{ 3 }; i < 10; ++i)
-						if (i != 6)
-							home_page.get_layer(i).set_visibility(false);
-				}
-				else if (home_page.get_layer(9).get_sprite(27)->is_selected())
-				{
-					if (home_page.get_layer(7).m_visible)
-						home_page.get_layer(7).set_visibility(true);
-					else
-						home_page.get_layer(7).set_visibility(true);
-					for (int i{ 3 }; i < 10; ++i)
-						if (i != 7)
-							home_page.get_layer(i).set_visibility(false);
-				}
-			}
-			else if (sprite_id == 5)
-			{
-				if(home_page.get_layer(8).m_visible)
-					home_page.get_layer(8).set_visibility(false);
-				else
-					home_page.get_layer(8).set_visibility(true);
-				for (int i{ 3 }; i < 10; ++i)
-					if (i != 8)
-						home_page.get_layer(i).set_visibility(false);
-			}
-			else if (sprite_id == 6)
-			{
-				if(home_page.get_layer(9).m_visible)
-					home_page.get_layer(9).set_visibility(false);
-				else
-					home_page.get_layer(9).set_visibility(true);
-				for (int i{ 3 }; i < 9; ++i)
-						home_page.get_layer(i).set_visibility(false);
-			}
+			m_popup_button.set_background_img_gl(m_popup_tex[8].id);
 		}
-		else if (sprite_id >= 7 && sprite_id <= 27 && inputs.test(2) && inputs.test(9)) // clicked on a face feature option
+		else
 		{
-			// select option
-			hovered->select();
-			if (sprite_id >= 8 && sprite_id <= 12)
-			{
-				for (int i{ 8 }; i <= 12; ++i)
-				{
-					if (i == sprite_id)
-						continue;
-					home_page.get_layer(4).get_sprite(i)->unselect();
-				}
-			}
-			else if (sprite_id >= 13 && sprite_id <= 17)
-			{
-				for (int i{ 13 }; i <= 17; ++i)
-				{
-					if (i == sprite_id)
-						continue;
-					home_page.get_layer(5).get_sprite(i)->unselect();
-				}
-			}
-			else if (sprite_id >= 18 && sprite_id <= 20)
-			{
-				for (int i{ 18 }; i <= 20; ++i)
-				{
-					if (i == sprite_id)
-						continue;
-					home_page.get_layer(6).get_sprite(i)->unselect();
-				}
-			}
-			else if (sprite_id >= 21 && sprite_id <= 22)
-			{
-				for (int i{ 21 }; i <= 22; ++i)
-				{
-					if (i == sprite_id)
-						continue;
-					home_page.get_layer(7).get_sprite(i)->unselect();
-				}
-			}
-			else if (sprite_id >= 23 && sprite_id <= 25)
-			{
-				for (int i{ 23 }; i <= 25; ++i)
-				{
-					if (i == sprite_id)
-						continue;
-					home_page.get_layer(8).get_sprite(i)->unselect();
-				}
-			}
-			else if (sprite_id >= 26 && sprite_id <= 27)
-			{
-				for (int i{ 26 }; i <= 27; ++i)
-				{
-					if (i == sprite_id)
-						continue;
-					home_page.get_layer(9).get_sprite(i)->unselect();
-				}
-			}
-
-			// hide layer
-			home_page.get_layer(hovered->get_layer_id()).set_visibility(false);
-
-			// set gender
-			if (sprite_id == 26)
-			{
-				m_avatar.m_gender = Avatar::GENDER::MALE;
-				// unselect all female features and select corresponding male ones
-				swap_gender_features(Avatar::GENDER::FEMALE, Avatar::GENDER::MALE);
-			}
-			else if (sprite_id == 27)
-			{
-				m_avatar.m_gender = Avatar::GENDER::FEMALE;
-				// unselect all male features and select corresponding female ones
-				swap_gender_features(Avatar::GENDER::MALE, Avatar::GENDER::FEMALE);
-			}
-
-			// set mouth
-			else if (sprite_id == 25)
-				m_avatar.m_mouth = Avatar::MOUTH::GRANDE;
-			else if (sprite_id == 24)
-				m_avatar.m_mouth = Avatar::MOUTH::MOYENNE;
-			else if (sprite_id == 23)
-				m_avatar.m_mouth = Avatar::MOUTH::PETITE;
-			else
-			{
-				if (m_avatar.m_gender == Avatar::GENDER::MALE)
-				{
-					// set male eyes
-					if (sprite_id == 18)
-						m_avatar.m_eyes = Avatar::EYES::MANGA;
-					else if (sprite_id == 19)
-						m_avatar.m_eyes = Avatar::EYES::AMANDE;
-					else if (sprite_id == 20)
-						m_avatar.m_eyes = Avatar::EYES::GROS;
-
-					// set male hair
-					else if (sprite_id == 8)
-						m_avatar.m_hair = Avatar::HAIR::HERISSON;
-					else if (sprite_id == 9)
-						m_avatar.m_hair = Avatar::HAIR::DECOIFFE;
-					else if (sprite_id == 10)
-						m_avatar.m_hair = Avatar::HAIR::MECHE_AVANT;
-					else if (sprite_id == 11)
-						m_avatar.m_hair = Avatar::HAIR::MIXTE;
-					else if (sprite_id == 12)
-						m_avatar.m_hair = Avatar::HAIR::ARRIERE;
-				}
-				else
-				{
-					// set female eyes
-					if (sprite_id == 21)
-						m_avatar.m_eyes = Avatar::EYES::EGYPTE;
-					else if (sprite_id == 22)
-						m_avatar.m_eyes = Avatar::EYES::MASCARA;
-
-					// set female hair
-					else if (sprite_id == 13)
-						m_avatar.m_hair = Avatar::HAIR::MIXTE;
-					else if (sprite_id == 14)
-						m_avatar.m_hair = Avatar::HAIR::MI_LONG;
-					else if (sprite_id == 15)
-						m_avatar.m_hair = Avatar::HAIR::FRANGE;
-					else if (sprite_id == 16)
-						m_avatar.m_hair = Avatar::HAIR::AU_BOL;
-					else if (sprite_id == 17)
-						m_avatar.m_hair = Avatar::HAIR::PONYTAIL;
-				}
-			}
+			m_popup_button.set_background_img_gl(m_popup_tex[7].id);
 		}
-		else if ((sprite_id == 29 || sprite_id == 30) && inputs.test(2) && inputs.test(9)) // color picker
+		if (interupt && m_popup_button.mouse_hover(mouse_pos[0], mouse_pos[1]) && inputs.test(2) && inputs.test(9)) // clicked on OK for popup
 		{
-			if (home_page.get_layer(2).get_sprite(2)->is_selected()) // change skin color
-			{
-				if (sprite_id == 29)
-				{
-					m_avatar.m_skin_color_id--;
-					if (m_avatar.m_skin_color_id == -1)
-					{
-						m_avatar.m_skin_color_id = m_avatar.m_skin_color.size() - 1;
-					}
-				}
-				else
-				{
-					m_avatar.m_skin_color_id++;
-					if (m_avatar.m_skin_color_id >= m_avatar.m_skin_color.size())
-					{
-						m_avatar.m_skin_color_id = 0;
-					}
-				}
-			}
-			else if (home_page.get_layer(2).get_sprite(3)->is_selected()) // change hair color
-			{
-				if (sprite_id == 29)
-				{
-					m_avatar.m_hair_color_id--;
-					if (m_avatar.m_hair_color_id == -1)
-					{
-						m_avatar.m_hair_color_id = m_avatar.m_hair_color.size() - 1;
-					}
-				}
-				else
-				{
-					m_avatar.m_hair_color_id++;
-					if (m_avatar.m_hair_color_id >= m_avatar.m_hair_color.size())
-					{
-						m_avatar.m_hair_color_id = 0;
-					}
-				}
-			}
-			else if (home_page.get_layer(2).get_sprite(4)->is_selected()) // change eyes color
-			{
-				if (sprite_id == 29)
-				{
-					m_avatar.m_eyes_color_id--;
-					if (m_avatar.m_eyes_color_id == -1)
-					{
-						m_avatar.m_eyes_color_id = m_avatar.m_eyes_color.size() - 1;
-					}
-				}
-				else
-				{
-					m_avatar.m_eyes_color_id++;
-					if (m_avatar.m_eyes_color_id >= m_avatar.m_eyes_color.size())
-					{
-						m_avatar.m_eyes_color_id = 0;
-					}
-				}
-			}
-
-			// stop focus pseudo input
-			home_page.get_layer(12).get_sprite(33)->use_background_img();
-			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-
-			// hide face feature options
-			home_page.get_layer(3).set_visibility(false);
-			home_page.get_layer(4).set_visibility(false);
-			home_page.get_layer(5).set_visibility(false);
-			home_page.get_layer(6).set_visibility(false);
-			home_page.get_layer(7).set_visibility(false);
-			home_page.get_layer(8).set_visibility(false);
-			home_page.get_layer(9).set_visibility(false);
+			g_interupt_mutex.lock();
+			m_interupt = false;
+			g_interupt_mutex.unlock();
 		}
 		else if (sprite_id == 31 && inputs.test(2) && inputs.test(9)) // clicked on quit game
-		{			
+		{
 			SDL_Event event;
 			event.type = SDL_QUIT;
 			SDL_PushEvent(&event);
 		}
-		else if (sprite_id == 33 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
+		else if (!interupt)
 		{
-			home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
-			m_writer.m_cursor.m_focus = 0; // 0 = pseudo, 1 = chat, 2 = not writting
-		}
-		else if (sprite_id == 34 && inputs.test(2) && inputs.test(9)) // clicked on connect
-		{
-			g_try_connection = true;
-			std::string data("0:" + m_writer.m_textInput[0] + ":");
-			// gender
-			if (m_avatar.m_gender == Avatar::GENDER::MALE) {
-				data += "0.";
-				// hair
-				switch (m_avatar.m_hair)
-				{
-				case Avatar::HAIR::MIXTE:
-					data += "0.";
-					break;
-				case Avatar::HAIR::HERISSON:
-					data += "1.";
-					break;
-				case Avatar::HAIR::DECOIFFE:
-					data += "2.";
-					break;
-				case Avatar::HAIR::ARRIERE:
-					data += "3.";
-					break;
-				case Avatar::HAIR::MECHE_AVANT:
-					data += "4.";
-					break;
-				default:
-					break;
-				};
-				// eyes
-				switch (m_avatar.m_eyes)
-				{
-				case Avatar::EYES::MANGA:
-					data += "0.";
-					break;
-				case Avatar::EYES::AMANDE:
-					data += "1.";
-					break;
-				case Avatar::EYES::GROS:
-					data += "2.";
-					break;
-				default:
-					break;
-				};
-			}
-			else {
-				data += "1.";
-				// hair
-				switch (m_avatar.m_hair)
-				{
-				case Avatar::HAIR::MIXTE:
-					data += "0.";
-					break;
-				case Avatar::HAIR::MI_LONG:
-					data += "5.";
-					break;
-				case Avatar::HAIR::FRANGE:
-					data += "6.";
-					break;
-				case Avatar::HAIR::AU_BOL:
-					data += "7.";
-					break;
-				case Avatar::HAIR::PONYTAIL:
-					data += "8.";
-					break;
-				default:
-					break;
-				};
-				// eyes
-				switch (m_avatar.m_eyes)
-				{
-				case Avatar::EYES::MANGA:
-					data += "0.";
-					break;
-				case Avatar::EYES::EGYPTE:
-					data += "3.";
-					break;
-				case Avatar::EYES::MASCARA:
-					data += "4.";
-					break;
-				default:
-					break;
-				};
-			}
-			// mouth
-			switch (m_avatar.m_mouth)
+			if (sprite_id >= 2 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on a face feature
 			{
-			case Avatar::MOUTH::PETITE:
-				data += "0.";
-				break;
-			case Avatar::MOUTH::MOYENNE:
-				data += "1.";
-				break;
-			case Avatar::MOUTH::GRANDE:
-				data += "2.";
-				break;
-			};
-			// skin color
-			data += std::to_string(m_avatar.m_skin_color_id) + ".";
-			// hair color
-			data += std::to_string(m_avatar.m_hair_color_id) + ".";
-			// eyes color
-			data += std::to_string(m_avatar.m_eyes_color_id);
+				// highlight
+				home_page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (sprite_id - 2))));
+				home_page.get_layer(1).set_visibility(true);
 
-			g_msg2server_mutex.lock();
-			g_msg2server_queue.emplace(data);
-			g_msg2server_mutex.unlock();
-			
-			// stop focus pseudo input
-			home_page.get_layer(12).get_sprite(33)->use_background_img();
-			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-		}
-		else if (sprite_id == 35 && inputs.test(2) && inputs.test(9)) // clicked on play
-		{
-			g_search_opponent = true;
-			g_msg2server_mutex.lock();
-			g_msg2server_queue.emplace("1");
-			g_msg2server_mutex.unlock();
-		}
-		else if (sprite_id == 36 && inputs.test(2) && inputs.test(9)) // clicked on stop search opponent
-		{
-			g_search_opponent = false;
-			g_msg2server_mutex.lock();
-			g_msg2server_queue.emplace("2");
-			g_msg2server_mutex.unlock();
-		}
-		else if (inputs.test(2) && inputs.test(9))
-		{
-			// stop focus pseudo input
-			home_page.get_layer(12).get_sprite(33)->use_background_img();
-			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-			
-			// hide face feature options
-			home_page.get_layer(3).set_visibility(false);
-			home_page.get_layer(4).set_visibility(false);
-			home_page.get_layer(5).set_visibility(false);
-			home_page.get_layer(6).set_visibility(false);
-			home_page.get_layer(7).set_visibility(false);
-			home_page.get_layer(8).set_visibility(false);
-			home_page.get_layer(9).set_visibility(false);
+				// select
+				hovered->select();
+				for (int i{ 2 }; i <= 6; ++i)
+				{
+					if (sprite_id != i)
+					{
+						home_page.get_layer(2).get_sprite(i)->unselect();
+					}
+				}
+
+				// stop focus pseudo input
+				home_page.get_layer(12).get_sprite(34)->use_background_img();
+				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+
+				// show options
+				if (sprite_id == 2)
+				{
+					if (home_page.get_layer(3).m_visible)
+						home_page.get_layer(3).set_visibility(false);
+					else
+						home_page.get_layer(3).set_visibility(true);
+					for (int i{ 4 }; i < 10; ++i)
+						home_page.get_layer(i).set_visibility(false);
+				}
+				else if (sprite_id == 3)
+				{
+					if (home_page.get_layer(9).get_sprite(26)->is_selected())
+					{
+						if (home_page.get_layer(4).m_visible)
+							home_page.get_layer(4).set_visibility(false);
+						else
+							home_page.get_layer(4).set_visibility(true);
+						for (int i{ 3 }; i < 10; ++i)
+							if (i != 4)
+								home_page.get_layer(i).set_visibility(false);
+					}
+					else if (home_page.get_layer(9).get_sprite(27)->is_selected())
+					{
+						if (home_page.get_layer(5).m_visible)
+							home_page.get_layer(5).set_visibility(true);
+						else
+							home_page.get_layer(5).set_visibility(true);
+						for (int i{ 3 }; i < 10; ++i)
+							if (i != 5)
+								home_page.get_layer(i).set_visibility(false);
+					}
+				}
+				else if (sprite_id == 4)
+				{
+					if (home_page.get_layer(9).get_sprite(26)->is_selected())
+					{
+						if (home_page.get_layer(6).m_visible)
+							home_page.get_layer(6).set_visibility(false);
+						else
+							home_page.get_layer(6).set_visibility(true);
+						for (int i{ 3 }; i < 10; ++i)
+							if (i != 6)
+								home_page.get_layer(i).set_visibility(false);
+					}
+					else if (home_page.get_layer(9).get_sprite(27)->is_selected())
+					{
+						if (home_page.get_layer(7).m_visible)
+							home_page.get_layer(7).set_visibility(true);
+						else
+							home_page.get_layer(7).set_visibility(true);
+						for (int i{ 3 }; i < 10; ++i)
+							if (i != 7)
+								home_page.get_layer(i).set_visibility(false);
+					}
+				}
+				else if (sprite_id == 5)
+				{
+					if (home_page.get_layer(8).m_visible)
+						home_page.get_layer(8).set_visibility(false);
+					else
+						home_page.get_layer(8).set_visibility(true);
+					for (int i{ 3 }; i < 10; ++i)
+						if (i != 8)
+							home_page.get_layer(i).set_visibility(false);
+				}
+				else if (sprite_id == 6)
+				{
+					if (home_page.get_layer(9).m_visible)
+						home_page.get_layer(9).set_visibility(false);
+					else
+						home_page.get_layer(9).set_visibility(true);
+					for (int i{ 3 }; i < 9; ++i)
+						home_page.get_layer(i).set_visibility(false);
+				}
+			}
+			else if (sprite_id >= 7 && sprite_id <= 27 && inputs.test(2) && inputs.test(9)) // clicked on a face feature option
+			{
+				// select option
+				hovered->select();
+				if (sprite_id >= 8 && sprite_id <= 12)
+				{
+					for (int i{ 8 }; i <= 12; ++i)
+					{
+						if (i == sprite_id)
+							continue;
+						home_page.get_layer(4).get_sprite(i)->unselect();
+					}
+				}
+				else if (sprite_id >= 13 && sprite_id <= 17)
+				{
+					for (int i{ 13 }; i <= 17; ++i)
+					{
+						if (i == sprite_id)
+							continue;
+						home_page.get_layer(5).get_sprite(i)->unselect();
+					}
+				}
+				else if (sprite_id >= 18 && sprite_id <= 20)
+				{
+					for (int i{ 18 }; i <= 20; ++i)
+					{
+						if (i == sprite_id)
+							continue;
+						home_page.get_layer(6).get_sprite(i)->unselect();
+					}
+				}
+				else if (sprite_id >= 21 && sprite_id <= 22)
+				{
+					for (int i{ 21 }; i <= 22; ++i)
+					{
+						if (i == sprite_id)
+							continue;
+						home_page.get_layer(7).get_sprite(i)->unselect();
+					}
+				}
+				else if (sprite_id >= 23 && sprite_id <= 25)
+				{
+					for (int i{ 23 }; i <= 25; ++i)
+					{
+						if (i == sprite_id)
+							continue;
+						home_page.get_layer(8).get_sprite(i)->unselect();
+					}
+				}
+				else if (sprite_id >= 26 && sprite_id <= 27)
+				{
+					for (int i{ 26 }; i <= 27; ++i)
+					{
+						if (i == sprite_id)
+							continue;
+						home_page.get_layer(9).get_sprite(i)->unselect();
+					}
+				}
+
+				// hide layer
+				home_page.get_layer(hovered->get_layer_id()).set_visibility(false);
+
+				// set gender
+				if (sprite_id == 26)
+				{
+					m_avatar.m_gender = Avatar::GENDER::MALE;
+					// unselect all female features and select corresponding male ones
+					swap_gender_features(Avatar::GENDER::FEMALE, Avatar::GENDER::MALE);
+				}
+				else if (sprite_id == 27)
+				{
+					m_avatar.m_gender = Avatar::GENDER::FEMALE;
+					// unselect all male features and select corresponding female ones
+					swap_gender_features(Avatar::GENDER::MALE, Avatar::GENDER::FEMALE);
+				}
+
+				// set mouth
+				else if (sprite_id == 25)
+					m_avatar.m_mouth = Avatar::MOUTH::GRANDE;
+				else if (sprite_id == 24)
+					m_avatar.m_mouth = Avatar::MOUTH::MOYENNE;
+				else if (sprite_id == 23)
+					m_avatar.m_mouth = Avatar::MOUTH::PETITE;
+				else
+				{
+					if (m_avatar.m_gender == Avatar::GENDER::MALE)
+					{
+						// set male eyes
+						if (sprite_id == 18)
+							m_avatar.m_eyes = Avatar::EYES::MANGA;
+						else if (sprite_id == 19)
+							m_avatar.m_eyes = Avatar::EYES::AMANDE;
+						else if (sprite_id == 20)
+							m_avatar.m_eyes = Avatar::EYES::GROS;
+
+						// set male hair
+						else if (sprite_id == 8)
+							m_avatar.m_hair = Avatar::HAIR::HERISSON;
+						else if (sprite_id == 9)
+							m_avatar.m_hair = Avatar::HAIR::DECOIFFE;
+						else if (sprite_id == 10)
+							m_avatar.m_hair = Avatar::HAIR::MECHE_AVANT;
+						else if (sprite_id == 11)
+							m_avatar.m_hair = Avatar::HAIR::MIXTE;
+						else if (sprite_id == 12)
+							m_avatar.m_hair = Avatar::HAIR::ARRIERE;
+					}
+					else
+					{
+						// set female eyes
+						if (sprite_id == 21)
+							m_avatar.m_eyes = Avatar::EYES::EGYPTE;
+						else if (sprite_id == 22)
+							m_avatar.m_eyes = Avatar::EYES::MASCARA;
+
+						// set female hair
+						else if (sprite_id == 13)
+							m_avatar.m_hair = Avatar::HAIR::MIXTE;
+						else if (sprite_id == 14)
+							m_avatar.m_hair = Avatar::HAIR::MI_LONG;
+						else if (sprite_id == 15)
+							m_avatar.m_hair = Avatar::HAIR::FRANGE;
+						else if (sprite_id == 16)
+							m_avatar.m_hair = Avatar::HAIR::AU_BOL;
+						else if (sprite_id == 17)
+							m_avatar.m_hair = Avatar::HAIR::PONYTAIL;
+					}
+				}
+			}
+			else if ((sprite_id == 29 || sprite_id == 30) && inputs.test(2) && inputs.test(9)) // color picker
+			{
+				if (home_page.get_layer(2).get_sprite(2)->is_selected()) // change skin color
+				{
+					if (sprite_id == 29)
+					{
+						m_avatar.m_skin_color_id--;
+						if (m_avatar.m_skin_color_id == -1)
+						{
+							m_avatar.m_skin_color_id = m_avatar.m_skin_color.size() - 1;
+						}
+					}
+					else
+					{
+						m_avatar.m_skin_color_id++;
+						if (m_avatar.m_skin_color_id >= m_avatar.m_skin_color.size())
+						{
+							m_avatar.m_skin_color_id = 0;
+						}
+					}
+				}
+				else if (home_page.get_layer(2).get_sprite(3)->is_selected()) // change hair color
+				{
+					if (sprite_id == 29)
+					{
+						m_avatar.m_hair_color_id--;
+						if (m_avatar.m_hair_color_id == -1)
+						{
+							m_avatar.m_hair_color_id = m_avatar.m_hair_color.size() - 1;
+						}
+					}
+					else
+					{
+						m_avatar.m_hair_color_id++;
+						if (m_avatar.m_hair_color_id >= m_avatar.m_hair_color.size())
+						{
+							m_avatar.m_hair_color_id = 0;
+						}
+					}
+				}
+				else if (home_page.get_layer(2).get_sprite(4)->is_selected()) // change eyes color
+				{
+					if (sprite_id == 29)
+					{
+						m_avatar.m_eyes_color_id--;
+						if (m_avatar.m_eyes_color_id == -1)
+						{
+							m_avatar.m_eyes_color_id = m_avatar.m_eyes_color.size() - 1;
+						}
+					}
+					else
+					{
+						m_avatar.m_eyes_color_id++;
+						if (m_avatar.m_eyes_color_id >= m_avatar.m_eyes_color.size())
+						{
+							m_avatar.m_eyes_color_id = 0;
+						}
+					}
+				}
+
+				// stop focus pseudo input
+				home_page.get_layer(12).get_sprite(33)->use_background_img();
+				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+
+				// hide face feature options
+				home_page.get_layer(3).set_visibility(false);
+				home_page.get_layer(4).set_visibility(false);
+				home_page.get_layer(5).set_visibility(false);
+				home_page.get_layer(6).set_visibility(false);
+				home_page.get_layer(7).set_visibility(false);
+				home_page.get_layer(8).set_visibility(false);
+				home_page.get_layer(9).set_visibility(false);
+			}
+			else if (sprite_id == 33 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
+			{
+				home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
+				m_writer.m_cursor.m_focus = 0; // 0 = pseudo, 1 = chat, 2 = not writting
+			}
+			else if (sprite_id == 34 && inputs.test(2) && inputs.test(9)) // clicked on connect
+			{
+				g_try_connection = true;
+				std::string data("0:" + m_writer.m_textInput[0] + ":");
+				// gender
+				if (m_avatar.m_gender == Avatar::GENDER::MALE) {
+					data += "0.";
+					// hair
+					switch (m_avatar.m_hair)
+					{
+					case Avatar::HAIR::MIXTE:
+						data += "0.";
+						break;
+					case Avatar::HAIR::HERISSON:
+						data += "1.";
+						break;
+					case Avatar::HAIR::DECOIFFE:
+						data += "2.";
+						break;
+					case Avatar::HAIR::ARRIERE:
+						data += "3.";
+						break;
+					case Avatar::HAIR::MECHE_AVANT:
+						data += "4.";
+						break;
+					default:
+						break;
+					};
+					// eyes
+					switch (m_avatar.m_eyes)
+					{
+					case Avatar::EYES::MANGA:
+						data += "0.";
+						break;
+					case Avatar::EYES::AMANDE:
+						data += "1.";
+						break;
+					case Avatar::EYES::GROS:
+						data += "2.";
+						break;
+					default:
+						break;
+					};
+				}
+				else {
+					data += "1.";
+					// hair
+					switch (m_avatar.m_hair)
+					{
+					case Avatar::HAIR::MIXTE:
+						data += "0.";
+						break;
+					case Avatar::HAIR::MI_LONG:
+						data += "5.";
+						break;
+					case Avatar::HAIR::FRANGE:
+						data += "6.";
+						break;
+					case Avatar::HAIR::AU_BOL:
+						data += "7.";
+						break;
+					case Avatar::HAIR::PONYTAIL:
+						data += "8.";
+						break;
+					default:
+						break;
+					};
+					// eyes
+					switch (m_avatar.m_eyes)
+					{
+					case Avatar::EYES::MANGA:
+						data += "0.";
+						break;
+					case Avatar::EYES::EGYPTE:
+						data += "3.";
+						break;
+					case Avatar::EYES::MASCARA:
+						data += "4.";
+						break;
+					default:
+						break;
+					};
+				}
+				// mouth
+				switch (m_avatar.m_mouth)
+				{
+				case Avatar::MOUTH::PETITE:
+					data += "0.";
+					break;
+				case Avatar::MOUTH::MOYENNE:
+					data += "1.";
+					break;
+				case Avatar::MOUTH::GRANDE:
+					data += "2.";
+					break;
+				};
+				// skin color
+				data += std::to_string(m_avatar.m_skin_color_id) + ".";
+				// hair color
+				data += std::to_string(m_avatar.m_hair_color_id) + ".";
+				// eyes color
+				data += std::to_string(m_avatar.m_eyes_color_id);
+
+				g_msg2server_mutex.lock();
+				g_msg2server_queue.emplace(data);
+				g_msg2server_mutex.unlock();
+
+				// stop focus pseudo input
+				home_page.get_layer(12).get_sprite(33)->use_background_img();
+				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+			}
+			else if (sprite_id == 35 && inputs.test(2) && inputs.test(9)) // clicked on play
+			{
+				g_search_opponent = true;
+				g_msg2server_mutex.lock();
+				g_msg2server_queue.emplace("1");
+				g_msg2server_mutex.unlock();
+			}
+			else if (sprite_id == 36 && inputs.test(2) && inputs.test(9)) // clicked on stop search opponent
+			{
+				g_search_opponent = false;
+				g_msg2server_mutex.lock();
+				g_msg2server_queue.emplace("2");
+				g_msg2server_mutex.unlock();
+			}
+			else if (inputs.test(2) && inputs.test(9))
+			{
+				// stop focus pseudo input
+				home_page.get_layer(12).get_sprite(33)->use_background_img();
+				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+
+				// hide face feature options
+				home_page.get_layer(3).set_visibility(false);
+				home_page.get_layer(4).set_visibility(false);
+				home_page.get_layer(5).set_visibility(false);
+				home_page.get_layer(6).set_visibility(false);
+				home_page.get_layer(7).set_visibility(false);
+				home_page.get_layer(8).set_visibility(false);
+				home_page.get_layer(9).set_visibility(false);
+			}
 		}
 		if (m_writer.m_cursor.m_focus == 0)
 		{
@@ -1868,6 +1905,9 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 		g_show_mutex.lock();
 		bool show_advertiser = m_advertiser.m_show;
 		g_show_mutex.unlock();
+		g_winner_mutex.lock();
+		int winner = m_winner;
+		g_winner_mutex.unlock();
 
 		if (!server_reachable)
 		{
@@ -1885,11 +1925,11 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			select_grid(inputs, chosen_card);
 			return;
 		}
-		if ((sprite_id == 7 || (m_winner != -1 && m_back_home.mouse_hover(mouse_pos[0], mouse_pos[1]))) && inputs.test(2) && inputs.test(9)) // clicked on abandon or back home page
+		if ((sprite_id == 7 || (m_winner != -1 && m_popup_button.mouse_hover(mouse_pos[0], mouse_pos[1]))) && inputs.test(2) && inputs.test(9)) // clicked on abandon or back home page
 		{
 			quit_game();
 		}
-		else if (sprite_id == 8 && inputs.test(2) && inputs.test(9)) // clicked on chat
+		else if (sprite_id == 8 && winner == -1 && inputs.test(2) && inputs.test(9)) // clicked on chat
 		{
 			game_page.get_layer(3).get_sprite(sprite_id)->use_background_img_selected();
 			m_writer.m_cursor.m_focus = 1; // 0 = pseudo, 1 = chat, 2 = not writting
@@ -1940,7 +1980,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			g_msg2server_queue.emplace(data);
 			g_msg2server_mutex.unlock();
 		}
-		else if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id) && turn == m_fruit && inputs.test(2) && inputs.test(9)) // clicked on a card
+		else if (m_cards.hovered_card(mouse_pos[0], mouse_pos[1], card_id) && turn == m_fruit && winner == -1 && inputs.test(2) && inputs.test(9)) // clicked on a card
 		{
 			if (m_fruit == 0 && (card_id >= 100 && card_id <= 102) && chosen_card == -1) { // orange card
 				int desc_id;
@@ -1981,7 +2021,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				}
 			}
 		}
-		else if (turn != m_fruit && chosen_card != -1 && !show_advertiser)
+		else if (turn != m_fruit && chosen_card != -1 && !show_advertiser && winner == -1)
 		{
 			// si bandeau n'est plus à l'écran, que ce n'est pas notre tour et qu'une carte a été choisie, alors utiliser la carte
 			g_grid_select_mutex.lock();
@@ -2013,7 +2053,7 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 				g_chosen_card_mutex.unlock();
 			}
 		}
-		else if (turn == m_fruit && chosen_card != -1 && !show_advertiser)
+		else if (turn == m_fruit && chosen_card != -1 && !show_advertiser && winner == -1)
 		{
 			// si bandeau n'est plus à l'écran, que c'est notre tour de jouer et qu'une carte a été choisie, alors utiliser la carte
 			g_grid_select_mutex.lock();
@@ -2046,13 +2086,13 @@ void Game::updateUI(std::bitset<10>& inputs, char* text_input, int screenW, int 
 			game_page.get_layer(3).get_sprite(8)->use_background_img();
 			m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
 		}
-		if (m_writer.m_cursor.m_focus == 1 && !inputs.test(5))
+		if (m_writer.m_cursor.m_focus == 1 && !inputs.test(5) && winner == -1)
 		{
 			int boundX = game_page.get_layer(3).get_sprite(8)->get_position().x + game_page.get_layer(3).get_sprite(8)->get_size().x - 10;
 			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[1], 240+13, 728-698-12, 1, m_writer.m_cursor.m_pos);
 			m_writer.write(text_input, inputs, delta, boundX, cursor_shape);
 		}
-		else if (m_writer.m_cursor.m_focus == 1 && inputs.test(5)) // pressed enter keyboard => send chat message
+		else if (m_writer.m_cursor.m_focus == 1 && inputs.test(5) && winner == -1) // pressed enter keyboard => send chat message
 		{
 			std::string data("4:");
 			data += m_writer.m_textInput[1];
@@ -2470,13 +2510,16 @@ void Game::hovering(int sprite_id)
 		m_mouse->use_normal();
 		game_page.get_layer(4).set_visibility(false);
 	}
-	if (m_winner != -1 && m_back_home.mouse_hover(mouse_pos[0], mouse_pos[1]))
+	g_interupt_mutex.lock();
+	bool interupt = m_interupt;
+	g_interupt_mutex.unlock();
+	if (!interupt && m_winner != -1 && m_popup_button.mouse_hover(mouse_pos[0], mouse_pos[1]))
 	{
-		m_back_home.set_background_img_gl(m_popup_tex[3].id);
+		m_popup_button.set_background_img_gl(m_popup_tex[3].id);
 	}
-	else
+	else if(!interupt && m_winner != -1 && !m_popup_button.mouse_hover(mouse_pos[0], mouse_pos[1]))
 	{
-		m_back_home.set_background_img_gl(m_popup_tex[2].id);
+		m_popup_button.set_background_img_gl(m_popup_tex[2].id);
 	}
 }
 
@@ -2505,7 +2548,7 @@ void Game::quit_game()
 	g_winner_mutex.lock();
 	bool someone_won = (m_winner == -1) ? false : true;
 	g_winner_mutex.unlock();
-	if (someone_won) {
+	if (!someone_won) {
 		std::string data("3");
 		g_msg2server_mutex.lock();
 		g_msg2server_queue.emplace(data);
@@ -2517,11 +2560,11 @@ void Game::quit_game()
 	// reset cursor position to pseudo input data
 	m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
 	// reset winner and remaining time
-	if (someone_won) {
-		m_winner = -1;
-		m_remaining_time = 600.0f;
-		m_remaining_time_enemy = 600.0f;
-	}
+	g_winner_mutex.lock();
+	m_winner = -1;
+	g_winner_mutex.unlock();
+	m_remaining_time = 600.0f;
+	m_remaining_time_enemy = 600.0f;
 	// reset mouse
 	m_mouse->update_size(25, 25);
 	m_mouse->use_normal();
@@ -3168,6 +3211,53 @@ void Game::set_animationTimer_move_left(bool inverseTeam)
 			m_fruit = 0;
 		}
 	}
+}
+
+void Game::leave_game()
+{
+	g_interupt_mutex.lock();
+	m_interupt = true;
+	g_interupt_mutex.unlock();
+	m_popup.set_background_img_gl(m_popup_tex[4].id);
+	m_popup_button.set_background_img_gl(m_popup_tex[7].id);
+	// send leave to server
+	g_msg2server_mutex.lock();
+	g_msg2server_queue.emplace("8");
+	g_msg2server_mutex.unlock();
+	// back to home page
+	g_game_found = false;
+	m_animationTimer = 0.0f;
+	m_move = MOVE::UNDEFINED;
+	// reset board
+	m_board.boundLeft = 0;
+	m_board.boundRight = 7;
+	m_board.boundTop = 0;
+	m_board.boundBottom = 7;
+	m_board.m_dyingTimer = 0.0f;
+	// stop playing music
+	if (scenes[0].getSoundSource(0).is_playing()) {
+		scenes[0].getSoundSource(0).stop_sound();
+	}
+	// clear chatLog
+	m_writer.m_chatLog.clear();
+	// move to home page
+	m_ui.set_active_page(0);
+	// use police of size 20
+	textRenderer->use_police(0);
+	// stop focus chat input
+	m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
+	m_ui.get_page(1).get_layer(3).get_sprite(8)->use_background_img();
+	// reset cursor position to pseudo input data
+	m_writer.m_cursor.m_pos = m_writer.m_textInput[0].size();
+	// reset winner and remaining time
+	g_winner_mutex.lock();
+	m_winner = -1;
+	g_winner_mutex.unlock();
+	m_remaining_time = 600.0f;
+	m_remaining_time_enemy = 600.0f;
+	// reset mouse
+	m_mouse->update_size(25, 25);
+	m_mouse->use_normal();
 }
 
 void Game::directionalShadowPass(int index, float delta, DRAWING_MODE mode)

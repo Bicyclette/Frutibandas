@@ -90,6 +90,9 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 					case 7:
 						client.send_data("c:" + message.substr(2)); // card
 						break;
+					case 8:
+						client.send_data("leave");
+						break;
 					default:
 						break;
 				};
@@ -223,6 +226,12 @@ void network_thread(bool& run, Writer& writer, MOVE& move, const std::shared_ptr
 						{
 							g->use_enemy_card(card_id, line, col);
 						}
+					}
+					else if (type == "gu") // enemy gave up
+					{
+						std::string name = message.substr(3);
+						std::cout << name << " gave up the match !" << std::endl;
+						g->leave_game();
 					}
 				}
 				else if (client.m_event.type == ENET_EVENT_TYPE_DISCONNECT)

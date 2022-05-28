@@ -1635,7 +1635,8 @@ class Game
 		void hovering(int sprite_id);
 		void select_grid(std::bitset<10>& inputs, int card_id);
 		void use_enemy_card(int card_id, int line, int col);
-		void Game::apply_card_renfort(int fruit_renfort, int num_renfort, std::array<glm::ivec2, 3> p);
+		void apply_card_renfort(int fruit_renfort, int num_renfort, std::array<glm::ivec2, 3> p);
+		void leave_game();
 
 		// fruits movement
 		void set_animationTimer(bool inverseTeam);
@@ -1664,12 +1665,13 @@ class Game
 		MOVE m_move;
 		float m_animationTimer;
 		Sprite m_popup;
-		Sprite m_back_home;
-		std::array<Texture, 4> m_popup_tex;
+		Sprite m_popup_button;
+		std::array<Texture, 9> m_popup_tex;
 		Timer m_timer;
 		ADVERTISER m_advertiser;
 		Anvil m_anvil;
 		Cow m_cow;
+		bool m_interupt;
 };
 
 inline std::queue<std::string> g_msg2server_queue;
@@ -1687,6 +1689,7 @@ inline std::mutex g_fruit_move_mutex;
 inline std::mutex g_turn_mutex;
 inline std::mutex g_rte_mutex; // remaining time enemy
 inline std::mutex g_winner_mutex;
+inline std::mutex g_interupt_mutex;
 inline std::mutex g_solo_mutex;
 
 #endif
