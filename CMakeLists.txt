@@ -46,6 +46,8 @@ set(SRCS
 	src/network_client.cpp
 	src/helpers.cpp
 	src/mouse.cpp
+	src/writer.cpp
+	src/bandas.cpp
 	src/imgui.cpp
 	src/imgui_draw.cpp
 	src/imgui_tables.cpp
@@ -85,6 +87,13 @@ set(HEADERS
 	include/allocation.hpp
 	include/network_client.hpp
 	include/mouse.hpp
+	include/avatar.hpp
+	include/writer.hpp
+	include/bandas.hpp
+	include/timer.hpp
+	include/cow.hpp
+	include/anvil.hpp
+	include/advertiser.hpp
 	include/imgui.h
 	include/imconfig.h
 	include/imgui_internal.h
@@ -92,8 +101,7 @@ set(HEADERS
 	include/imstb_rectpack.h
 	include/imstb_truetype.h
 	include/imgui_impl_sdl.h
-	include/imgui_impl_opengl3.h
-	include/tinyfiledialogs.hpp)
+	include/imgui_impl_opengl3.h)
 
 add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 

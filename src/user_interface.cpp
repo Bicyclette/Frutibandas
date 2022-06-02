@@ -257,6 +257,7 @@ void Sprite::set_pos(glm::vec2 pos)
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 24 * sizeof(float), data);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Sprite::set_size(glm::vec2 size)

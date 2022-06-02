@@ -1,6 +1,6 @@
 #include "mouse.hpp"
 
-Mouse::Mouse(int pos[2], int size[2], std::string img_normal, std::string img_hover, std::string img_visor, int screenW, int screenH) :
+Mouse::Mouse(glm::ivec2 pos, glm::ivec2 size, std::string img_normal, std::string img_hover, std::string img_visor, int screenW, int screenH) :
     m_screen{screenW, screenH},
     m_size{size[0], size[1]},
     m_shader("shaders/mouse/vertex.glsl", "shaders/mouse/fragment.glsl", SHADER_TYPE::MOUSE),
@@ -117,12 +117,12 @@ void Mouse::draw()
     glBindVertexArray(0);
 }
 
-int* Mouse::get_position()
+glm::ivec2 Mouse::get_position()
 {
     return m_pos;
 }
 
-int* Mouse::get_size()
+glm::ivec2 Mouse::get_size()
 {
     return m_size;
 }

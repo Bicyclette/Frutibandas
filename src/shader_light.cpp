@@ -34,9 +34,9 @@ Shader::Shader(const std::string & vertex_shader_file, const std::string & fragm
 	f_shader_stream.read(fShaderCode, fShader_codeLength);
 
 	if(!v_shader_stream)
-		std::cerr << "Error while trying to read the vertex shader file !" << std::endl;
+		std::cerr << "Error while trying to read the vertex shader file : " << vertex_shader_file << std::endl;
 	if(!f_shader_stream)
-		std::cerr << "Error while trying to read the fragment shader file !" << std::endl;
+		std::cerr << "Error while trying to read the fragment shader file : " << fragment_shader_file << std::endl;
 
 	// Now compile the shaders, create the shader program and link
 	compile(vShaderCode, fShaderCode);
@@ -91,11 +91,11 @@ Shader::Shader(const std::string & vertex_shader_file, const std::string & geome
 	f_shader_stream.read(fShaderCode, fShader_codeLength);
 
 	if(!v_shader_stream)
-		std::cerr << "Error while trying to read the vertex shader file !" << std::endl;
+		std::cerr << "Error while trying to read the vertex shader file : " << vertex_shader_file << std::endl;
 	if(!g_shader_stream)
-		std::cerr << "Error while trying to read the geometry shader file !" << std::endl;
+		std::cerr << "Error while trying to read the geometry shader file : " << geometry_shader_file << std::endl;
 	if(!f_shader_stream)
-		std::cerr << "Error while trying to read the fragment shader file !" << std::endl;
+		std::cerr << "Error while trying to read the fragment shader file : " << fragment_shader_file << std::endl;
 
 	// Now compile the shaders, create the shader program and link
 	compile(vShaderCode, gShaderCode, fShaderCode);
@@ -129,7 +129,7 @@ Shader::Shader(const std::string & compute_shader_file, SHADER_TYPE t) :
 	c_shader_stream.read(cShaderCode, cShader_codeLength);
 
 	if(!c_shader_stream)
-		std::cerr << "Error while trying to read the compute shader file !" << std::endl;
+		std::cerr << "Error while trying to read the compute shader file : " << compute_shader_file << std::endl;
 
 	// Now compile the shader, create the shader program and link
 	compile(cShaderCode);
