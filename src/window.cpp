@@ -2,7 +2,7 @@
 
 WindowManager::WindowManager(const std::string& title)
 {
-	alive = true;
+	m_alive = true;
 
 	if(SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
@@ -18,8 +18,8 @@ WindowManager::WindowManager(const std::string& title)
 		std::exit(-1);
 	}
 
-	width = 1050;
-	height = 728;
+	int width = 1050;
+	int height = 728;
 
 	window = nullptr;
 
@@ -78,35 +78,15 @@ WindowManager::WindowManager(const std::string& title)
 	glClearColor(LIGHT_GREY[0], LIGHT_GREY[1], LIGHT_GREY[2], LIGHT_GREY[3]);
 	SDL_GL_SetSwapInterval(1);
 
-	// IMGUI
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-	ImGui_ImplOpenGL3_Init();
+	// window callback (move with mouse pointer)
+	SDL_SetWindowHitTest(window, moveWindowCallback, 0);
 }
 
 WindowManager::~WindowManager()
 {
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL2_Shutdown();
-	ImGui::DestroyContext();
-
 	SDL_GL_DeleteContext(glContext);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-}
-
-int WindowManager::getWidth()
-{
-	return width;
-}
-
-int WindowManager::getHeight()
-{
-	return height;
 }
 
 SDL_Window* WindowManager::getWindowPtr()
@@ -114,61 +94,43 @@ SDL_Window* WindowManager::getWindowPtr()
 	return window;
 }
 
-std::array<int, 3> & WindowManager::getMouseData()
+bool WindowManager::isAlive()
 {
-	return mouseData;
-}
-
-std::bitset<10>& WindowManager::getUserInputs()
-{
-	return userInputs;
-}
-
-char* WindowManager::get_text_input()
-{
-	return m_textInput;
-}
-
-bool& WindowManager::isAlive()
-{
-	return alive;
+	return m_alive;
 }
 
 void WindowManager::checkEvents(bool writing)
 {
 	event.keyboardState = SDL_GetKeyboardState(nullptr);
-	event.mouseButtonBitMask = SDL_GetRelativeMouseState(&mouseData[0], &mouseData[1]);
+	event.mouseButtonBitMask = SDL_GetRelativeMouseState(&m_mouseData[0], &m_mouseData[1]);
 
 	while(SDL_PollEvent(&event.e))
 	{
-		// forward to ImGui
-		ImGui_ImplSDL2_ProcessEvent(&event.e);
-
 		if(event.e.type == SDL_QUIT)
 		{
-			alive = false;
+			m_alive = false;
 		}
 
 		if(event.e.type == SDL_WINDOWEVENT)
 		{
 			if(event.e.window.event == SDL_WINDOWEVENT_RESIZED)
 			{
-				userInputs.set(4);
-				width = event.e.window.data1;
-				height = event.e.window.data2;
+				m_userInputs.set(4);
+				int width = event.e.window.data1;
+				int height = event.e.window.data2;
 				glViewport(0, 0, width, height);
 			}
 		}
 
 		if (event.e.type == SDL_MOUSEBUTTONUP)
 		{
-			userInputs.set(9);
+			m_userInputs.set(9);
 		}
 
 		if(event.e.type == SDL_MOUSEWHEEL)
 		{
-			userInputs.set(3);
-			mouseData[2] = event.e.wheel.y;
+			m_userInputs.set(3);
+			m_mouseData[2] = event.e.wheel.y;
 		}
 		if (writing)
 		{
@@ -187,41 +149,50 @@ void WindowManager::checkEvents(bool writing)
 
 	if(SDL_BUTTON(event.mouseButtonBitMask) == SDL_BUTTON_LEFT)
 	{
-		userInputs.set(2);
+		m_userInputs.set(2);
 	}
 	
 	if(SDL_BUTTON(event.mouseButtonBitMask) == SDL_BUTTON_MIDDLE)
 	{
-		userInputs.set(1);
+		m_userInputs.set(1);
 	}
 	
 	if(SDL_BUTTON(event.mouseButtonBitMask) == SDL_BUTTON_RIGHT)
 	{
-		userInputs.set(0);
+		m_userInputs.set(0);
 	}
 
 	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_RETURN)])
 	{
-		userInputs.set(5);
+		m_userInputs.set(5);
 	}
 
 	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_BACKSPACE)])
 	{
-		userInputs.set(6);
+		m_userInputs.set(6);
 	}
 
 	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_RIGHT)])
 	{
-		userInputs.set(7);
+		m_userInputs.set(7);
 	}
 
 	if (event.keyboardState[SDL_GetScancodeFromKey(SDLK_LEFT)])
 	{
-		userInputs.set(8);
+		m_userInputs.set(8);
 	}
 }
 
 void WindowManager::resetEvents()
 {
-	userInputs.reset();
+	m_userInputs.reset();
+}
+
+SDL_HitTestResult moveWindowCallback(SDL_Window* win, const SDL_Point* area, void* data)
+{
+	if (area->y >= 0 && area->y <= 81 && area->x <= 970)
+	{
+		return SDL_HITTEST_DRAGGABLE;
+	}
+	return SDL_HITTEST_NORMAL;
 }

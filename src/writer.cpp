@@ -1,8 +1,7 @@
 #include "writer.hpp"
 
-void Writer::write(char* c, std::bitset<10>& userInputs, float delta, int boundX, glm::vec3 cursor_shape)
+void Writer::write(std::string character, std::bitset<10> userInputs, float delta, int boundX, glm::vec3 cursor_shape)
 {
-	std::string character(c);
 	if (character.size() > 1) {
 		return;
 	}
@@ -20,6 +19,11 @@ void Writer::write(char* c, std::bitset<10>& userInputs, float delta, int boundX
 		writeAction = WRITE_ACTION::CHARACTER;
 
 	write_aux(writeAction, character, delta, boundX, cursor_shape);
+}
+
+Writer::~Writer()
+{
+	m_cursor.cleanup();
 }
 
 void Writer::write_aux(WRITE_ACTION writeAction, std::string& character, float delta, int boundX, glm::vec3 cursor_shape)

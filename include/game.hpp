@@ -27,7 +27,7 @@ class Game
 		~Game();
 		void draw(float& delta, double& elapsedTime, int width, int height, DRAWING_MODE mode = DRAWING_MODE::SOLID, bool debug = false, bool debugPhysics = false);
 		void resizeScreen(int clientWidth, int clientHeight);
-		void updateSceneActiveCameraView(int index, const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta);
+		void updateSceneActiveCameraView(int index, const std::bitset<10> inputs, std::array<int, 3> mouse, float delta);
 		Graphics& getGraphics();
 		std::vector<Scene> & getScenes();
 		int getActiveScene();

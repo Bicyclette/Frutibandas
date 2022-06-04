@@ -6,13 +6,14 @@
 #include "shader_light.hpp"
 
 // eye colors
-#define JAUNE	55 / 360.0f
-#define MARRON	40 / 360.0f
-#define ROUGE	360 / 360.0f
-#define VIOLET	275 / 360.0f
-#define ROSE	322 / 360.0f
-#define BLEU	216 / 360.0f
-#define VERT	100 / 360.0f
+#define JAUNE	glm::vec3(53 / 360.0f, 0.95f, 1.0f)
+#define MARRON	glm::vec3(25 / 360.0f, 0.95f, 0.4f)
+#define ROUGE	glm::vec3(360 / 360.0f, 1.0f, 1.0f)
+#define VIOLET	glm::vec3(275 / 360.0f, 1.0f, 1.0f)
+#define ROSE	glm::vec3(322 / 360.0f, 1.0f, 1.0f)
+#define BLEU	glm::vec3(216 / 360.0f, 1.0f, 1.0f)
+#define VERT	glm::vec3(100 / 360.0f, 1.0f, 1.0f)
+#define BLACK	glm::vec3(0.0f, 0.0f, 1.0f)
 
 // skin colors
 #define PALE1 glm::vec3(0.988f, 0.863f, 0.847f)
@@ -28,7 +29,7 @@
 
 // hair colors
 #define H_ROUGE glm::vec3(0.946f, 0.046f, 0.05f)
-#define H_ORANGE glm::vec3(1.0f, 0.546f, 0.0f)
+#define H_ORANGE glm::vec3(0.78f, 0.31f, 0.15f)
 #define H_JAUNE1 glm::vec3(1.0f, 0.851f, 0.0f)
 #define H_JAUNE2 glm::vec3(0.901f, 0.704f, 0.011f)
 #define H_VERT1 glm::vec3(0.097f, 0.932f, 0.023f)
@@ -168,7 +169,10 @@ struct Avatar
 			createTexture("assets/avatar/sprites/homme/yeux_amande.tga", TEXTURE_TYPE::DIFFUSE, true),						// 13
 			createTexture("assets/avatar/sprites/homme/yeux_colere.tga", TEXTURE_TYPE::DIFFUSE, true),						// 14
 			createTexture("assets/avatar/sprites/homme/yeux_gros.tga", TEXTURE_TYPE::DIFFUSE, true),						// 15
-			createTexture("assets/avatar/sprites/homme/yeux_manga.tga", TEXTURE_TYPE::DIFFUSE, true)						// 16
+			createTexture("assets/avatar/sprites/homme/yeux_manga.tga", TEXTURE_TYPE::DIFFUSE, true),						// 16
+			createTexture("assets/avatar/sprites/homme/yeux_amande_mask.tga", TEXTURE_TYPE::DIFFUSE, true),					// 17
+			createTexture("assets/avatar/sprites/homme/yeux_gros_mask.tga", TEXTURE_TYPE::DIFFUSE, true),					// 18
+			createTexture("assets/avatar/sprites/homme/yeux_manga_mask.tga", TEXTURE_TYPE::DIFFUSE, true)					// 19
 		},
 		m_tex_femme{
 			createTexture("assets/avatar/sprites/femme/cheveux_70_back.tga", TEXTURE_TYPE::DIFFUSE, true),					// 0
@@ -196,7 +200,9 @@ struct Avatar
 			createTexture("assets/avatar/sprites/femme/yeux_colere.tga", TEXTURE_TYPE::DIFFUSE, true),						// 22
 			createTexture("assets/avatar/sprites/femme/yeux_egypte.tga", TEXTURE_TYPE::DIFFUSE, true),						// 23
 			createTexture("assets/avatar/sprites/femme/yeux_manga.tga", TEXTURE_TYPE::DIFFUSE, true),						// 24
-			createTexture("assets/avatar/sprites/femme/yeux_inquiet.tga", TEXTURE_TYPE::DIFFUSE, true)						// 25
+			createTexture("assets/avatar/sprites/femme/yeux_inquiet.tga", TEXTURE_TYPE::DIFFUSE, true),						// 25
+			createTexture("assets/avatar/sprites/femme/yeux_manga_mask.tga", TEXTURE_TYPE::DIFFUSE, true),					// 26
+			createTexture("assets/avatar/sprites/femme/yeux_egypte_mask.tga", TEXTURE_TYPE::DIFFUSE, true)					// 27
 		},
 		m_tex_mixte{
 			createTexture("assets/avatar/sprites/mixte/bouche_grande.tga", TEXTURE_TYPE::DIFFUSE, true),					// 0
@@ -215,7 +221,11 @@ struct Avatar
 			createTexture("assets/avatar/sprites/mixte/visage1.tga", TEXTURE_TYPE::DIFFUSE, true),							// 13
 			createTexture("assets/avatar/sprites/mixte/visage2.tga", TEXTURE_TYPE::DIFFUSE, true),							// 14
 			createTexture("assets/avatar/sprites/mixte/yeux_1.tga", TEXTURE_TYPE::DIFFUSE, true),							// 15
-			createTexture("assets/avatar/sprites/mixte/yeux_fatigue.tga", TEXTURE_TYPE::DIFFUSE, true)						// 16
+			createTexture("assets/avatar/sprites/mixte/yeux_fatigue.tga", TEXTURE_TYPE::DIFFUSE, true),						// 16
+			createTexture("assets/avatar/sprites/mixte/sac2_back.tga", TEXTURE_TYPE::DIFFUSE, true),						// 17
+			createTexture("assets/avatar/sprites/mixte/sac3_back.tga", TEXTURE_TYPE::DIFFUSE, true),						// 18
+			createTexture("assets/avatar/sprites/mixte/yeux_1_mask.tga", TEXTURE_TYPE::DIFFUSE, true),						// 19
+			createTexture("assets/avatar/sprites/mixte/yeux_fatigue_mask.tga", TEXTURE_TYPE::DIFFUSE, true)					// 20
 		}
 	{
 		glGenVertexArrays(1, &m_vao);
@@ -252,6 +262,7 @@ struct Avatar
 		m_shaderHSL.setBool("mirrorX", mirrorX);
 		m_shaderHSL.setMatrix("proj", m_projection);
 		m_shaderHSL.setInt("image", 0);
+		m_shaderHSL.setInt("mask", 1);
 
 		m_shaderRGB.use();
 		m_shaderRGB.setBool("mirrorX", mirrorX);
@@ -294,6 +305,18 @@ struct Avatar
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 		}
+		else if (m_homme.m_sac == SAC::LVL2)
+		{
+			m_shader.use();
+			glBindTexture(GL_TEXTURE_2D, m_tex_mixte[17].id);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+		else if (m_homme.m_sac == SAC::LVL3)
+		{
+			m_shader.use();
+			glBindTexture(GL_TEXTURE_2D, m_tex_mixte[18].id);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 		// draw face
 		m_shaderRGB.use();
@@ -314,32 +337,48 @@ struct Avatar
 			m_shaderHSL.use();
 			if (m_homme.m_eyes == EYES::PSYCHO) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[15].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_homme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[19].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::FATIGUE) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[16].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_homme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[20].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::MANGA) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[16].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_homme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[19].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::COLERE) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[14].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_homme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", BLACK);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::AMANDE) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[13].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_homme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[17].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::GROS) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[15].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_homme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[18].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 		}
@@ -579,6 +618,18 @@ struct Avatar
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 		}
+		else if (m_femme.m_sac == SAC::LVL2)
+		{
+			m_shader.use();
+			glBindTexture(GL_TEXTURE_2D, m_tex_mixte[17].id);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+		else if (m_femme.m_sac == SAC::LVL3)
+		{
+			m_shader.use();
+			glBindTexture(GL_TEXTURE_2D, m_tex_mixte[18].id);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 		// draw face
 		m_shaderRGB.use();
@@ -599,32 +650,46 @@ struct Avatar
 			m_shaderHSL.use();
 			if (m_femme.m_eyes == EYES::PSYCHO) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[15].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_femme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_femme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[19].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_femme.m_eyes == EYES::FATIGUE) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[16].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_femme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_femme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_mixte[20].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_femme.m_eyes == EYES::MANGA) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_femme[24].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_femme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_femme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_femme[26].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_femme.m_eyes == EYES::COLERE) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_femme[22].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_femme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", BLACK);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_femme.m_eyes == EYES::EGYPTE) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_femme[23].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_femme.m_eyes_color_id]);
+				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_femme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, m_tex_femme[27].id);
+				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_femme.m_eyes == EYES::INQUIETE) {
 				glBindTexture(GL_TEXTURE_2D, m_tex_femme[25].id);
-				m_shaderHSL.setFloat("teinte", m_eyes_color[m_femme.m_eyes_color_id]);
+				glActiveTexture(GL_TEXTURE0);
+				m_shaderHSL.setVec3f("HSL", BLACK);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 		}
@@ -795,7 +860,7 @@ struct Avatar
 		}
 	}
 
-	std::vector<float> m_eyes_color;
+	std::vector<glm::vec3> m_eyes_color;
 	std::vector<glm::vec3> m_skin_color;
 	std::vector<glm::vec3> m_hair_color;
 	std::vector<Texture> m_tex_homme;

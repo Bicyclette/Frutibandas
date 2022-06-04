@@ -3,10 +3,9 @@
 Bandas::Bandas(Graphics& graphics) :
 	m_graphics(graphics),
     m_text(c_screen_width, c_screen_height),
-    m_mouse(glm::ivec2(0, 0), glm::ivec2(25, 25), "assets/mouse/normal.tga", "assets/mouse/hover.tga", "assets/mouse/viseur.tga", c_screen_width, c_screen_height),
+	m_mouse("assets/mouse/viseur.tga"),
 	m_writer(c_screen_width, c_screen_height)
 {
-    m_mouse.activate();
 	// user interface
 	createUI();
 
@@ -18,7 +17,8 @@ Bandas::Bandas(Graphics& graphics) :
 
 Bandas::~Bandas()
 {
-
+	m_me.m_avatar.cleanup();
+	m_enemy.m_avatar.cleanup();
 }
 
 void Bandas::createUI()
@@ -39,10 +39,10 @@ void Bandas::createUI()
 	home_page.add_layer(9); // options sac
 	home_page.add_layer(10); // options sex
 	home_page.add_layer(11); // avatar
-	home_page.add_layer(12); // choix de couleur
-	//home_page.add_layer(13); // user inputs (pseudo, connexion, chercher un adversaire)
-	//home_page.add_layer(14); // chercher adversaire
-	//home_page.add_layer(15); // stop chercher adversaire
+	home_page.add_layer(12); // choix de couleur et fermer la fenêtre
+	home_page.add_layer(13); // user inputs (pseudo, connexion)
+	home_page.add_layer(14); // chercher adversaire
+	home_page.add_layer(15); // stop chercher adversaire
 
 	Layer& h_layer0 = home_page.get_layer(0);
 	h_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(c_screen_width, c_screen_height), c_screen_width, c_screen_height);
@@ -328,136 +328,64 @@ void Bandas::createUI()
 	h_layer12.add_sprite(62, glm::vec2(525, 728 - 285), glm::vec2(50, 50), c_screen_width, c_screen_height);
 	h_layer12.get_sprite(62)->set_background_img("assets/frutibouilleur/couleur_right.tga");
 	h_layer12.get_sprite(62)->use_background_img();
-/*
-	Layer& h_layer12 = home_page.get_layer(12);
-	h_layer12.add_sprite(33, glm::vec2(525 - 75, 728 - (140 + 48 * 7 - 12)), glm::vec2(150, 30), c_screen_width, c_screen_height);
-	h_layer12.get_sprite(33)->set_background_img("assets/pseudo.tga");
-	h_layer12.get_sprite(33)->set_background_img_selected("assets/pseudo_hover.tga");
-	h_layer12.get_sprite(33)->use_background_img();
-	h_layer12.add_sprite(34, glm::vec2(525 - 75, 728 - (140 + 48 * 8 - 24)), glm::vec2(150, 24), c_screen_width, c_screen_height);
-	h_layer12.get_sprite(34)->set_background_img("assets/connexion.tga");
-	h_layer12.get_sprite(34)->set_background_img_selected("assets/connexion_hover.tga");
-	h_layer12.get_sprite(34)->use_background_img();
+	h_layer12.add_sprite(63, glm::vec2(984, 728 - 65), glm::vec2(50, 50), c_screen_width, c_screen_height);
+	h_layer12.get_sprite(63)->set_background_img("assets/home_page/off.tga");
+	h_layer12.get_sprite(63)->use_background_img();
 
 	Layer& h_layer13 = home_page.get_layer(13);
-	h_layer13.add_sprite(35, glm::vec2(525 - 75, 246), glm::vec2(150, 24), c_screen_width, c_screen_height);
-	h_layer13.get_sprite(35)->set_background_img("assets/jouer.tga");
-	h_layer13.get_sprite(35)->set_background_img_selected("assets/jouer_hover.tga");
-	h_layer13.get_sprite(35)->use_background_img();
+	h_layer13.add_sprite(64, glm::vec2(525 - 75, 728 - (140 + 48 * 7 - 12)), glm::vec2(150, 30), c_screen_width, c_screen_height);
+	h_layer13.get_sprite(64)->set_background_img("assets/home_page/pseudo.tga");
+	h_layer13.get_sprite(64)->set_background_img_selected("assets/home_page/pseudo_hover.tga");
+	h_layer13.get_sprite(64)->use_background_img();
+	h_layer13.add_sprite(65, glm::vec2(525 - 75, 728 - (140 + 48 * 8 - 24)), glm::vec2(150, 24), c_screen_width, c_screen_height);
+	h_layer13.get_sprite(65)->set_background_img("assets/home_page/connexion.tga");
+	h_layer13.get_sprite(65)->set_background_img_selected("assets/home_page/connexion_hover.tga");
+	h_layer13.get_sprite(65)->use_background_img();
+	h_layer13.add_sprite(66, glm::vec2(91, 728 - 432-70), glm::vec2(99, 70), c_screen_width, c_screen_height);
+	h_layer13.get_sprite(66)->set_background_img("assets/home_page/internet.tga");
+	h_layer13.get_sprite(66)->set_background_img_selected("assets/home_page/internet_on.tga");
+	h_layer13.get_sprite(66)->use_background_img();
+	h_layer13.get_sprite(66)->set_bloom_strength(100.0f);
 
 	Layer& h_layer14 = home_page.get_layer(14);
-	h_layer14.add_sprite(36, glm::vec2(525 - 40, 240), glm::vec2(80, 24), c_screen_width, c_screen_height);
-	h_layer14.get_sprite(36)->set_background_img("assets/stop_search.tga");
-	h_layer14.get_sprite(36)->set_background_img_selected("assets/stop_search_hover.tga");
-	h_layer14.get_sprite(36)->use_background_img();
-	*/
+	h_layer14.set_visibility(false);
+	h_layer14.add_sprite(67, glm::vec2(525 - 40, 240), glm::vec2(80, 24), c_screen_width, c_screen_height);
+	h_layer14.get_sprite(67)->set_background_img("assets/home_page/play.tga");
+	h_layer14.get_sprite(67)->set_background_img_selected("assets/home_page/play_hover.tga");
+	h_layer14.get_sprite(67)->use_background_img();
+
+	Layer& h_layer15 = home_page.get_layer(15);
+	h_layer15.set_visibility(false);
+	h_layer15.add_sprite(68, glm::vec2(525 - 40, 240), glm::vec2(80, 24), c_screen_width, c_screen_height);
+	h_layer15.get_sprite(68)->set_background_img("assets/home_page/stop_search.tga");
+	h_layer15.get_sprite(68)->set_background_img_selected("assets/home_page/stop_search_hover.tga");
+	h_layer15.get_sprite(68)->use_background_img();
 
 	m_ui.set_active_page(0);
 }
 
-void Bandas::swap_gender_features(Avatar::GENDER from, Avatar::GENDER to)
-{
-	
-}
-
-void Bandas::update_home_page(std::bitset<10>& user_input, char* txt_input, float delta)
+void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input, float delta)
 {
 	glm::ivec2 mouse_pos = m_mouse.get_position();
-	glm::ivec2 mouse_size = m_mouse.get_size();
-	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos.x, mouse_pos.y);
+	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos.x, c_screen_height - mouse_pos.y);
 
 	if (!hovered) { return; }
 	Page& home_page{ m_ui.get_page(0) };
 	int sprite_id{ hovered->get_id() };
 
 	hovering_home_page(home_page, sprite_id);
-	if (user_input.test(2) && user_input.test(9)) // if click event
+	if (user_input.test(2) && user_input.test(9)) // if click & release events
 	{
 		click_home_page(home_page, sprite_id);
 		update_avatar(home_page, sprite_id);
 	}
+	if (m_writer.m_cursor.m_focus == 0)
+	{
+		int boundX = home_page.get_layer(13).get_sprite(64)->get_position().x + home_page.get_layer(13).get_sprite(64)->get_size().x;
+		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+		m_writer.write(txt_input, user_input, delta, boundX, cursor_shape);
+	}
 	/*
-		if (sprite_id >= 2 && sprite_id <= 6) // hovered a face feature
-		{
-			// change sprite texture to selected/hover texture
-			home_page.get_layer(2).get_sprite(sprite_id)->use_background_img_selected();
-			for (int i{ 2 }; i < 7; ++i)
-				if (i != sprite_id)
-					home_page.get_layer(2).get_sprite(i)->use_background_img();
-		}
-		else
-		{
-			// reset to normal texture
-			for (int i{ 2 }; i < 7; ++i)
-				home_page.get_layer(2).get_sprite(i)->use_background_img();
-		}
-		if (sprite_id >= 7 && sprite_id <= 27) // hovered a face feature option
-		{
-			// change sprite texture to selected/hover texture
-			Layer& layer{ home_page.get_layer(hovered->get_layer_id()) };
-			layer.get_sprite(sprite_id)->use_background_img_selected();
-			for (int i{ 7 }; i < 29; ++i)
-			{
-				if (i == sprite_id)
-					continue;
-				if (i == 7) // layer 3
-					home_page.get_layer(3).get_sprite(i)->use_background_img();
-				else if (i >= 8 && i <= 12) // layer 4
-					home_page.get_layer(4).get_sprite(i)->use_background_img();
-				else if (i >= 13 && i <= 17) // layer 5
-					home_page.get_layer(5).get_sprite(i)->use_background_img();
-				else if (i >= 18 && i <= 20) // layer 6
-					home_page.get_layer(6).get_sprite(i)->use_background_img();
-				else if (i >= 21 && i <= 22) // layer 7
-					home_page.get_layer(7).get_sprite(i)->use_background_img();
-				else if (i >= 23 && i <= 25) // layer 8
-					home_page.get_layer(8).get_sprite(i)->use_background_img();
-				else if (i == 26 || i == 27) // layer 9
-					home_page.get_layer(9).get_sprite(i)->use_background_img();
-			}
-		}
-		else
-		{
-			// reset to normal texture
-			for (int i{ 7 }; i < 29; ++i)
-			{
-				if (i == 7) // layer 3
-					home_page.get_layer(3).get_sprite(i)->use_background_img();
-				else if (i >= 8 && i <= 12) // layer 4
-					home_page.get_layer(4).get_sprite(i)->use_background_img();
-				else if (i >= 13 && i <= 17) // layer 5
-					home_page.get_layer(5).get_sprite(i)->use_background_img();
-				else if (i >= 18 && i <= 20) // layer 6
-					home_page.get_layer(6).get_sprite(i)->use_background_img();
-				else if (i >= 21 && i <= 22) // layer 7
-					home_page.get_layer(7).get_sprite(i)->use_background_img();
-				else if (i >= 23 && i <= 25) // layer 8
-					home_page.get_layer(8).get_sprite(i)->use_background_img();
-				else if (i == 26 || i == 27) // layer 9
-					home_page.get_layer(9).get_sprite(i)->use_background_img();
-			}
-		}
-		if (sprite_id == 29 || sprite_id == 30) // hovered a color picker arrow
-		{
-			// bloom
-			home_page.get_layer(11).get_sprite(sprite_id)->set_bloom_strength(1.5f);
-		}
-		else
-		{
-			// reset bloom
-			home_page.get_layer(11).get_sprite(29)->set_bloom_strength(1.0f);
-			home_page.get_layer(11).get_sprite(30)->set_bloom_strength(1.0f);
-		}
-		if (sprite_id == 31) // hovered close game button
-		{
-			// bloom
-			home_page.get_layer(11).get_sprite(sprite_id)->set_bloom_strength(100'000.0f);
-		}
-		else
-		{
-			// reset bloom
-			home_page.get_layer(11).get_sprite(31)->set_bloom_strength(1.0f);
-		}
 		if (sprite_id == 34) // hovered connexion button
 		{
 			home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
@@ -504,305 +432,7 @@ void Bandas::update_home_page(std::bitset<10>& user_input, char* txt_input, floa
 		}
 		else if (!interupt)
 		{
-			if (sprite_id >= 2 && sprite_id <= 6 && inputs.test(2) && inputs.test(9)) // clicked on a face feature
-			{
-				// highlight
-				home_page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (sprite_id - 2))));
-				home_page.get_layer(1).set_visibility(true);
-
-				// select
-				hovered->select();
-				for (int i{ 2 }; i <= 6; ++i)
-				{
-					if (sprite_id != i)
-					{
-						home_page.get_layer(2).get_sprite(i)->unselect();
-					}
-				}
-
-				// stop focus pseudo input
-				home_page.get_layer(12).get_sprite(34)->use_background_img();
-				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-
-				// show options
-				if (sprite_id == 2)
-				{
-					if (home_page.get_layer(3).m_visible)
-						home_page.get_layer(3).set_visibility(false);
-					else
-						home_page.get_layer(3).set_visibility(true);
-					for (int i{ 4 }; i < 10; ++i)
-						home_page.get_layer(i).set_visibility(false);
-				}
-				else if (sprite_id == 3)
-				{
-					if (home_page.get_layer(9).get_sprite(26)->is_selected())
-					{
-						if (home_page.get_layer(4).m_visible)
-							home_page.get_layer(4).set_visibility(false);
-						else
-							home_page.get_layer(4).set_visibility(true);
-						for (int i{ 3 }; i < 10; ++i)
-							if (i != 4)
-								home_page.get_layer(i).set_visibility(false);
-					}
-					else if (home_page.get_layer(9).get_sprite(27)->is_selected())
-					{
-						if (home_page.get_layer(5).m_visible)
-							home_page.get_layer(5).set_visibility(true);
-						else
-							home_page.get_layer(5).set_visibility(true);
-						for (int i{ 3 }; i < 10; ++i)
-							if (i != 5)
-								home_page.get_layer(i).set_visibility(false);
-					}
-				}
-				else if (sprite_id == 4)
-				{
-					if (home_page.get_layer(9).get_sprite(26)->is_selected())
-					{
-						if (home_page.get_layer(6).m_visible)
-							home_page.get_layer(6).set_visibility(false);
-						else
-							home_page.get_layer(6).set_visibility(true);
-						for (int i{ 3 }; i < 10; ++i)
-							if (i != 6)
-								home_page.get_layer(i).set_visibility(false);
-					}
-					else if (home_page.get_layer(9).get_sprite(27)->is_selected())
-					{
-						if (home_page.get_layer(7).m_visible)
-							home_page.get_layer(7).set_visibility(true);
-						else
-							home_page.get_layer(7).set_visibility(true);
-						for (int i{ 3 }; i < 10; ++i)
-							if (i != 7)
-								home_page.get_layer(i).set_visibility(false);
-					}
-				}
-				else if (sprite_id == 5)
-				{
-					if (home_page.get_layer(8).m_visible)
-						home_page.get_layer(8).set_visibility(false);
-					else
-						home_page.get_layer(8).set_visibility(true);
-					for (int i{ 3 }; i < 10; ++i)
-						if (i != 8)
-							home_page.get_layer(i).set_visibility(false);
-				}
-				else if (sprite_id == 6)
-				{
-					if (home_page.get_layer(9).m_visible)
-						home_page.get_layer(9).set_visibility(false);
-					else
-						home_page.get_layer(9).set_visibility(true);
-					for (int i{ 3 }; i < 9; ++i)
-						home_page.get_layer(i).set_visibility(false);
-				}
-			}
-			else if (sprite_id >= 7 && sprite_id <= 27 && inputs.test(2) && inputs.test(9)) // clicked on a face feature option
-			{
-				// select option
-				hovered->select();
-				if (sprite_id >= 8 && sprite_id <= 12)
-				{
-					for (int i{ 8 }; i <= 12; ++i)
-					{
-						if (i == sprite_id)
-							continue;
-						home_page.get_layer(4).get_sprite(i)->unselect();
-					}
-				}
-				else if (sprite_id >= 13 && sprite_id <= 17)
-				{
-					for (int i{ 13 }; i <= 17; ++i)
-					{
-						if (i == sprite_id)
-							continue;
-						home_page.get_layer(5).get_sprite(i)->unselect();
-					}
-				}
-				else if (sprite_id >= 18 && sprite_id <= 20)
-				{
-					for (int i{ 18 }; i <= 20; ++i)
-					{
-						if (i == sprite_id)
-							continue;
-						home_page.get_layer(6).get_sprite(i)->unselect();
-					}
-				}
-				else if (sprite_id >= 21 && sprite_id <= 22)
-				{
-					for (int i{ 21 }; i <= 22; ++i)
-					{
-						if (i == sprite_id)
-							continue;
-						home_page.get_layer(7).get_sprite(i)->unselect();
-					}
-				}
-				else if (sprite_id >= 23 && sprite_id <= 25)
-				{
-					for (int i{ 23 }; i <= 25; ++i)
-					{
-						if (i == sprite_id)
-							continue;
-						home_page.get_layer(8).get_sprite(i)->unselect();
-					}
-				}
-				else if (sprite_id >= 26 && sprite_id <= 27)
-				{
-					for (int i{ 26 }; i <= 27; ++i)
-					{
-						if (i == sprite_id)
-							continue;
-						home_page.get_layer(9).get_sprite(i)->unselect();
-					}
-				}
-
-				// hide layer
-				home_page.get_layer(hovered->get_layer_id()).set_visibility(false);
-
-				// set gender
-				if (sprite_id == 26)
-				{
-					m_avatar.m_gender = Avatar::GENDER::MALE;
-					// unselect all female features and select corresponding male ones
-					swap_gender_features(Avatar::GENDER::FEMALE, Avatar::GENDER::MALE);
-				}
-				else if (sprite_id == 27)
-				{
-					m_avatar.m_gender = Avatar::GENDER::FEMALE;
-					// unselect all male features and select corresponding female ones
-					swap_gender_features(Avatar::GENDER::MALE, Avatar::GENDER::FEMALE);
-				}
-
-				// set mouth
-				else if (sprite_id == 25)
-					m_avatar.m_mouth = Avatar::MOUTH::GRANDE;
-				else if (sprite_id == 24)
-					m_avatar.m_mouth = Avatar::MOUTH::MOYENNE;
-				else if (sprite_id == 23)
-					m_avatar.m_mouth = Avatar::MOUTH::PETITE;
-				else
-				{
-					if (m_avatar.m_gender == Avatar::GENDER::MALE)
-					{
-						// set male eyes
-						if (sprite_id == 18)
-							m_avatar.m_eyes = Avatar::EYES::MANGA;
-						else if (sprite_id == 19)
-							m_avatar.m_eyes = Avatar::EYES::AMANDE;
-						else if (sprite_id == 20)
-							m_avatar.m_eyes = Avatar::EYES::GROS;
-
-						// set male hair
-						else if (sprite_id == 8)
-							m_avatar.m_hair = Avatar::HAIR::HERISSON;
-						else if (sprite_id == 9)
-							m_avatar.m_hair = Avatar::HAIR::DECOIFFE;
-						else if (sprite_id == 10)
-							m_avatar.m_hair = Avatar::HAIR::MECHE_AVANT;
-						else if (sprite_id == 11)
-							m_avatar.m_hair = Avatar::HAIR::MIXTE;
-						else if (sprite_id == 12)
-							m_avatar.m_hair = Avatar::HAIR::ARRIERE;
-					}
-					else
-					{
-						// set female eyes
-						if (sprite_id == 21)
-							m_avatar.m_eyes = Avatar::EYES::EGYPTE;
-						else if (sprite_id == 22)
-							m_avatar.m_eyes = Avatar::EYES::MASCARA;
-
-						// set female hair
-						else if (sprite_id == 13)
-							m_avatar.m_hair = Avatar::HAIR::MIXTE;
-						else if (sprite_id == 14)
-							m_avatar.m_hair = Avatar::HAIR::MI_LONG;
-						else if (sprite_id == 15)
-							m_avatar.m_hair = Avatar::HAIR::FRANGE;
-						else if (sprite_id == 16)
-							m_avatar.m_hair = Avatar::HAIR::AU_BOL;
-						else if (sprite_id == 17)
-							m_avatar.m_hair = Avatar::HAIR::PONYTAIL;
-					}
-				}
-			}
-			else if ((sprite_id == 29 || sprite_id == 30) && inputs.test(2) && inputs.test(9)) // color picker
-			{
-				if (home_page.get_layer(2).get_sprite(2)->is_selected()) // change skin color
-				{
-					if (sprite_id == 29)
-					{
-						m_avatar.m_skin_color_id--;
-						if (m_avatar.m_skin_color_id == -1)
-						{
-							m_avatar.m_skin_color_id = m_avatar.m_skin_color.size() - 1;
-						}
-					}
-					else
-					{
-						m_avatar.m_skin_color_id++;
-						if (m_avatar.m_skin_color_id >= m_avatar.m_skin_color.size())
-						{
-							m_avatar.m_skin_color_id = 0;
-						}
-					}
-				}
-				else if (home_page.get_layer(2).get_sprite(3)->is_selected()) // change hair color
-				{
-					if (sprite_id == 29)
-					{
-						m_avatar.m_hair_color_id--;
-						if (m_avatar.m_hair_color_id == -1)
-						{
-							m_avatar.m_hair_color_id = m_avatar.m_hair_color.size() - 1;
-						}
-					}
-					else
-					{
-						m_avatar.m_hair_color_id++;
-						if (m_avatar.m_hair_color_id >= m_avatar.m_hair_color.size())
-						{
-							m_avatar.m_hair_color_id = 0;
-						}
-					}
-				}
-				else if (home_page.get_layer(2).get_sprite(4)->is_selected()) // change eyes color
-				{
-					if (sprite_id == 29)
-					{
-						m_avatar.m_eyes_color_id--;
-						if (m_avatar.m_eyes_color_id == -1)
-						{
-							m_avatar.m_eyes_color_id = m_avatar.m_eyes_color.size() - 1;
-						}
-					}
-					else
-					{
-						m_avatar.m_eyes_color_id++;
-						if (m_avatar.m_eyes_color_id >= m_avatar.m_eyes_color.size())
-						{
-							m_avatar.m_eyes_color_id = 0;
-						}
-					}
-				}
-
-				// stop focus pseudo input
-				home_page.get_layer(12).get_sprite(33)->use_background_img();
-				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-
-				// hide face feature options
-				home_page.get_layer(3).set_visibility(false);
-				home_page.get_layer(4).set_visibility(false);
-				home_page.get_layer(5).set_visibility(false);
-				home_page.get_layer(6).set_visibility(false);
-				home_page.get_layer(7).set_visibility(false);
-				home_page.get_layer(8).set_visibility(false);
-				home_page.get_layer(9).set_visibility(false);
-			}
-			else if (sprite_id == 33 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
+			if (sprite_id == 33 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
 			{
 				home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
 				m_writer.m_cursor.m_focus = 0; // 0 = pseudo, 1 = chat, 2 = not writting
@@ -1099,10 +729,34 @@ void Bandas::hovering_home_page(Page& page, int id)
 		page.get_layer(12).get_sprite(61)->set_bloom_strength(1.0f);
 		page.get_layer(12).get_sprite(62)->set_bloom_strength(1.0f);
 	}
+
+	if (id == 63) // quitter le jeu
+	{
+		page.get_layer(12).get_sprite(id)->set_bloom_strength(100000.0f);
+	}
+	else
+	{
+		page.get_layer(12).get_sprite(63)->set_bloom_strength(1.0f);
+	}
+
+	if (id == 65) // connexion
+	{
+		page.get_layer(13).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(13).get_sprite(65)->use_background_img();
+	}
 }
 
 void Bandas::click_home_page(Page& page, int id)
 {
+	if (id != 64)
+	{
+		m_writer.m_cursor.m_focus = 2;
+		page.get_layer(13).get_sprite(64)->use_background_img();
+	}
+
 	if (id == 2) // face
 	{
 		page.get_layer(2).get_sprite(id)->select();
@@ -1247,6 +901,19 @@ void Bandas::click_home_page(Page& page, int id)
 		page.get_layer(7).set_visibility(false);
 		page.get_layer(8).set_visibility(false);
 		page.get_layer(9).set_visibility(false);
+	}
+
+	if (id == 63) // quitter le jeu
+	{
+		SDL_Event event;
+		event.type = SDL_QUIT;
+		SDL_PushEvent(&event);
+	}
+
+	if (id == 64) // pseudo input
+	{
+		m_writer.m_cursor.m_focus = 0;
+		page.get_layer(13).get_sprite(64)->use_background_img_selected();
 	}
 }
 
@@ -1423,7 +1090,7 @@ void Bandas::update_avatar(Page& page, int id)
 
 }
 
-void Bandas::draw_home_page()
+void Bandas::draw_home_page(float delta)
 {
 	// draw avatar
 	m_graphics.avatarFBO->bind();
@@ -1438,14 +1105,22 @@ void Bandas::draw_home_page()
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	m_ui.get_page(0).draw();
+
+	// draw cursor
+	if (m_writer.m_cursor.m_focus == 0)
+	{
+		m_text.print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
+		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+		m_writer.m_cursor.draw(cursor_shape, delta);
+	}
 }
 
-void Bandas::update_game_page(std::bitset<10>& user_input, char* txt_input, float delta)
+void Bandas::update_game_page(std::bitset<10> user_input, std::string txt_input, float delta)
 {
 
 }
 
-void Bandas::draw_game_page()
+void Bandas::draw_game_page(float delta)
 {
 	m_graphics.userInterfaceFBO->bind();
 	glViewport(0, 0, c_screen_width, c_screen_height);

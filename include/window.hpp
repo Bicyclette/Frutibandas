@@ -12,10 +12,6 @@
 #include <memory>
 #include "color.hpp"
 
-#include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_opengl3.h"
-
 struct WindowEvent
 {
 	SDL_Event e;
@@ -44,13 +40,8 @@ class WindowManager
  		*/
 		WindowManager(const std::string& title);
 		~WindowManager();
-		int getWidth();
-		int getHeight();
 		SDL_Window* getWindowPtr();
-		std::array<int, 3> & getMouseData();
-		std::bitset<10>& getUserInputs();
-		char* get_text_input();
-		bool& isAlive();
+		bool isAlive();
 		void checkEvents(bool writing = false);
 		void resetEvents();
 
@@ -59,17 +50,18 @@ class WindowManager
 		void fillWriteInput();
 
 		std::string title;
-		int width;
-		int height;
-		bool alive;
-
 		SDL_Window * window;
 		SDL_GLContext glContext;
-
 		struct WindowEvent event;
-		std::array<int, 3> mouseData; // 0 = xRel, 1 = yRel, 2 = mouse wheel direction
-		std::bitset<10> userInputs;
+
+	public:
+
+		bool m_alive;
+		std::array<int, 3> m_mouseData; // 0 = xRel, 1 = yRel, 2 = mouse wheel direction
+		std::bitset<10> m_userInputs;
 		char m_textInput[32];
 };
+
+SDL_HitTestResult moveWindowCallback(SDL_Window* win, const SDL_Point* area, void* data);
 
 #endif

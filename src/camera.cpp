@@ -40,7 +40,7 @@ Camera::Camera(CAM_TYPE type, glm::ivec2 scrDim, glm::vec3 camPos, glm::vec3 cam
 	projection = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
 }
 
-void Camera::updateViewMatrix(glm::vec3 vehiclePos, glm::vec3 vehicleDirection, glm::vec3 vehicleUp, float steering, float steeringIncrement, const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta)
+void Camera::updateViewMatrix(glm::vec3 vehiclePos, glm::vec3 vehicleDirection, glm::vec3 vehicleUp, float steering, float steeringIncrement, const std::bitset<10> inputs, std::array<int, 3> mouse, float delta)
 {
 	previousPosition = position;
 	target = vehiclePos + vehicleUp * 2.5f;
@@ -65,7 +65,7 @@ void Camera::updateViewMatrix(glm::vec3 vehiclePos, glm::vec3 vehicleDirection, 
 	updateListener();
 }
 
-void Camera::updateViewMatrix(glm::vec3 characterPos, glm::vec3 characterDirection, const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta)
+void Camera::updateViewMatrix(glm::vec3 characterPos, glm::vec3 characterDirection, const std::bitset<10> inputs, std::array<int, 3> mouse, float delta)
 {
 	previousPosition = position;
 	target = characterPos + recenterTarget;
@@ -86,7 +86,7 @@ void Camera::updateViewMatrix(glm::vec3 characterPos, glm::vec3 characterDirecti
 	updateListener();
 }
 
-void Camera::updateViewMatrix(const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta)
+void Camera::updateViewMatrix(const std::bitset<10> inputs, std::array<int, 3> mouse, float delta)
 {
 	previousPosition = position;
 	if(inputs.test(1) && !inputs.test(4)) // middle mouse button

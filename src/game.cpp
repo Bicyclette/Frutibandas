@@ -78,16 +78,12 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 {
 	if (m_bandas.m_ui.get_active_page() == 0)
 	{
-		m_bandas.draw_home_page();
+		m_bandas.draw_home_page(delta);
 	}
 	else if (m_bandas.m_ui.get_active_page() == 1)
 	{
-		m_bandas.draw_game_page();
+		m_bandas.draw_game_page(delta);
 	}
-	// mouse
-	m_bandas.m_mouse.update_position();
-	m_bandas.m_mouse.draw();
-
 	if (m_bandas.m_ui.get_active_page() == 0)
 	{
 		bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
@@ -105,15 +101,19 @@ void Game::resizeScreen(int clientWidth, int clientHeight)
 	graphics.resizeScreen(clientWidth, clientHeight);
 }
 
-void Game::updateSceneActiveCameraView(int index, const std::bitset<10> & inputs, std::array<int, 3> & mouse, float delta)
+void Game::updateSceneActiveCameraView(int index, const std::bitset<10> inputs, std::array<int, 3> mouse, float delta)
 {
 	if(index < scenes.size())
 	{
 		CAM_TYPE type = scenes[index].getActiveCamera().getType();
-		if(type == CAM_TYPE::REGULAR)
+		if (type == CAM_TYPE::REGULAR)
+		{
 			scenes[index].getActiveCamera().updateViewMatrix(inputs, mouse, delta);
-		else if(type == CAM_TYPE::THIRD_PERSON)
+		}
+		else if (type == CAM_TYPE::THIRD_PERSON)
+		{
 			scenes[index].getActiveCamera().updateViewMatrix(character->getPosition(), character->getDirection(), inputs, mouse, delta);
+		}
 		else if(type == CAM_TYPE::VEHICLE)
 		{
 			std::shared_ptr<Vehicle> & vehicle{scenes[index].getVehicles()[activeVehicle]};

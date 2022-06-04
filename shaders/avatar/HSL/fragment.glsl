@@ -5,7 +5,8 @@ out vec4 color;
 in vec2 texCoords;
 
 uniform sampler2D image;
-uniform float teinte; // HSL color space
+uniform sampler2D mask;
+uniform vec3 HSL;
 uniform bool mirrorX;
 
 vec3 hsl2rgb( in vec3 c )
@@ -91,9 +92,14 @@ void main()
 		x = (x + 1.0f) * 0.5f;
 		image_sample = texture(image, vec2(x, texCoords.y));
 	}
+	float iris = texture(mask, texCoords).r;
 	float L = rgb2hsl(image_sample.rgb).b;
 	float alpha = image_sample.a;
-	float H = teinte * 360.0f;
-	vec3 RGB = hsl2rgb(vec3(teinte, 1.0f, L));
+	vec3 RGB;
+	if(iris > 0.5f) {
+		RGB = hsl2rgb(HSL * vec3(1.0f, 1.0f, L));
+	} else {
+		RGB = hsl2rgb(vec3(1.0f, 1.0f, L));
+	}
 	color = vec4(RGB, alpha);
 }

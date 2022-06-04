@@ -97,8 +97,9 @@ public:
 		m_lastWriteAction = WRITE_ACTION::NOTHING;
 		m_lastCharacter = "";
 	}
+	~Writer();
 
-	void write(char* c, std::bitset<10>& userInputs, float delta, int boundX, glm::vec3 cursor_shape);
+	void write(std::string character, std::bitset<10> userInputs, float delta, int boundX, glm::vec3 cursor_shape);
 
 	std::array<std::string, 2> m_textInput = { "", "" };
 	std::array<std::vector<int>, 2> m_textSectionsWidth;
