@@ -8,15 +8,90 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "92.88.236.2"
+#define SERVER "192.168.3.28"
 #define PORT 7777
 
+void connect(std::shared_ptr<Game>& game)
+{
+	std::string message;
+	g_msg2server_mtx.lock();
+	if (!g_msg2server.empty())
+	{
+		message = g_msg2server.front();
+		g_msg2server.pop();
+	}
+	else
+	{
+		g_msg2server_mtx.unlock();
+		return;
+	}
+	g_msg2server_mtx.unlock();
+	int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
+
+	if(code == 0)
+	{
+		game->m_bandas.m_net.connect(SERVER, PORT);
+	}
+}
+
+void send_message(std::shared_ptr<Game> & game)
+{
+	std::string message;
+	g_msg2server_mtx.lock();
+	if (!g_msg2server.empty())
+	{
+		message = g_msg2server.front();
+		g_msg2server.pop();
+	}
+	else
+	{
+		g_msg2server_mtx.unlock();
+		return;
+	}
+	g_msg2server_mtx.unlock();
+	int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
+	if (code == 1) // play (search opponent)
+	{
+		game->m_bandas.m_net.send_data("so");
+		game->m_bandas.m_net.search_game(true);
+	}
+	else if (code == 2) // stop search opponent
+	{
+		game->m_bandas.m_net.send_data("sso");
+		game->m_bandas.m_net.search_game(false);
+	}
+}
+
+void receive_message(std::shared_ptr<Game> & game)
+{
+	if (game->m_bandas.m_net.service())
+	{
+		if (game->m_bandas.m_net.m_event.type == ENET_EVENT_TYPE_RECEIVE)
+		{
+			std::string message(reinterpret_cast<char*>(game->m_bandas.m_net.m_event.packet->data));
+			std::string type(message.substr(0, message.find_first_of(':')));
+			
+		}
+		else if (game->m_bandas.m_net.m_event.type == ENET_EVENT_TYPE_DISCONNECT)
+		{
+			game->m_bandas.m_net.disconnect();
+		}
+	}
+}
+
 void network_thread(std::shared_ptr<WindowManager>& client, std::shared_ptr<Game>& game)
-{	
+{
 	while (client->isAlive())
 	{
-		std::string message;
-		
+		if (game->m_bandas.m_net.is_connected())
+		{
+			send_message(game);
+			receive_message(game);
+		}
+		else
+		{
+			connect(game);
+		}
 	}
 }
 

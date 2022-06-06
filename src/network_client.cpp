@@ -2,7 +2,10 @@
 
 NetworkClient::NetworkClient() :
 	m_client(nullptr),
-	m_peer(nullptr)
+	m_peer(nullptr),
+	m_connected(false),
+	m_trying_to_connect(false),
+	m_searching_game(false)
 {
 	if (enet_initialize() != 0)
 	{
@@ -21,11 +24,24 @@ NetworkClient::NetworkClient() :
 
 NetworkClient::~NetworkClient()
 {
+	enet_host_destroy(m_client);
+	enet_peer_reset(m_peer);
+}
 
+bool NetworkClient::is_trying_to_connect()
+{
+	m_trying_to_connect_mtx.lock();
+	bool trying_to_connect = m_trying_to_connect;
+	m_trying_to_connect_mtx.unlock();
+	return trying_to_connect;
 }
 
 bool NetworkClient::connect(std::string server_ip, int port)
 {
+	m_trying_to_connect_mtx.lock();
+	m_trying_to_connect = true;
+	m_trying_to_connect_mtx.unlock();
+
 	enet_address_set_host(&m_address, server_ip.c_str());
 	m_address.port = port;
 
@@ -41,10 +57,28 @@ bool NetworkClient::connect(std::string server_ip, int port)
 	if (enet_host_service(m_client, &m_event, 5000) > 0 &&
 		m_event.type == ENET_EVENT_TYPE_CONNECT)
 	{
+		m_trying_to_connect_mtx.lock();
+		m_trying_to_connect = false;
+		m_trying_to_connect_mtx.unlock();
+
+		mtx.lock();
+		m_connected = true;
+		mtx.unlock();
+
 		return true;
 	}
 	else
 	{
+		enet_peer_reset(m_peer);
+
+		m_trying_to_connect_mtx.lock();
+		m_trying_to_connect = false;
+		m_trying_to_connect_mtx.unlock();
+
+		mtx.lock();
+		m_connected = false;
+		mtx.unlock();
+		
 		return false;
 	}
 }
@@ -60,9 +94,27 @@ bool NetworkClient::disconnect()
 				enet_packet_destroy(m_event.packet);
 				break;
 			case ENET_EVENT_TYPE_DISCONNECT:
+				mtx.lock();
+				m_connected = false;
+				mtx.unlock();
+				m_trying_to_connect_mtx.lock();
+				m_trying_to_connect = false;
+				m_trying_to_connect_mtx.unlock();
+				m_searching_game_mtx.lock();
+				m_searching_game = false;
+				m_searching_game_mtx.unlock();
 				return true;
 		}
 	}
+	mtx.lock();
+	m_connected = false;
+	mtx.unlock();
+	m_trying_to_connect_mtx.lock();
+	m_trying_to_connect = false;
+	m_trying_to_connect_mtx.unlock();
+	m_searching_game_mtx.lock();
+	m_searching_game = false;
+	m_searching_game_mtx.unlock();
 	return false;
 }
 
@@ -91,4 +143,27 @@ void NetworkClient::send_data(std::string data)
 int NetworkClient::service()
 {
 	return enet_host_service(m_client, &m_event, 0);
+}
+
+bool NetworkClient::is_connected()
+{
+	mtx.lock();
+	bool connected = m_connected;
+	mtx.unlock();
+	return connected;
+}
+
+void NetworkClient::search_game(bool search)
+{
+	m_searching_game_mtx.lock();
+	m_searching_game = search;
+	m_searching_game_mtx.unlock();
+}
+
+bool NetworkClient::is_searching_game()
+{
+	m_searching_game_mtx.lock();
+	bool searching_game = m_searching_game;
+	m_searching_game_mtx.unlock();
+	return searching_game;
 }

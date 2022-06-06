@@ -41,8 +41,9 @@ void Bandas::createUI()
 	home_page.add_layer(11); // avatar
 	home_page.add_layer(12); // choix de couleur et fermer la fenêtre
 	home_page.add_layer(13); // user inputs (pseudo, connexion)
-	home_page.add_layer(14); // chercher adversaire
-	home_page.add_layer(15); // stop chercher adversaire
+	home_page.add_layer(14); // connection status
+	home_page.add_layer(15); // chercher adversaire
+	home_page.add_layer(16); // stop chercher adversaire
 
 	Layer& h_layer0 = home_page.get_layer(0);
 	h_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(c_screen_width, c_screen_height), c_screen_width, c_screen_height);
@@ -341,25 +342,27 @@ void Bandas::createUI()
 	h_layer13.get_sprite(65)->set_background_img("assets/home_page/connexion.tga");
 	h_layer13.get_sprite(65)->set_background_img_selected("assets/home_page/connexion_hover.tga");
 	h_layer13.get_sprite(65)->use_background_img();
-	h_layer13.add_sprite(66, glm::vec2(91, 728 - 432-70), glm::vec2(99, 70), c_screen_width, c_screen_height);
-	h_layer13.get_sprite(66)->set_background_img("assets/home_page/internet.tga");
-	h_layer13.get_sprite(66)->set_background_img_selected("assets/home_page/internet_on.tga");
-	h_layer13.get_sprite(66)->use_background_img();
-	h_layer13.get_sprite(66)->set_bloom_strength(100.0f);
 
 	Layer& h_layer14 = home_page.get_layer(14);
-	h_layer14.set_visibility(false);
-	h_layer14.add_sprite(67, glm::vec2(525 - 40, 240), glm::vec2(80, 24), c_screen_width, c_screen_height);
-	h_layer14.get_sprite(67)->set_background_img("assets/home_page/play.tga");
-	h_layer14.get_sprite(67)->set_background_img_selected("assets/home_page/play_hover.tga");
-	h_layer14.get_sprite(67)->use_background_img();
+	h_layer14.add_sprite(66, glm::vec2(91, 728 - 432-70), glm::vec2(99, 70), c_screen_width, c_screen_height);
+	h_layer14.get_sprite(66)->set_background_img("assets/home_page/internet.tga");
+	h_layer14.get_sprite(66)->set_background_img_selected("assets/home_page/internet_on.tga");
+	h_layer14.get_sprite(66)->use_background_img();
+	h_layer14.get_sprite(66)->set_bloom_strength(100.0f);
 
 	Layer& h_layer15 = home_page.get_layer(15);
 	h_layer15.set_visibility(false);
-	h_layer15.add_sprite(68, glm::vec2(525 - 40, 240), glm::vec2(80, 24), c_screen_width, c_screen_height);
-	h_layer15.get_sprite(68)->set_background_img("assets/home_page/stop_search.tga");
-	h_layer15.get_sprite(68)->set_background_img_selected("assets/home_page/stop_search_hover.tga");
-	h_layer15.get_sprite(68)->use_background_img();
+	h_layer15.add_sprite(67, glm::vec2(525 - 40, 240), glm::vec2(80, 24), c_screen_width, c_screen_height);
+	h_layer15.get_sprite(67)->set_background_img("assets/home_page/play.tga");
+	h_layer15.get_sprite(67)->set_background_img_selected("assets/home_page/play_hover.tga");
+	h_layer15.get_sprite(67)->use_background_img();
+
+	Layer& h_layer16 = home_page.get_layer(16);
+	h_layer16.set_visibility(false);
+	h_layer16.add_sprite(68, glm::vec2(525 - 40, 240), glm::vec2(80, 24), c_screen_width, c_screen_height);
+	h_layer16.get_sprite(68)->set_background_img("assets/home_page/stop_search.tga");
+	h_layer16.get_sprite(68)->set_background_img_selected("assets/home_page/stop_search_hover.tga");
+	h_layer16.get_sprite(68)->use_background_img();
 
 	m_ui.set_active_page(0);
 }
@@ -385,207 +388,6 @@ void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input,
 		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
 		m_writer.write(txt_input, user_input, delta, boundX, cursor_shape);
 	}
-	/*
-		if (sprite_id == 34) // hovered connexion button
-		{
-			home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
-		}
-		else
-		{
-			home_page.get_layer(12).get_sprite(34)->use_background_img();
-		}
-		if (sprite_id == 35) // hovered play button
-		{
-			home_page.get_layer(13).get_sprite(sprite_id)->use_background_img_selected();
-		}
-		else
-		{
-			home_page.get_layer(13).get_sprite(35)->use_background_img();
-		}
-		if (sprite_id == 36) // hovered stop search button
-		{
-			home_page.get_layer(14).get_sprite(sprite_id)->use_background_img_selected();
-		}
-		else
-		{
-			home_page.get_layer(14).get_sprite(36)->use_background_img();
-		}
-		if (interupt && m_popup_button.mouse_hover(mouse_pos[0], mouse_pos[1]))
-		{
-			m_popup_button.set_background_img_gl(m_popup_tex[8].id);
-		}
-		else
-		{
-			m_popup_button.set_background_img_gl(m_popup_tex[7].id);
-		}
-		if (interupt && m_popup_button.mouse_hover(mouse_pos[0], mouse_pos[1]) && inputs.test(2) && inputs.test(9)) // clicked on OK for popup
-		{
-			g_interupt_mutex.lock();
-			m_interupt = false;
-			g_interupt_mutex.unlock();
-		}
-		else if (sprite_id == 31 && inputs.test(2) && inputs.test(9)) // clicked on quit game
-		{
-			SDL_Event event;
-			event.type = SDL_QUIT;
-			SDL_PushEvent(&event);
-		}
-		else if (!interupt)
-		{
-			if (sprite_id == 33 && inputs.test(2) && inputs.test(9)) // clicked on pseudo
-			{
-				home_page.get_layer(12).get_sprite(sprite_id)->use_background_img_selected();
-				m_writer.m_cursor.m_focus = 0; // 0 = pseudo, 1 = chat, 2 = not writting
-			}
-			else if (sprite_id == 34 && inputs.test(2) && inputs.test(9)) // clicked on connect
-			{
-				g_try_connection = true;
-				std::string data("0:" + m_writer.m_textInput[0] + ":");
-				// gender
-				if (m_avatar.m_gender == Avatar::GENDER::MALE) {
-					data += "0.";
-					// hair
-					switch (m_avatar.m_hair)
-					{
-					case Avatar::HAIR::MIXTE:
-						data += "0.";
-						break;
-					case Avatar::HAIR::HERISSON:
-						data += "1.";
-						break;
-					case Avatar::HAIR::DECOIFFE:
-						data += "2.";
-						break;
-					case Avatar::HAIR::ARRIERE:
-						data += "3.";
-						break;
-					case Avatar::HAIR::MECHE_AVANT:
-						data += "4.";
-						break;
-					default:
-						break;
-					};
-					// eyes
-					switch (m_avatar.m_eyes)
-					{
-					case Avatar::EYES::MANGA:
-						data += "0.";
-						break;
-					case Avatar::EYES::AMANDE:
-						data += "1.";
-						break;
-					case Avatar::EYES::GROS:
-						data += "2.";
-						break;
-					default:
-						break;
-					};
-				}
-				else {
-					data += "1.";
-					// hair
-					switch (m_avatar.m_hair)
-					{
-					case Avatar::HAIR::MIXTE:
-						data += "0.";
-						break;
-					case Avatar::HAIR::MI_LONG:
-						data += "5.";
-						break;
-					case Avatar::HAIR::FRANGE:
-						data += "6.";
-						break;
-					case Avatar::HAIR::AU_BOL:
-						data += "7.";
-						break;
-					case Avatar::HAIR::PONYTAIL:
-						data += "8.";
-						break;
-					default:
-						break;
-					};
-					// eyes
-					switch (m_avatar.m_eyes)
-					{
-					case Avatar::EYES::MANGA:
-						data += "0.";
-						break;
-					case Avatar::EYES::EGYPTE:
-						data += "3.";
-						break;
-					case Avatar::EYES::MASCARA:
-						data += "4.";
-						break;
-					default:
-						break;
-					};
-				}
-				// mouth
-				switch (m_avatar.m_mouth)
-				{
-				case Avatar::MOUTH::PETITE:
-					data += "0.";
-					break;
-				case Avatar::MOUTH::MOYENNE:
-					data += "1.";
-					break;
-				case Avatar::MOUTH::GRANDE:
-					data += "2.";
-					break;
-				};
-				// skin color
-				data += std::to_string(m_avatar.m_skin_color_id) + ".";
-				// hair color
-				data += std::to_string(m_avatar.m_hair_color_id) + ".";
-				// eyes color
-				data += std::to_string(m_avatar.m_eyes_color_id);
-
-				g_msg2server_mutex.lock();
-				g_msg2server_queue.emplace(data);
-				g_msg2server_mutex.unlock();
-
-				// stop focus pseudo input
-				home_page.get_layer(12).get_sprite(33)->use_background_img();
-				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-			}
-			else if (sprite_id == 35 && inputs.test(2) && inputs.test(9)) // clicked on play
-			{
-				g_search_opponent = true;
-				g_msg2server_mutex.lock();
-				g_msg2server_queue.emplace("1");
-				g_msg2server_mutex.unlock();
-			}
-			else if (sprite_id == 36 && inputs.test(2) && inputs.test(9)) // clicked on stop search opponent
-			{
-				g_search_opponent = false;
-				g_msg2server_mutex.lock();
-				g_msg2server_queue.emplace("2");
-				g_msg2server_mutex.unlock();
-			}
-			else if (inputs.test(2) && inputs.test(9))
-			{
-				// stop focus pseudo input
-				home_page.get_layer(12).get_sprite(33)->use_background_img();
-				m_writer.m_cursor.m_focus = 2; // 0 = pseudo, 1 = chat, 2 = not writting
-
-				// hide face feature options
-				home_page.get_layer(3).set_visibility(false);
-				home_page.get_layer(4).set_visibility(false);
-				home_page.get_layer(5).set_visibility(false);
-				home_page.get_layer(6).set_visibility(false);
-				home_page.get_layer(7).set_visibility(false);
-				home_page.get_layer(8).set_visibility(false);
-				home_page.get_layer(9).set_visibility(false);
-			}
-		}
-		if (m_writer.m_cursor.m_focus == 0)
-		{
-			int boundX = home_page.get_layer(12).get_sprite(33)->get_position().x + home_page.get_layer(12).get_sprite(33)->get_size().x;
-			glm::vec3 cursor_shape = textRenderer->get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
-			m_writer.write(text_input, inputs, delta, boundX, cursor_shape);
-		}
-	}
-	*/
 }
 
 void Bandas::hovering_home_page(Page& page, int id)
@@ -746,6 +548,24 @@ void Bandas::hovering_home_page(Page& page, int id)
 	else
 	{
 		page.get_layer(13).get_sprite(65)->use_background_img();
+	}
+
+	if (id == 67) // connexion
+	{
+		page.get_layer(15).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(15).get_sprite(67)->use_background_img();
+	}
+
+	if (id == 68) // connexion
+	{
+		page.get_layer(16).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(16).get_sprite(68)->use_background_img();
 	}
 }
 
@@ -914,6 +734,27 @@ void Bandas::click_home_page(Page& page, int id)
 	{
 		m_writer.m_cursor.m_focus = 0;
 		page.get_layer(13).get_sprite(64)->use_background_img_selected();
+	}
+
+	if (id == 65) // clicked on connect
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("0");
+		g_msg2server_mtx.unlock();
+	}
+
+	if (id == 67) // clicked on play
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("1");
+		g_msg2server_mtx.unlock();
+	}
+
+	if (id == 68) // clicked on stop search opponent
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("2");
+		g_msg2server_mtx.unlock();
 	}
 }
 
@@ -1092,6 +933,8 @@ void Bandas::update_avatar(Page& page, int id)
 
 void Bandas::draw_home_page(float delta)
 {
+	Page& home_page{ m_ui.get_page(0) };
+
 	// draw avatar
 	m_graphics.avatarFBO->bind();
 	glViewport(0, 0, c_avatar_width, c_avatar_height);
@@ -1106,12 +949,46 @@ void Bandas::draw_home_page(float delta)
 	glClear(GL_COLOR_BUFFER_BIT);
 	m_ui.get_page(0).draw();
 
-	// draw cursor
-	if (m_writer.m_cursor.m_focus == 0)
+	// check connection status
+	if (m_net.is_trying_to_connect())
 	{
-		m_text.print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
-		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
-		m_writer.m_cursor.draw(cursor_shape, delta);
+		m_text.print("trying to connect...", 525 - 85, 272, 1, glm::vec3(0));
+		home_page.get_layer(13).set_visibility(false);
+		home_page.get_layer(15).set_visibility(false);
+		home_page.get_layer(16).set_visibility(false);
+	}
+	else
+	{
+		if (m_net.is_connected())
+		{
+			home_page.get_layer(14).get_sprite(66)->use_background_img_selected();
+			home_page.get_layer(13).set_visibility(false);
+			if (m_net.is_searching_game())
+			{
+				m_text.print("searching opponent...", 525 - 86, 272, 1, glm::vec3(0));
+				home_page.get_layer(15).set_visibility(false);
+				home_page.get_layer(16).set_visibility(true);
+			}
+			else
+			{
+				home_page.get_layer(15).set_visibility(true);
+				home_page.get_layer(16).set_visibility(false);
+			}
+		}
+		else
+		{
+			home_page.get_layer(14).get_sprite(66)->use_background_img();
+			home_page.get_layer(13).set_visibility(true);
+			home_page.get_layer(15).set_visibility(false);
+			home_page.get_layer(16).set_visibility(false);
+			// draw pseudo input and cursor
+			m_text.print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
+			if (m_writer.m_cursor.m_focus == 0)
+			{
+				glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+				m_writer.m_cursor.draw(cursor_shape, delta);
+			}
+		}
 	}
 }
 

@@ -94,6 +94,7 @@ set(HEADERS
 	include/cow.hpp
 	include/anvil.hpp
 	include/advertiser.hpp
+	include/communication.hpp
 	include/imgui.h
 	include/imconfig.h
 	include/imgui_internal.h

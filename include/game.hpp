@@ -15,7 +15,6 @@
 #include "color.hpp"
 #include "character.hpp"
 #include "user_interface.hpp"
-#include "network_client.hpp"
 #include "helpers.hpp"
 #include "bandas.hpp"
 

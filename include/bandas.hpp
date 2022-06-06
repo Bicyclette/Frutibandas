@@ -11,6 +11,8 @@
 #include "graphics.hpp"
 #include "writer.hpp"
 #include "window.hpp"
+#include "communication.hpp"
+#include "network_client.hpp"
 
 constexpr int c_screen_width{ 1050 };
 constexpr int c_screen_height{ 728 };
@@ -42,6 +44,7 @@ class Bandas
 		void draw_game_page(float delta);
 
 	public: // properties
+		NetworkClient m_net;
 		Graphics& m_graphics;
 		UI m_ui;
 		Text m_text;
