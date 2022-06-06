@@ -21,7 +21,7 @@ cmake -B build -S .
 
 ## Credit
 <p align=center>
-The original game was made by the Motion Twin.<br>
+The original game was made by the Motion Twin.<br><br>
 <a href="https://motion-twin.com/fr/">
 <img alt="Motion Twin" src="logo/motion_twin.png" width="200">
 </a>
