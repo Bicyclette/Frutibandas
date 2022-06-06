@@ -1,7 +1,7 @@
 # Frutibandas
 
-<p align=center>
-Bringing the game Frutibandas back to life.<br>
+<p align=center style="font-size:150%;">
+Bringing the game Frutibandas back to life.<br><br>
 <img alt="home" src="screen_capture/home_page.png">
 </p>
 
