@@ -8,7 +8,7 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "192.168.3.28"
+#define SERVER "192.168.3.94"
 #define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
@@ -30,7 +30,11 @@ void connect(std::shared_ptr<Game>& game)
 
 	if(code == 0)
 	{
-		game->m_bandas.m_net.connect(SERVER, PORT);
+		if (game->m_bandas.m_net.connect(SERVER, PORT))
+		{
+			// send pseudo
+			game->m_bandas.m_net.send_data("nn:" + game->m_bandas.m_me.m_pseudo);
+		}
 	}
 }
 
@@ -52,6 +56,9 @@ void send_message(std::shared_ptr<Game> & game)
 	int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
 	if (code == 1) // play (search opponent)
 	{
+		// send avatar
+		game->m_bandas.m_net.send_data("pp:" + game->m_bandas.m_me.m_avatar.get_net_data());
+		// then declare we are in queue
 		game->m_bandas.m_net.send_data("so");
 		game->m_bandas.m_net.search_game(true);
 	}
@@ -60,21 +67,91 @@ void send_message(std::shared_ptr<Game> & game)
 		game->m_bandas.m_net.send_data("sso");
 		game->m_bandas.m_net.search_game(false);
 	}
+	else if (code == 3) // give up game
+	{
+		game->m_bandas.m_net.send_data("gu");
+	}
+	else if (code == 4) // game chat message
+	{
+		game->m_bandas.m_net.send_data("gc:" + message.substr(2));
+	}
 }
 
 void receive_message(std::shared_ptr<Game> & game)
 {
+	int next_token;
 	if (game->m_bandas.m_net.service())
 	{
 		if (game->m_bandas.m_net.m_event.type == ENET_EVENT_TYPE_RECEIVE)
 		{
 			std::string message(reinterpret_cast<char*>(game->m_bandas.m_net.m_event.packet->data));
 			std::string type(message.substr(0, message.find_first_of(':')));
-			
+			if (type == "gs")
+			{
+				message = message.substr(6);
+				// get pseudo
+				next_token = message.find_first_of(':');
+				std::string pseudo = message.substr(0, next_token);
+				message = message.substr(next_token+4);
+
+				// get avatar
+				next_token = message.find_first_of(':');
+				std::string avatar = message.substr(0, next_token);
+				message = message.substr(next_token+6);
+				
+				// get team
+				next_token = message.find_first_of(':');
+				int team = std::stoi(message.substr(0, next_token));
+				message = message.substr(next_token+3);
+				
+				// get board
+				next_token = message.find_first_of(':');
+				std::string plateau = message.substr(0, next_token);
+				message = message.substr(next_token + 6);
+				
+				// get turn
+				next_token = message.find_first_of(':');
+				int turn = std::stoi(message.substr(0, next_token));
+				if (turn == team)
+				{
+					message = message.substr(next_token + 3);
+					//get set of cards
+					next_token = message.find_first_of(':');
+					std::string cards = message.substr(0, next_token);
+				}
+
+				// set my data
+				game->m_bandas.m_me.m_team = team;
+
+				// set enemy data
+				game->m_bandas.m_enemy.m_team = (team == 0) ? 1 : 0;
+				game->m_bandas.m_enemy.m_pseudo = pseudo;
+				game->m_bandas.m_enemy.m_avatar.create_from_net_data(avatar);
+				// switch to game page
+				game->m_bandas.start_game();
+			}
+			else if (type == "gu")
+			{
+				game->m_bandas.enemy_gave_up();
+			}
+			else if (type == "dc")
+			{
+				game->m_bandas.enemy_disconnected();
+			}
+			else if (type == "gc")
+			{
+				std::string data = message.substr(3);
+				int messageLength = data.size();
+				if (messageLength > 0)
+				{
+					game->m_bandas.add_chat_message(data);
+				}
+			}
 		}
 		else if (game->m_bandas.m_net.m_event.type == ENET_EVENT_TYPE_DISCONNECT)
 		{
-			game->m_bandas.m_net.disconnect();
+			game->m_bandas.lost_server_connection();
+			game->m_bandas.m_net.connection_lost();
 		}
 	}
 }

@@ -23,7 +23,13 @@ Bandas::~Bandas()
 
 void Bandas::createUI()
 {
-	// home page
+	create_home_page();
+	create_game_page();
+	m_ui.set_active_page(0);
+}
+
+void Bandas::create_home_page()
+{
 	m_ui.add_page();
 
 	Page& home_page = m_ui.get_page(0);
@@ -44,6 +50,7 @@ void Bandas::createUI()
 	home_page.add_layer(14); // connection status
 	home_page.add_layer(15); // chercher adversaire
 	home_page.add_layer(16); // stop chercher adversaire
+	home_page.add_layer(17); // pop up messages
 
 	Layer& h_layer0 = home_page.get_layer(0);
 	h_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(c_screen_width, c_screen_height), c_screen_width, c_screen_height);
@@ -335,16 +342,14 @@ void Bandas::createUI()
 
 	Layer& h_layer13 = home_page.get_layer(13);
 	h_layer13.add_sprite(64, glm::vec2(525 - 75, 728 - (140 + 48 * 7 - 12)), glm::vec2(150, 30), c_screen_width, c_screen_height);
-	h_layer13.get_sprite(64)->set_background_img("assets/home_page/pseudo.tga");
-	h_layer13.get_sprite(64)->set_background_img_selected("assets/home_page/pseudo_hover.tga");
-	h_layer13.get_sprite(64)->use_background_img();
+	h_layer13.get_sprite(64)->set_background_color(glm::vec4(0.906f, 0.957f, 0.808f, 1.0f));
 	h_layer13.add_sprite(65, glm::vec2(525 - 75, 728 - (140 + 48 * 8 - 24)), glm::vec2(150, 24), c_screen_width, c_screen_height);
 	h_layer13.get_sprite(65)->set_background_img("assets/home_page/connexion.tga");
 	h_layer13.get_sprite(65)->set_background_img_selected("assets/home_page/connexion_hover.tga");
 	h_layer13.get_sprite(65)->use_background_img();
 
 	Layer& h_layer14 = home_page.get_layer(14);
-	h_layer14.add_sprite(66, glm::vec2(91, 728 - 432-70), glm::vec2(99, 70), c_screen_width, c_screen_height);
+	h_layer14.add_sprite(66, glm::vec2(91, 728 - 432 - 70), glm::vec2(99, 70), c_screen_width, c_screen_height);
 	h_layer14.get_sprite(66)->set_background_img("assets/home_page/internet.tga");
 	h_layer14.get_sprite(66)->set_background_img_selected("assets/home_page/internet_on.tga");
 	h_layer14.get_sprite(66)->use_background_img();
@@ -364,7 +369,47 @@ void Bandas::createUI()
 	h_layer16.get_sprite(68)->set_background_img_selected("assets/home_page/stop_search_hover.tga");
 	h_layer16.get_sprite(68)->use_background_img();
 
-	m_ui.set_active_page(0);
+	Layer& h_layer17 = home_page.get_layer(17);
+	h_layer17.set_visibility(false);
+	h_layer17.add_sprite(69, glm::vec2(184, 728 - 168 - 393), glm::vec2(683, 393), c_screen_width, c_screen_height);
+	h_layer17.get_sprite(69)->add_texture("assets/home_page/opponent_gave_up.tga");
+	h_layer17.get_sprite(69)->add_texture("assets/home_page/opponent_disconnected.tga");
+	h_layer17.get_sprite(69)->add_texture("assets/home_page/connection_server_lost.tga");
+	h_layer17.get_sprite(69)->use_background_img_gl();
+	h_layer17.add_sprite(70, glm::vec2(525 - 90, 728 - 168 - 350), glm::vec2(180, 85), c_screen_width, c_screen_height);
+	h_layer17.get_sprite(70)->set_background_img("assets/home_page/ok.tga");
+	h_layer17.get_sprite(70)->set_background_img_selected("assets/home_page/ok_hover.tga");
+	h_layer17.get_sprite(70)->use_background_img();
+}
+
+void Bandas::create_game_page()
+{
+	m_ui.add_page();
+
+	Page& game_page = m_ui.get_page(1);
+	game_page.add_layer(0); // game background + avatar + abandon button
+	game_page.add_layer(1); // chat input
+
+	Layer& g_layer0 = game_page.get_layer(0);
+	g_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(c_screen_width, c_screen_height), c_screen_width, c_screen_height);
+	g_layer0.get_sprite(0)->set_background_img("assets/game_page/game.tga");
+	g_layer0.get_sprite(0)->use_background_img();
+	g_layer0.add_sprite(1, glm::vec2(21, 728 - 23 - 130), glm::vec2(130, 130), c_screen_width, c_screen_height);
+	g_layer0.get_sprite(1)->set_background_img_gl(m_graphics.avatarFBO->getAttachments()[0].id);
+	g_layer0.get_sprite(1)->use_background_img_gl();
+	g_layer0.add_sprite(2, glm::vec2(896, 728 - 23 - 130), glm::vec2(130, 130), c_screen_width, c_screen_height);
+	g_layer0.get_sprite(2)->set_background_img_gl(m_graphics.opponentAvatarFBO->getAttachments()[0].id);
+	g_layer0.get_sprite(2)->use_background_img_gl();
+	g_layer0.add_sprite(3, glm::vec2(1050 - 120, 0), glm::vec2(120, 30), c_screen_width, c_screen_height);
+	g_layer0.get_sprite(3)->set_background_img("assets/game_page/give_up.tga");
+	g_layer0.get_sprite(3)->set_background_img_selected("assets/game_page/give_up_hover.tga");
+	g_layer0.get_sprite(3)->use_background_img();
+
+	Layer& g_layer1 = game_page.get_layer(1);
+	g_layer1.add_sprite(4, glm::vec2(240, 728 - 698 - 20), glm::vec2(572, 25), c_screen_width, c_screen_height);
+	g_layer1.get_sprite(4)->set_background_img("assets/game_page/chat_input.tga");
+	g_layer1.get_sprite(4)->set_background_img_selected("assets/game_page/chat_input_hover.tga");
+	g_layer1.get_sprite(4)->use_background_img();
 }
 
 void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input, float delta)
@@ -387,6 +432,7 @@ void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input,
 		int boundX = home_page.get_layer(13).get_sprite(64)->get_position().x + home_page.get_layer(13).get_sprite(64)->get_size().x;
 		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
 		m_writer.write(txt_input, user_input, delta, boundX, cursor_shape);
+		m_me.m_pseudo = m_writer.m_textInput[0];
 	}
 }
 
@@ -567,6 +613,15 @@ void Bandas::hovering_home_page(Page& page, int id)
 	{
 		page.get_layer(16).get_sprite(68)->use_background_img();
 	}
+
+	if (id == 70) // ok button from popup messages
+	{
+		page.get_layer(17).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(17).get_sprite(70)->use_background_img();
+	}
 }
 
 void Bandas::click_home_page(Page& page, int id)
@@ -574,7 +629,7 @@ void Bandas::click_home_page(Page& page, int id)
 	if (id != 64)
 	{
 		m_writer.m_cursor.m_focus = 2;
-		page.get_layer(13).get_sprite(64)->use_background_img();
+		page.get_layer(13).get_sprite(64)->set_background_color(glm::vec4(0.906f, 0.957f, 0.808f, 1.0f));
 	}
 
 	if (id == 2) // face
@@ -733,7 +788,7 @@ void Bandas::click_home_page(Page& page, int id)
 	if (id == 64) // pseudo input
 	{
 		m_writer.m_cursor.m_focus = 0;
-		page.get_layer(13).get_sprite(64)->use_background_img_selected();
+		page.get_layer(13).get_sprite(64)->set_background_color(glm::vec4(0.849f, 0.898f, 0.754f, 1.0f));
 	}
 
 	if (id == 65) // clicked on connect
@@ -755,6 +810,11 @@ void Bandas::click_home_page(Page& page, int id)
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("2");
 		g_msg2server_mtx.unlock();
+	}
+
+	if (id == 70)
+	{
+		page.get_layer(17).set_visibility(false);
 	}
 }
 
@@ -940,7 +1000,7 @@ void Bandas::draw_home_page(float delta)
 	glViewport(0, 0, c_avatar_width, c_avatar_height);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-	m_me.m_avatar.draw(false);
+	m_me.m_avatar.draw();
 
 	// draw home page
 	m_graphics.userInterfaceFBO->bind();
@@ -968,11 +1028,35 @@ void Bandas::draw_home_page(float delta)
 				m_text.print("searching opponent...", 525 - 86, 272, 1, glm::vec3(0));
 				home_page.get_layer(15).set_visibility(false);
 				home_page.get_layer(16).set_visibility(true);
+
+				// no more avatar editing
+				home_page.get_layer(1).m_sg.set_grey(true);
+				home_page.get_layer(1).m_sg.set_selectable(false);
+				home_page.get_layer(2).m_sg.set_grey(true);
+				home_page.get_layer(2).m_sg.set_selectable(false);
+				home_page.get_layer(10).m_sg.set_grey(true);
+				home_page.get_layer(10).m_sg.set_selectable(false);
+				home_page.get_layer(12).get_sprite(61)->set_grey(true);
+				home_page.get_layer(12).get_sprite(61)->set_selectable(false);
+				home_page.get_layer(12).get_sprite(62)->set_grey(true);
+				home_page.get_layer(12).get_sprite(62)->set_selectable(false);
 			}
 			else
 			{
 				home_page.get_layer(15).set_visibility(true);
 				home_page.get_layer(16).set_visibility(false);
+
+				// avatar editing available
+				home_page.get_layer(1).m_sg.set_grey(false);
+				home_page.get_layer(1).m_sg.set_selectable(true);
+				home_page.get_layer(2).m_sg.set_grey(false);
+				home_page.get_layer(2).m_sg.set_selectable(true);
+				home_page.get_layer(10).m_sg.set_grey(false);
+				home_page.get_layer(10).m_sg.set_selectable(true);
+				home_page.get_layer(12).get_sprite(61)->set_grey(false);
+				home_page.get_layer(12).get_sprite(61)->set_selectable(true);
+				home_page.get_layer(12).get_sprite(62)->set_grey(false);
+				home_page.get_layer(12).get_sprite(62)->set_selectable(true);
 			}
 		}
 		else
@@ -982,26 +1066,258 @@ void Bandas::draw_home_page(float delta)
 			home_page.get_layer(15).set_visibility(false);
 			home_page.get_layer(16).set_visibility(false);
 			// draw pseudo input and cursor
-			m_text.print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
-			if (m_writer.m_cursor.m_focus == 0)
+			if (!home_page.get_layer(17).m_visible)
 			{
-				glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
-				m_writer.m_cursor.draw(cursor_shape, delta);
+				m_text.print(m_writer.m_textInput[0], 525 - 72, 272, 1, glm::vec3(0));
+				if (m_writer.m_cursor.m_focus == 0)
+				{
+					glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[0], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+					m_writer.m_cursor.draw(cursor_shape, delta);
+				}
 			}
 		}
 	}
 }
 
+void Bandas::start_game()
+{
+	m_ui.set_active_page(1);
+	// stop focus text input
+	m_writer.m_cursor.m_focus = 2;
+	m_writer.m_cursor.m_pos = 0;
+	// no more searching game
+	m_net.search_game(false);
+}
+
+void Bandas::quit_game()
+{
+	m_ui.set_active_page(0);
+	// stop focus text input
+	m_writer.m_cursor.m_focus = 2;
+	m_writer.m_cursor.m_pos = static_cast<int>(m_writer.m_textInput[0].size());
+	// clear chat log
+	m_writer.m_chatLog.clear();
+}
+
+void Bandas::enemy_gave_up()
+{
+	quit_game();
+	m_ui.get_page(0).get_layer(17).set_visibility(true);
+	Layer& h_layer17 = m_ui.get_page(0).get_layer(17);
+	h_layer17.get_sprite(69)->set_background_img_gl(h_layer17.get_sprite(69)->get_texture_id(0));
+}
+
+void Bandas::enemy_disconnected()
+{
+	quit_game();
+	m_ui.get_page(0).get_layer(17).set_visibility(true);
+	Layer& h_layer17 = m_ui.get_page(0).get_layer(17);
+	h_layer17.get_sprite(69)->set_background_img_gl(h_layer17.get_sprite(69)->get_texture_id(1));
+}
+
+void Bandas::lost_server_connection()
+{
+	quit_game();
+	m_ui.get_page(0).get_layer(17).set_visibility(true);
+	Layer& h_layer17 = m_ui.get_page(0).get_layer(17);
+	h_layer17.get_sprite(69)->set_background_img_gl(h_layer17.get_sprite(69)->get_texture_id(2));
+	// avatar editing available
+	Page& home_page = m_ui.get_page(0);
+	home_page.get_layer(1).m_sg.set_grey(false);
+	home_page.get_layer(1).m_sg.set_selectable(true);
+	home_page.get_layer(2).m_sg.set_grey(false);
+	home_page.get_layer(2).m_sg.set_selectable(true);
+	home_page.get_layer(10).m_sg.set_grey(false);
+	home_page.get_layer(10).m_sg.set_selectable(true);
+	home_page.get_layer(12).get_sprite(61)->set_grey(false);
+	home_page.get_layer(12).get_sprite(61)->set_selectable(true);
+	home_page.get_layer(12).get_sprite(62)->set_grey(false);
+	home_page.get_layer(12).get_sprite(62)->set_selectable(true);
+}
+
 void Bandas::update_game_page(std::bitset<10> user_input, std::string txt_input, float delta)
 {
+	glm::ivec2 mouse_pos = m_mouse.get_position();
+	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos.x, c_screen_height - mouse_pos.y);
 
+	if (!hovered) { return; }
+	Page& game_page{ m_ui.get_page(1) };
+	int sprite_id{ hovered->get_id() };
+
+	hovering_game_page(game_page, sprite_id);
+	if (user_input.test(2) && user_input.test(9)) // if click & release events
+	{
+		click_game_page(game_page, sprite_id);
+	}
+	update_chat_input(user_input, txt_input, delta);
+}
+
+void Bandas::hovering_game_page(Page& page, int id)
+{
+	if (id == 3) // abandon button
+	{
+		page.get_layer(0).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(0).get_sprite(3)->use_background_img();
+	}
+}
+
+void Bandas::click_game_page(Page& page, int id)
+{
+	if (id == 3) // abandon button
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("3");
+		g_msg2server_mtx.unlock();
+		quit_game();
+	}
+
+	if (id == 4) // chat input
+	{
+		m_writer.m_cursor.m_focus = 1;
+		page.get_layer(1).get_sprite(4)->use_background_img_selected();
+	}
+	else
+	{
+		m_writer.m_cursor.m_focus = 2;
+		page.get_layer(1).get_sprite(4)->use_background_img();
+	}
+}
+
+void Bandas::draw_avatar_game_page()
+{
+	// draw avatar
+	m_graphics.avatarFBO->bind();
+	glViewport(0, 0, c_avatar_width, c_avatar_height);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	m_me.m_avatar.draw();
+	bool mirror = false;
+	if (m_me.m_team == 0) {
+		mirror = true;
+	}
+	if (mirror) {
+		m_graphics.cs_horizontal_mirror.use();
+		m_graphics.cs_horizontal_mirror.setInt("screen_width", c_avatar_width);
+		glBindImageTexture(0, m_graphics.avatarFBO->getAttachments()[0].id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+		glBindImageTexture(1, m_graphics.avatar_mirror_rt.getId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+		m_graphics.cs_horizontal_mirror.dispatch(c_screen_width / 8, c_screen_height / 8, 1, GL_ALL_BARRIER_BITS);
+	}
+
+	// draw enemy avatar
+	m_graphics.opponentAvatarFBO->bind();
+	glViewport(0, 0, c_avatar_width, c_avatar_height);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	m_enemy.m_avatar.draw();
+	if (!mirror) {
+		m_graphics.cs_horizontal_mirror.use();
+		m_graphics.cs_horizontal_mirror.setInt("screen_width", c_avatar_width);
+		glBindImageTexture(0, m_graphics.opponentAvatarFBO->getAttachments()[0].id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+		glBindImageTexture(1, m_graphics.avatar_mirror_rt.getId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+		m_graphics.cs_horizontal_mirror.dispatch(c_screen_width / 8, c_screen_height / 8, 1, GL_ALL_BARRIER_BITS);
+	}
+	
+	if (m_me.m_team == 0)
+	{
+		m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(m_graphics.avatar_mirror_rt.getId());			// orange
+		m_ui.get_page(1).get_layer(0).get_sprite(2)->set_background_img_gl(m_graphics.opponentAvatarFBO->getAttachments()[0].id);	// banane
+	}
+	else
+	{
+		m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(m_graphics.avatar_mirror_rt.getId());	// orange
+		m_ui.get_page(1).get_layer(0).get_sprite(2)->set_background_img_gl(m_graphics.avatarFBO->getAttachments()[0].id);			// banane
+	}
 }
 
 void Bandas::draw_game_page(float delta)
 {
+	draw_avatar_game_page();
+	
+	// draw background
 	m_graphics.userInterfaceFBO->bind();
 	glViewport(0, 0, c_screen_width, c_screen_height);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	m_ui.get_page(1).draw();
+
+	// print pseudo
+	if (m_me.m_team == 0)
+	{
+		m_text.print(m_me.m_pseudo, 19, 728 - 159 - 27, 1, glm::vec3(0));
+		m_text.print(m_enemy.m_pseudo, 839, 728 - 159 - 27, 1, glm::vec3(0));
+	}
+	else
+	{
+		m_text.print(m_enemy.m_pseudo, 19, 728 - 159 - 27, 1, glm::vec3(0));
+		m_text.print(m_me.m_pseudo, 839, 728 - 159 - 27, 1, glm::vec3(0));
+	}
+
+	//print remaining fruits
+	m_text.print(std::to_string(32), 190, 728 - 52, 1, glm::vec3(0));
+	m_text.print(std::to_string(32), 856, 728 - 52, 1, glm::vec3(0));
+
+	// print chat
+	draw_chat(delta);
+}
+
+void Bandas::add_chat_message(std::string msg)
+{
+	if (m_writer.m_chatLog.size() == 6)
+	{
+		for (int i{ 0 }; i < 5; ++i)
+		{
+			m_writer.m_chatLog[i] = m_writer.m_chatLog[i + 1];
+		}
+		m_writer.m_chatLog[5] = msg;
+	}
+	else
+	{
+		m_writer.m_chatLog.push_back(msg);
+	}
+}
+
+void Bandas::draw_chat(float delta)
+{
+	// chat input
+	m_text.print(m_writer.m_textInput[1], 240 + 13, 728 - 698 - 12, 1, glm::vec3(0));
+	// cursor
+	if (m_writer.m_cursor.m_focus == 1)
+	{
+		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[1], 240 + 13, 728 - 698 - 12, 1, m_writer.m_cursor.m_pos);
+		m_writer.m_cursor.draw(cursor_shape, delta);
+	}
+	// conversation
+	for (int i{ 1 }; i <= m_writer.m_chatLog.size(); ++i)
+	{
+		m_text.print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 20 * i, 1, glm::vec3(0));
+	}
+}
+
+void Bandas::update_chat_input(std::bitset<10> user_input, std::string txt_input, float delta)
+{
+	Page& game_page{ m_ui.get_page(1) };
+	if (m_writer.m_cursor.m_focus == 1 && !user_input.test(5))
+	{
+		int boundX = game_page.get_layer(1).get_sprite(4)->get_position().x + game_page.get_layer(1).get_sprite(4)->get_size().x;
+		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[1], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+		m_writer.write(txt_input, user_input, delta, boundX, cursor_shape);
+	}
+	else if (m_writer.m_cursor.m_focus == 1 && user_input.test(5))
+	{
+		if (m_writer.m_textInput[1].size() > 0)
+		{
+			std::string data("4:");
+			data += m_writer.m_textInput[1];
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace(data);
+			g_msg2server_mtx.unlock();
+			// clear chat input
+			m_writer.m_textInput[1].clear();
+			// reset cursor pos to zero
+			m_writer.m_cursor.m_pos = 0;
+		}
+	}
 }

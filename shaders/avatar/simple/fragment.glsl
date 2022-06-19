@@ -5,21 +5,9 @@ out vec4 fragColor;
 in vec2 texCoords;
 
 uniform sampler2D image;
-uniform bool mirrorX;
 
 void main()
 {
-	vec4 image_sample;
-	if(!mirrorX)
-	{
-		image_sample = texture(image, texCoords);
-	}
-	else
-	{
-		float x = ((texCoords.x - 0.5) * 2.0f) * -1.0f;
-		x = (x + 1.0f) * 0.5f;
-		image_sample = texture(image, vec2(x, texCoords.y));
-	}
-	
+	vec4 image_sample = texture(image, texCoords);
 	fragColor = image_sample;
 }

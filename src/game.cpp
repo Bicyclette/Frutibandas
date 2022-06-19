@@ -79,14 +79,11 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 	if (m_bandas.m_ui.get_active_page() == 0)
 	{
 		m_bandas.draw_home_page(delta);
+		bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
 	}
 	else if (m_bandas.m_ui.get_active_page() == 1)
 	{
 		m_bandas.draw_game_page(delta);
-	}
-	if (m_bandas.m_ui.get_active_page() == 0)
-	{
-		bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
 	}
 }
 
@@ -861,6 +858,13 @@ void Game::uiCompositing()
 
 	Shader& s{ graphics.uiCompositing };
 	s.use();
+
+	if (m_bandas.m_ui.get_active_page() == 1) {
+		s.setInt("page", 1);
+	}
+	else {
+		s.setInt("page", 0);
+	}
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, graphics.userInterfaceFBO->getAttachments()[0].id);

@@ -14,7 +14,7 @@
 #include <array>
 #include <exception>
 #include "shader_light.hpp"
-
+#include "tinyutf8/tinyutf8.h"
 
 struct Glyph
 {
@@ -27,7 +27,7 @@ struct Glyph
 class Text
 {
     public:
-        using Alphabet = std::map<char, Glyph>;
+        using Alphabet = std::map<unsigned long, Glyph>;
 
     public:
         Text(int width, int height);
@@ -79,6 +79,9 @@ class Sprite
         bool is_selected() { return m_selected; }
         int get_layer_id() { return m_layer_id; }
         void set_layer_id(int id) { m_layer_id = id; }
+        void set_grey(bool grey) { m_grey = grey; }
+        void add_texture(std::string tex_path);
+        GLuint get_texture_id(int index) { return m_texture[index].id; }
 
     private:
 
@@ -97,6 +100,8 @@ class Sprite
         glm::mat4 m_projection;
         bool m_selectable;
         bool m_selected;
+        bool m_grey;
+        std::vector<Texture> m_texture;
 };
 
 struct SpriteGroup
@@ -105,8 +110,21 @@ struct SpriteGroup
     SpriteGroup(int id) : m_id(id) {}
     void translate(glm::vec2 shift)
     {
-        for (auto& s : m_sprite)
+        for (auto& s : m_sprite) {
             s->translate(shift);
+        }
+    }
+    void set_grey(bool grey)
+    {
+        for (auto& s : m_sprite) {
+            s->set_grey(grey);
+        }
+    }
+    void set_selectable(bool selectable)
+    {
+        for (auto& s : m_sprite) {
+            s->set_selectable(selectable);
+        }
     }
 
     int m_id;

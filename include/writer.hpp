@@ -78,7 +78,7 @@ struct Cursor
 	}
 
 	int m_focus; // 0 = pseudo, 1 = chat, 2 = not writing
-	size_t m_pos;
+	int m_pos;
 	float m_blink;
 	bool m_blink_ctrl;
 	Shader m_shader;

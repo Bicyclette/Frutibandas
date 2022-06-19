@@ -118,6 +118,18 @@ bool NetworkClient::disconnect()
 	return false;
 }
 
+void NetworkClient::connection_lost()
+{
+	mtx.lock();
+	m_connected = false;
+	mtx.unlock();
+	m_trying_to_connect_mtx.lock();
+	m_trying_to_connect = false;
+	m_trying_to_connect_mtx.unlock();
+	m_searching_game_mtx.lock();
+	m_searching_game = false;
+	m_searching_game_mtx.unlock();
+}
 
 bool NetworkClient::has_received_data()
 {
@@ -134,10 +146,10 @@ void NetworkClient::print_data()
 	std::cout << data << std::endl;
 }
 
-void NetworkClient::send_data(std::string data)
+int NetworkClient::send_data(std::string data)
 {
 	ENetPacket* packet = enet_packet_create(data.c_str(), data.size() + 1, ENET_PACKET_FLAG_RELIABLE);
-	enet_peer_send(m_peer, 0, packet);
+	return enet_peer_send(m_peer, 0, packet);
 }
 
 int NetworkClient::service()

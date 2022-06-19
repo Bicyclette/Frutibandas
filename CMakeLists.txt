@@ -53,8 +53,7 @@ set(SRCS
 	src/imgui_tables.cpp
 	src/imgui_widgets.cpp
 	src/imgui_impl_sdl.cpp
-	src/imgui_impl_opengl3.cpp
-	src/tinyfiledialogs.cpp)
+	src/imgui_impl_opengl3.cpp)
 
 set(HEADERS
 	include/stb_image.h
@@ -102,7 +101,8 @@ set(HEADERS
 	include/imstb_rectpack.h
 	include/imstb_truetype.h
 	include/imgui_impl_sdl.h
-	include/imgui_impl_opengl3.h)
+	include/imgui_impl_opengl3.h
+	include/tinyutf8/tinyutf8.h)
 
 add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 

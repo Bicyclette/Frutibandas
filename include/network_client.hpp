@@ -17,11 +17,12 @@ class NetworkClient
 		bool disconnect();
 		bool has_received_data();
 		void print_data();
-		void send_data(std::string data);
+		int send_data(std::string data);
 		int service();
 		bool is_connected();
 		bool is_searching_game();
 		void search_game(bool search);
+		void connection_lost();
 
 	public:
 		ENetHost* m_client;

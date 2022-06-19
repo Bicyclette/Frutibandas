@@ -57,7 +57,7 @@ void Text::load_police(std::string ttf_file, int font_size)
     Alphabet alphabet;
     police.emplace_back(ttf_file, alphabet);
     
-    for(unsigned char c{0}; c < 128; ++c)
+    for(unsigned long c{0}; c < 128; ++c)
     {
         // load character glyph
         if(FT_Load_Char(face, c, FT_LOAD_RENDER))
@@ -82,7 +82,7 @@ void Text::load_police(std::string ttf_file, int font_size)
             glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
             face->glyph->advance.x
         };
-        police[police.size()-1].second.insert(std::pair<char, Glyph>(c, character));
+        police[police.size()-1].second.insert(std::pair<unsigned long, Glyph>(c, character));
     }
 
     // clean up
@@ -105,11 +105,27 @@ void Text::print(std::string txt, float x, float y, float scale, glm::vec3 color
     shader.setMatrix("proj", projection);
     glBindVertexArray(vao);
 
-    // iterate through all characters
-    std::string::const_iterator c;
-    for (c = txt.begin(); c != txt.end(); ++c)
+    // convert string to utf8 string
+    std::u32string s32;
+    for (unsigned char c : txt)
     {
-        Glyph glyph = alphabet[*c];
+        s32 += c;
+    }
+    tiny_utf8::string str;
+    for (auto c : s32)
+    {
+        str += c;
+    }
+    // get utf8 codepoints
+    std::vector<unsigned long> cp; // codepoint
+    for_each(str.begin(), str.end(), [&cp](char32_t codepoint) {
+		unsigned long code = codepoint;
+        cp.push_back(code);
+	});
+    // iterate through all codepoints
+    for(unsigned long code : cp)
+    {
+        Glyph glyph = alphabet[code];
         float xpos = x + glyph.bearing.x * scale;
         float ypos = y - (glyph.size.y - glyph.bearing.y) * scale;
 
@@ -188,7 +204,8 @@ Sprite::Sprite(int id, glm::vec2 pos, glm::vec2 size, int screenW, int screenH) 
     m_shader("shaders/UI/vertex.glsl", "shaders/UI/fragment.glsl", SHADER_TYPE::UI),
     m_projection(glm::ortho(0.0f, static_cast<float>(screenW), 0.0f, static_cast<float>(screenH))),
     m_selectable(true),
-    m_selected(false)
+    m_selected(false),
+    m_grey(false)
 {
     glGenVertexArrays(1, &m_vao);
     glGenBuffers(1, &m_vbo);
@@ -308,6 +325,7 @@ void Sprite::draw(glm::vec2 translate)
     m_shader.setVec4f("bkg_color", m_color);
     m_shader.setFloat("bloom_strength", m_bloom_strength);
     m_shader.setVec2f("translate", translate);
+    m_shader.setBool("grey", m_grey);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
 }
@@ -321,4 +339,9 @@ bool Sprite::mouse_hover(int mouseX, int mouseY)
 void Sprite::resize_screen(int width, int height)
 {
     m_projection = glm::ortho(0.0f, static_cast<float>(width), 0.0f, static_cast<float>(height));
+}
+
+void Sprite::add_texture(std::string tex_path)
+{
+    m_texture.push_back(createTexture(tex_path, TEXTURE_TYPE::DIFFUSE, true));
 }

@@ -27,6 +27,7 @@ struct Player
 {
 	Avatar m_avatar;
 	std::string m_pseudo;
+	int m_team;
 };
 
 class Bandas
@@ -35,13 +36,27 @@ class Bandas
 		Bandas(Graphics& graphics);
 		~Bandas();
 		void createUI();
+		inline void create_home_page();
+		inline void create_game_page();
 		void update_home_page(std::bitset<10> user_input, std::string txt_input, float delta);
 		void hovering_home_page(Page& page, int id);
 		void click_home_page(Page& page, int id);
 		void update_avatar(Page& page, int id);
 		void draw_home_page(float delta);
+		void start_game();
+		void quit_game();
+		void enemy_gave_up();
+		void enemy_disconnected();
+		void lost_server_connection();
+
 		void update_game_page(std::bitset<10> user_input, std::string txt_input, float delta);
+		void hovering_game_page(Page& page, int id);
+		void click_game_page(Page& page, int id);
 		void draw_game_page(float delta);
+		void draw_chat(float delta);
+		void add_chat_message(std::string msg);
+		void update_chat_input(std::bitset<10> user_input, std::string txt_input, float delta);
+		void draw_avatar_game_page();
 
 	public: // properties
 		NetworkClient m_net;

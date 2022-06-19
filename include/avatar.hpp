@@ -253,24 +253,21 @@ struct Avatar
 		glBindVertexArray(0);
 	}
 
-	void draw(bool mirrorX = false)
+	void draw()
 	{
 		glBindVertexArray(m_vao);
 		glActiveTexture(GL_TEXTURE0);
 
 		m_shaderHSL.use();
-		m_shaderHSL.setBool("mirrorX", mirrorX);
 		m_shaderHSL.setMatrix("proj", m_projection);
 		m_shaderHSL.setInt("image", 0);
 		m_shaderHSL.setInt("mask", 1);
 
 		m_shaderRGB.use();
-		m_shaderRGB.setBool("mirrorX", mirrorX);
 		m_shaderRGB.setMatrix("proj", m_projection);
 		m_shaderRGB.setInt("image", 0);
 
 		m_shader.use();
-		m_shader.setBool("mirrorX", mirrorX);
 		m_shader.setMatrix("proj", m_projection);
 		m_shader.setInt("image", 0);
 
@@ -857,6 +854,99 @@ struct Avatar
 			if (tex.id != -1) {
 				glDeleteTextures(1, &tex.id);
 			}
+		}
+	}
+
+	std::string get_net_data()
+	{
+		std::string data;
+		// gender.face_type.skin_color_id.hair_id.hair_color_id.eyes_id.eyes_color_id.mouth_id.m_sac_id
+		if (m_gender == GENDER::MALE)
+		{
+			data += "0.";
+			data += std::to_string(static_cast<int>(m_homme.m_face)) + ".";
+			data += std::to_string(m_homme.m_skin_color_id) + ".";
+			data += std::to_string(static_cast<int>(m_homme.m_hair)) + ".";
+			data += std::to_string(m_homme.m_hair_color_id) + ".";
+			data += std::to_string(static_cast<int>(m_homme.m_eyes)) + ".";
+			data += std::to_string(m_homme.m_eyes_color_id) + ".";
+			data += std::to_string(static_cast<int>(m_homme.m_mouth)) + ".";
+			data += std::to_string(static_cast<int>(m_homme.m_sac));
+		}
+		else
+		{
+			data += "1.";
+			data += std::to_string(static_cast<int>(m_femme.m_face)) + ".";
+			data += std::to_string(m_femme.m_skin_color_id) + ".";
+			data += std::to_string(static_cast<int>(m_femme.m_hair)) + ".";
+			data += std::to_string(m_femme.m_hair_color_id) + ".";
+			data += std::to_string(static_cast<int>(m_femme.m_eyes)) + ".";
+			data += std::to_string(m_femme.m_eyes_color_id) + ".";
+			data += std::to_string(static_cast<int>(m_femme.m_mouth)) + ".";
+			data += std::to_string(static_cast<int>(m_femme.m_sac));
+		}
+		return data;
+	}
+
+	void create_from_net_data(std::string data)
+	{
+		int next_token = data.find_first_of('.');
+		int gender = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token+1);
+
+		next_token = data.find_first_of('.');
+		int face = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token + 1);
+
+		next_token = data.find_first_of('.');
+		int skin_color_id = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token + 1);
+
+		next_token = data.find_first_of('.');
+		int hair = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token + 1);
+
+		next_token = data.find_first_of('.');
+		int hair_color_id = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token + 1);
+
+		next_token = data.find_first_of('.');
+		int eyes = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token + 1);
+
+		next_token = data.find_first_of('.');
+		int eyes_color_id = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token + 1);
+
+		next_token = data.find_first_of('.');
+		int mouth = std::atoi(data.substr(0, next_token).c_str());
+		data = data.substr(next_token + 1);
+
+		int sac = std::atoi(data.substr(0).c_str());
+
+		// convert int to enum class
+		m_gender = static_cast<GENDER>(gender);
+		if (m_gender == GENDER::MALE)
+		{
+			m_homme.m_face = static_cast<FACE>(face);
+			m_homme.m_skin_color_id = skin_color_id;
+			m_homme.m_hair = static_cast<HAIR>(hair);
+			m_homme.m_hair_color_id = hair_color_id;
+			m_homme.m_eyes = static_cast<EYES>(eyes);
+			m_homme.m_eyes_color_id = eyes_color_id;
+			m_homme.m_mouth = static_cast<MOUTH>(mouth);
+			m_homme.m_sac = static_cast<SAC>(sac);
+		}
+		else
+		{
+			m_femme.m_face = static_cast<FACE>(face);
+			m_femme.m_skin_color_id = skin_color_id;
+			m_femme.m_hair = static_cast<HAIR>(hair);
+			m_femme.m_hair_color_id = hair_color_id;
+			m_femme.m_eyes = static_cast<EYES>(eyes);
+			m_femme.m_eyes_color_id = eyes_color_id;
+			m_femme.m_mouth = static_cast<MOUTH>(mouth);
+			m_femme.m_sac = static_cast<SAC>(sac);
 		}
 	}
 

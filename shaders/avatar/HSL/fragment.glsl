@@ -7,7 +7,6 @@ in vec2 texCoords;
 uniform sampler2D image;
 uniform sampler2D mask;
 uniform vec3 HSL;
-uniform bool mirrorX;
 
 vec3 hsl2rgb( in vec3 c )
 {
@@ -81,17 +80,7 @@ vec3 hsv2rgb(vec3 c)
 
 void main()
 {
-	vec4 image_sample;
-	if(!mirrorX)
-	{
-		image_sample = texture(image, texCoords);
-	}
-	else
-	{
-		float x = ((texCoords.x - 0.5) * 2.0f) * -1.0f;
-		x = (x + 1.0f) * 0.5f;
-		image_sample = texture(image, vec2(x, texCoords.y));
-	}
+	vec4 image_sample = texture(image, texCoords);
 	float iris = texture(mask, texCoords).r;
 	float L = rgb2hsl(image_sample.rgb).b;
 	float alpha = image_sample.a;
