@@ -13,9 +13,7 @@
 #include "window.hpp"
 #include "communication.hpp"
 #include "network_client.hpp"
-
-constexpr int c_screen_width{ 1050 };
-constexpr int c_screen_height{ 728 };
+#include "music.hpp"
 
 constexpr int c_avatar_width{ 512 };
 constexpr int c_avatar_height{ 512 };
@@ -49,9 +47,10 @@ class Bandas
 		void enemy_disconnected();
 		void lost_server_connection();
 
-		void update_game_page(std::bitset<10> user_input, std::string txt_input, float delta);
+		void update_game_page(std::array<int, 3> mouse_data, std::bitset<10> user_input, std::string txt_input, float delta);
 		void hovering_game_page(Page& page, int id);
 		void click_game_page(Page& page, int id);
+		void hold_left_click_game_page(Page& page, int id, std::array<int, 3> mouse_data);
 		void draw_game_page(float delta);
 		void draw_chat(float delta);
 		void add_chat_message(std::string msg);
@@ -67,6 +66,7 @@ class Bandas
 		Mouse m_mouse;
 		Player m_me;
 		Player m_enemy;
+		Music music;
 };
 
 #endif

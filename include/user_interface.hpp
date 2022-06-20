@@ -82,6 +82,9 @@ class Sprite
         void set_grey(bool grey) { m_grey = grey; }
         void add_texture(std::string tex_path);
         GLuint get_texture_id(int index) { return m_texture[index].id; }
+        GLuint get_vao() { return m_vao; }
+        glm::mat4 get_projection_matrix() { return m_projection; }
+        GLuint get_background_img_id() { return m_img[0].id; }
 
     private:
 

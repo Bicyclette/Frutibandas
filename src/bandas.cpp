@@ -2,7 +2,7 @@
 
 Bandas::Bandas(Graphics& graphics) :
 	m_graphics(graphics),
-    m_text(c_screen_width, c_screen_height),
+	m_text(c_screen_width, c_screen_height),
 	m_mouse("assets/mouse/viseur.tga"),
 	m_writer(c_screen_width, c_screen_height)
 {
@@ -69,7 +69,7 @@ void Bandas::create_home_page()
 	h_layer2.get_sprite(2)->use_background_img();
 	h_layer2.get_sprite(2)->select();
 	// >>>>> highlight
-	h_layer1.get_sprite(1)->set_pos(glm::vec2(400, 728 - 140));
+	h_layer1.get_sprite(1)->set_pos(glm::vec2(400, 728 - 188));
 	h_layer1.set_visibility(true);
 	// <<<<< highlight
 	h_layer2.add_sprite(3, glm::vec2(600, 728 - (140 + 48 * 2 - 12)), glm::vec2(150, 24), c_screen_width, c_screen_height);
@@ -404,12 +404,18 @@ void Bandas::create_game_page()
 	g_layer0.get_sprite(3)->set_background_img("assets/game_page/give_up.tga");
 	g_layer0.get_sprite(3)->set_background_img_selected("assets/game_page/give_up_hover.tga");
 	g_layer0.get_sprite(3)->use_background_img();
+	g_layer0.add_sprite(4, glm::vec2(1050 - 120-91-5, 0), glm::vec2(91, 30), c_screen_width, c_screen_height);
+	g_layer0.get_sprite(4)->set_background_img("assets/game_page/sound.tga");
+	g_layer0.get_sprite(4)->set_background_img_selected("assets/game_page/sound_hover.tga");
+	g_layer0.get_sprite(4)->use_background_img();
 
 	Layer& g_layer1 = game_page.get_layer(1);
-	g_layer1.add_sprite(4, glm::vec2(240, 728 - 698 - 20), glm::vec2(572, 25), c_screen_width, c_screen_height);
-	g_layer1.get_sprite(4)->set_background_img("assets/game_page/chat_input.tga");
-	g_layer1.get_sprite(4)->set_background_img_selected("assets/game_page/chat_input_hover.tga");
-	g_layer1.get_sprite(4)->use_background_img();
+	g_layer1.add_sprite(5, glm::vec2(240, 728 - 698 - 20), glm::vec2(572, 25), c_screen_width, c_screen_height);
+	g_layer1.get_sprite(5)->set_background_img("assets/game_page/chat_input.tga");
+	g_layer1.get_sprite(5)->set_background_img_selected("assets/game_page/chat_input_hover.tga");
+	g_layer1.get_sprite(5)->use_background_img();
+
+	// sprites 6 & 7 are reserved for music loudness
 }
 
 void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input, float delta)
@@ -640,7 +646,7 @@ void Bandas::click_home_page(Page& page, int id)
 		page.get_layer(2).get_sprite(5)->unselect();
 		page.get_layer(2).get_sprite(6)->unselect();
 		// highlight
-		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (id - 2))));
+		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (188 + 48 * (id - 2))));
 		page.get_layer(1).set_visibility(true);
 		// show options
 		if(page.get_layer(3).m_visible){ page.get_layer(3).set_visibility(false); }
@@ -661,7 +667,7 @@ void Bandas::click_home_page(Page& page, int id)
 		page.get_layer(2).get_sprite(5)->unselect();
 		page.get_layer(2).get_sprite(6)->unselect();
 		// highlight
-		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (id - 2))));
+		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (188 + 48 * (id - 2))));
 		page.get_layer(1).set_visibility(true);
 		// show options
 		if(m_me.m_avatar.m_gender == Avatar::GENDER::MALE)
@@ -697,7 +703,7 @@ void Bandas::click_home_page(Page& page, int id)
 		page.get_layer(2).get_sprite(5)->unselect();
 		page.get_layer(2).get_sprite(6)->unselect();
 		// highlight
-		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (id - 2))));
+		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (188 + 48 * (id - 2))));
 		page.get_layer(1).set_visibility(true);
 		// show options
 		if (m_me.m_avatar.m_gender == Avatar::GENDER::MALE)
@@ -733,7 +739,7 @@ void Bandas::click_home_page(Page& page, int id)
 		page.get_layer(2).get_sprite(4)->unselect();
 		page.get_layer(2).get_sprite(6)->unselect();
 		// highlight
-		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (id - 2))));
+		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (188 + 48 * (id - 2))));
 		page.get_layer(1).set_visibility(true);
 		// show options
 		if (page.get_layer(8).m_visible) { page.get_layer(8).set_visibility(false); }
@@ -754,7 +760,7 @@ void Bandas::click_home_page(Page& page, int id)
 		page.get_layer(2).get_sprite(4)->unselect();
 		page.get_layer(2).get_sprite(5)->unselect();
 		// highlight
-		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (140 + 48 * (id - 2))));
+		page.get_layer(1).get_sprite(1)->set_pos(glm::vec2(400, 728 - (188 + 48 * (id - 2))));
 		page.get_layer(1).set_visibility(true);
 		// show options
 		if (page.get_layer(9).m_visible) { page.get_layer(9).set_visibility(false); }
@@ -1097,6 +1103,8 @@ void Bandas::quit_game()
 	m_writer.m_cursor.m_pos = static_cast<int>(m_writer.m_textInput[0].size());
 	// clear chat log
 	m_writer.m_chatLog.clear();
+	// hide music sound controller
+	music.visible = false;
 }
 
 void Bandas::enemy_gave_up()
@@ -1135,7 +1143,7 @@ void Bandas::lost_server_connection()
 	home_page.get_layer(12).get_sprite(62)->set_selectable(true);
 }
 
-void Bandas::update_game_page(std::bitset<10> user_input, std::string txt_input, float delta)
+void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> user_input, std::string txt_input, float delta)
 {
 	glm::ivec2 mouse_pos = m_mouse.get_position();
 	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos.x, c_screen_height - mouse_pos.y);
@@ -1148,6 +1156,14 @@ void Bandas::update_game_page(std::bitset<10> user_input, std::string txt_input,
 	if (user_input.test(2) && user_input.test(9)) // if click & release events
 	{
 		click_game_page(game_page, sprite_id);
+	}
+	else if (user_input.test(2) && !user_input.test(9)) // hold left click
+	{
+		hold_left_click_game_page(game_page, sprite_id, mouse_data);
+	}
+	else
+	{
+		music.grab_ctrl = false;
 	}
 	update_chat_input(user_input, txt_input, delta);
 }
@@ -1162,6 +1178,27 @@ void Bandas::hovering_game_page(Page& page, int id)
 	{
 		page.get_layer(0).get_sprite(3)->use_background_img();
 	}
+
+	if (id == 4) // sound button
+	{
+		page.get_layer(0).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(0).get_sprite(4)->use_background_img();
+	}
+}
+
+void Bandas::hold_left_click_game_page(Page& page, int id, std::array<int, 3> mouse_data)
+{
+	if (!music.grab(m_mouse.get_position()))
+	{
+		music.visible = false;
+	}
+	else
+	{
+		music.tweak_sound_lvl(mouse_data);
+	}
 }
 
 void Bandas::click_game_page(Page& page, int id)
@@ -1173,16 +1210,21 @@ void Bandas::click_game_page(Page& page, int id)
 		g_msg2server_mtx.unlock();
 		quit_game();
 	}
+	
+	if (id == 4) // sound button
+	{
+		music.visible = true;
+	}
 
-	if (id == 4) // chat input
+	if (id == 5) // chat input
 	{
 		m_writer.m_cursor.m_focus = 1;
-		page.get_layer(1).get_sprite(4)->use_background_img_selected();
+		page.get_layer(1).get_sprite(id)->use_background_img_selected();
 	}
 	else
 	{
 		m_writer.m_cursor.m_focus = 2;
-		page.get_layer(1).get_sprite(4)->use_background_img();
+		page.get_layer(1).get_sprite(5)->use_background_img();
 	}
 }
 
@@ -1261,6 +1303,9 @@ void Bandas::draw_game_page(float delta)
 
 	// print chat
 	draw_chat(delta);
+
+	// draw music controller
+	music.draw();
 }
 
 void Bandas::add_chat_message(std::string msg)
@@ -1301,7 +1346,7 @@ void Bandas::update_chat_input(std::bitset<10> user_input, std::string txt_input
 	Page& game_page{ m_ui.get_page(1) };
 	if (m_writer.m_cursor.m_focus == 1 && !user_input.test(5))
 	{
-		int boundX = game_page.get_layer(1).get_sprite(4)->get_position().x + game_page.get_layer(1).get_sprite(4)->get_size().x;
+		int boundX = game_page.get_layer(1).get_sprite(5)->get_position().x + game_page.get_layer(1).get_sprite(5)->get_size().x;
 		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[1], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
 		m_writer.write(txt_input, user_input, delta, boundX, cursor_shape);
 	}

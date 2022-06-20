@@ -102,7 +102,8 @@ set(HEADERS
 	include/imstb_truetype.h
 	include/imgui_impl_sdl.h
 	include/imgui_impl_opengl3.h
-	include/tinyutf8/tinyutf8.h)
+	include/tinyutf8/tinyutf8.h
+	include/music.hpp)
 
 add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 

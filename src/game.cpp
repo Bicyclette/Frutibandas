@@ -24,10 +24,10 @@ Game::Game(int clientWidth, int clientHeight) :
 	scenes[0].addCamera(CAM_TYPE::REGULAR, glm::ivec2(clientWidth, clientHeight), camPos, camTarget, camUp, 45.0f, 0.1f, 100.0f);
 	scenes[0].setActiveCamera(0);
 
-	// audio
-	scenes[0].addSoundSource(glm::vec3(0, 0, 0));
-	scenes[0].getSoundSource(0).set_volume(0.125f);
+	// music
+	scenes[0].addSoundSource(glm::vec3(0.0f));
 	scenes[0].getSoundSource(0).set_looping(true);
+	scenes[0].getSoundSource(0).set_volume(m_bandas.music.volume);
 	scenes[0].addAudioFile("assets/sound/el_gato_montes.wav");
 }
 
@@ -84,6 +84,25 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 	else if (m_bandas.m_ui.get_active_page() == 1)
 	{
 		m_bandas.draw_game_page(delta);
+	}
+}
+
+void Game::sound_manager()
+{
+	if (m_bandas.m_ui.get_active_page() == 1)
+	{
+		if (!scenes[0].getSoundSource(0).is_playing())
+		{
+			scenes[0].playSound(0, 0);
+		}
+		scenes[0].getSoundSource(0).set_volume(m_bandas.music.volume);
+	}
+	else
+	{
+		if (scenes[0].getSoundSource(0).is_playing())
+		{
+			scenes[0].stopSound(0, 0);
+		}
 	}
 }
 

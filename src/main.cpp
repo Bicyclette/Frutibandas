@@ -208,12 +208,13 @@ void render(std::shared_ptr<Game> game, std::shared_ptr<WindowManager> client)
 		}
 		else if (game->m_bandas.m_ui.get_active_page() == 1)
 		{
-			game->m_bandas.update_game_page(client->m_userInputs, std::string(client->m_textInput), delta);
+			game->m_bandas.update_game_page(client->m_mouseData, client->m_userInputs, std::string(client->m_textInput), delta);
 		}
 		game->updateSceneActiveCameraView(game->getActiveScene(), client->m_userInputs, client->m_mouseData, delta);
 
 		// draw scene
 		game->draw(delta, currentFrame, c_screen_width, c_screen_height, draw_mode, debug, debugPhysics);
+		game->sound_manager();
 
 		client->resetEvents();
 		SDL_GL_SwapWindow(client->getWindowPtr());

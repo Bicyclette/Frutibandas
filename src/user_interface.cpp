@@ -263,13 +263,14 @@ void Sprite::translate(glm::vec2 shift)
 void Sprite::set_pos(glm::vec2 pos)
 {
     m_pos = pos;
+
     float data[24] = {
-        m_pos.x, m_pos.y, 0.0f, 1.0f,
-        m_pos.x, m_pos.y - m_size.y, 0.0f, 0.0f,
-        m_pos.x + m_size.x, m_pos.y - m_size.y, 1.0f, 0.0f,
-        m_pos.x, m_pos.y, 0.0f, 1.0f,
-        m_pos.x + m_size.x, m_pos.y - m_size.y, 1.0f, 0.0f,
-        m_pos.x + m_size.x, m_pos.y, 1.0f, 1.0f
+        m_pos.x, m_pos.y + m_size.y, 0.0f, 1.0f,
+        m_pos.x, m_pos.y, 0.0f, 0.0f,
+        m_pos.x + m_size.x, m_pos.y, 1.0f, 0.0f,
+        m_pos.x, m_pos.y + m_size.y, 0.0f, 1.0f,
+        m_pos.x + m_size.x, m_pos.y, 1.0f, 0.0f,
+        m_pos.x + m_size.x, m_pos.y + m_size.y, 1.0f, 1.0f
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
