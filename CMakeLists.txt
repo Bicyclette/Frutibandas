@@ -48,6 +48,7 @@ set(SRCS
 	src/mouse.cpp
 	src/writer.cpp
 	src/bandas.cpp
+	src/logic.cpp
 	src/imgui.cpp
 	src/imgui_draw.cpp
 	src/imgui_tables.cpp
@@ -94,6 +95,7 @@ set(HEADERS
 	include/anvil.hpp
 	include/advertiser.hpp
 	include/communication.hpp
+	include/logic.hpp
 	include/imgui.h
 	include/imconfig.h
 	include/imgui_internal.h

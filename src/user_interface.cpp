@@ -331,6 +331,22 @@ void Sprite::draw(glm::vec2 translate)
     glBindVertexArray(0);
 }
 
+void Sprite::draw(GLuint image)
+{
+    glBindVertexArray(m_vao);
+    m_shader.use();
+    m_shader.setMatrix("proj", m_projection);
+    m_shader.setBool("use_bkg_img", true);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, image);
+    m_shader.setInt("image", 0);
+    m_shader.setVec4f("bkg_color", m_color);
+    m_shader.setFloat("bloom_strength", 1.0f);
+    m_shader.setBool("grey", false);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
+
 // top left corner of mouse pointer
 bool Sprite::mouse_hover(int mouseX, int mouseY)
 {

@@ -12,13 +12,14 @@ constexpr int c_screen_height{ 728 };
 struct Music
 {
 	Music() :
-		volume(0.125f),
+		volume(0.75f),
 		shader("shaders/sound/vertex.glsl", "shaders/sound/fragment.glsl"),
 		sound_lvl(6, glm::vec2(1050 - 120 - 91 - 5 + 41, 40), glm::vec2(7, 100), c_screen_width, c_screen_height),
 		sound_ctrl(7, glm::vec2(1050 - 120 - 91 - 5 + 34, 35), glm::vec2(20, 20), c_screen_width, c_screen_height),
 		visible(false),
 		grab_ctrl(false),
-		range{ 35, 125 }
+		range{ 35, 125 },
+		intro_done(false)
 	{
 		sound_lvl.set_background_img("assets/game_page/sound_lvl.tga");
 		sound_lvl.use_background_img();
@@ -83,6 +84,7 @@ struct Music
 	bool visible;
 	bool grab_ctrl;
 	std::array<int, 2> range;
+	bool intro_done;
 };
 
 #endif

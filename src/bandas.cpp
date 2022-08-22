@@ -387,8 +387,9 @@ void Bandas::create_game_page()
 	m_ui.add_page();
 
 	Page& game_page = m_ui.get_page(1);
-	game_page.add_layer(0); // game background + avatar + abandon button
+	game_page.add_layer(0); // game background + avatar + sound & abandon buttons
 	game_page.add_layer(1); // chat input
+	game_page.add_layer(2); // game arrows
 
 	Layer& g_layer0 = game_page.get_layer(0);
 	g_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(c_screen_width, c_screen_height), c_screen_width, c_screen_height);
@@ -415,7 +416,23 @@ void Bandas::create_game_page()
 	g_layer1.get_sprite(5)->set_background_img_selected("assets/game_page/chat_input_hover.tga");
 	g_layer1.get_sprite(5)->use_background_img();
 
-	// sprites 6 & 7 are reserved for music loudness
+	Layer& g_layer2 = game_page.get_layer(2);
+	g_layer2.add_sprite(6, glm::vec2(473, 728 + 17 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.get_sprite(6)->set_background_img("assets/game_page/arrow_up.tga");
+	g_layer2.get_sprite(6)->set_background_img_selected("assets/game_page/arrow_up_hover.tga");
+	g_layer2.get_sprite(6)->use_background_img();
+	g_layer2.add_sprite(7, glm::vec2(473, 728 - 465 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.get_sprite(7)->set_background_img("assets/game_page/arrow_down.tga");
+	g_layer2.get_sprite(7)->set_background_img_selected("assets/game_page/arrow_down_hover.tga");
+	g_layer2.get_sprite(7)->use_background_img();
+	g_layer2.add_sprite(8, glm::vec2(719, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.get_sprite(8)->set_background_img("assets/game_page/arrow_right.tga");
+	g_layer2.get_sprite(8)->set_background_img_selected("assets/game_page/arrow_right_hover.tga");
+	g_layer2.get_sprite(8)->use_background_img();
+	g_layer2.add_sprite(9, glm::vec2(229, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.get_sprite(9)->set_background_img("assets/game_page/arrow_left.tga");
+	g_layer2.get_sprite(9)->set_background_img_selected("assets/game_page/arrow_left_hover.tga");
+	g_layer2.get_sprite(9)->use_background_img();
 }
 
 void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input, float delta)
@@ -1187,6 +1204,39 @@ void Bandas::hovering_game_page(Page& page, int id)
 	{
 		page.get_layer(0).get_sprite(4)->use_background_img();
 	}
+
+	if (id == 6) // up arrow
+	{
+		page.get_layer(2).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(2).get_sprite(6)->use_background_img();
+	}
+	if (id == 7) // down arrow
+	{
+		page.get_layer(2).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(2).get_sprite(7)->use_background_img();
+	}
+	if (id == 8) // right arrow
+	{
+		page.get_layer(2).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(2).get_sprite(8)->use_background_img();
+	}
+	if (id == 9) // left arrow
+	{
+		page.get_layer(2).get_sprite(id)->use_background_img_selected();
+	}
+	else
+	{
+		page.get_layer(2).get_sprite(9)->use_background_img();
+	}
 }
 
 void Bandas::hold_left_click_game_page(Page& page, int id, std::array<int, 3> mouse_data)
@@ -1225,6 +1275,34 @@ void Bandas::click_game_page(Page& page, int id)
 	{
 		m_writer.m_cursor.m_focus = 2;
 		page.get_layer(1).get_sprite(5)->use_background_img();
+	}
+
+	if (id == 6) // up arrow
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("5:2");
+		g_msg2server_mtx.unlock();
+	}
+
+	if (id == 7) // down arrow
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("5:3");
+		g_msg2server_mtx.unlock();
+	}
+
+	if (id == 8) // right arrow
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("5:0");
+		g_msg2server_mtx.unlock();
+	}
+
+	if (id == 9) // left arrow
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("5:1");
+		g_msg2server_mtx.unlock();
 	}
 }
 
@@ -1279,11 +1357,22 @@ void Bandas::draw_game_page(float delta)
 	draw_avatar_game_page();
 	
 	// draw background
+
+	if (m_logic.turn == m_me.m_team) {
+		m_ui.get_page(1).get_layer(2).set_visibility(true);
+	}
+	else {
+		m_ui.get_page(1).get_layer(2).set_visibility(false);
+	}
+
 	m_graphics.userInterfaceFBO->bind();
 	glViewport(0, 0, c_screen_width, c_screen_height);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	m_ui.get_page(1).draw();
+
+	// board
+	m_board.draw(m_logic, delta);
 
 	// print pseudo
 	if (m_me.m_team == 0)

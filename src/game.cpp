@@ -26,9 +26,10 @@ Game::Game(int clientWidth, int clientHeight) :
 
 	// music
 	scenes[0].addSoundSource(glm::vec3(0.0f));
-	scenes[0].getSoundSource(0).set_looping(true);
+	scenes[0].getSoundSource(0).set_looping(false);
 	scenes[0].getSoundSource(0).set_volume(m_bandas.music.volume);
-	scenes[0].addAudioFile("assets/sound/el_gato_montes.wav");
+	scenes[0].addAudioFile("assets/sound/intro.wav");
+	scenes[0].addAudioFile("assets/sound/loop.wav");
 }
 
 Game::~Game() {}
@@ -91,9 +92,15 @@ void Game::sound_manager()
 {
 	if (m_bandas.m_ui.get_active_page() == 1)
 	{
-		if (!scenes[0].getSoundSource(0).is_playing())
+		if (!scenes[0].getSoundSource(0).is_playing() && !m_bandas.music.intro_done)
 		{
+			m_bandas.music.intro_done = true;
 			scenes[0].playSound(0, 0);
+		}
+		else if (!scenes[0].getSoundSource(0).is_playing() && m_bandas.music.intro_done)
+		{
+			scenes[0].getSoundSource(0).set_looping(true);
+			scenes[0].playSound(0, 1);
 		}
 		scenes[0].getSoundSource(0).set_volume(m_bandas.music.volume);
 	}
@@ -102,6 +109,7 @@ void Game::sound_manager()
 		if (scenes[0].getSoundSource(0).is_playing())
 		{
 			scenes[0].stopSound(0, 0);
+			scenes[0].stopSound(0, 1);
 		}
 	}
 }

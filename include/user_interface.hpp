@@ -66,6 +66,7 @@ class Sprite
         void set_background_color(glm::vec4 color) { m_color = color; }
         void set_bloom_strength(float strength) { m_bloom_strength = strength; }
         void draw(glm::vec2 translate = glm::vec2(0.0f));
+        void draw(GLuint image);
         void use_background_img() { m_img_index = 0; }
         void use_background_img_gl() { m_img_index = -2; }
         void use_background_img_selected() { m_img_index = 1; }

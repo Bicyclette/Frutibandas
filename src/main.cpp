@@ -8,7 +8,7 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "192.168.3.94"
+#define SERVER "92.88.236.2"
 #define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
@@ -75,6 +75,10 @@ void send_message(std::shared_ptr<Game> & game)
 	{
 		game->m_bandas.m_net.send_data("gc:" + message.substr(2));
 	}
+	else if (code == 5) // movement
+	{
+		game->m_bandas.m_net.send_data("mv:" + message.substr(2));
+	}
 }
 
 void receive_message(std::shared_ptr<Game> & game)
@@ -120,6 +124,12 @@ void receive_message(std::shared_ptr<Game> & game)
 					std::string cards = message.substr(0, next_token);
 				}
 
+				// init board
+				game->m_bandas.m_board.init(plateau);
+
+				// set turn
+				game->m_bandas.m_logic.turn = turn;
+
 				// set my data
 				game->m_bandas.m_me.m_team = team;
 
@@ -146,6 +156,28 @@ void receive_message(std::shared_ptr<Game> & game)
 				{
 					game->m_bandas.add_chat_message(data);
 				}
+			}
+			else if (type == "mv")
+			{
+				int move_dir = std::atoi(&message[3]);
+				game->m_bandas.m_logic.move.dir = move_dir;
+				if (move_dir == 0)
+				{
+					game->m_bandas.m_logic.move.dir_vec = glm::vec2(1, 0);
+				}
+				else if (move_dir == 1)
+				{
+					game->m_bandas.m_logic.move.dir_vec = glm::vec2(-1, 0);
+				}
+				else if (move_dir == 2)
+				{
+					game->m_bandas.m_logic.move.dir_vec = glm::vec2(0, 1);
+				}
+				else if (move_dir == 3)
+				{
+					game->m_bandas.m_logic.move.dir_vec = glm::vec2(0, -1);
+				}
+				game->m_bandas.m_board.set_animTimer(game->m_bandas.m_logic);
 			}
 		}
 		else if (game->m_bandas.m_net.m_event.type == ENET_EVENT_TYPE_DISCONNECT)

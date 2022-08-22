@@ -190,7 +190,7 @@ void WindowManager::resetEvents()
 
 SDL_HitTestResult moveWindowCallback(SDL_Window* win, const SDL_Point* area, void* data)
 {
-	if (area->y >= 0 && area->y <= 81 && area->x <= 970)
+	if (area->y >= 0 && area->y <= 15 && area->x >= 231 && area->x <= 819)
 	{
 		return SDL_HITTEST_DRAGGABLE;
 	}

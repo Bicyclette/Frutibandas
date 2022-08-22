@@ -14,6 +14,7 @@
 #include "communication.hpp"
 #include "network_client.hpp"
 #include "music.hpp"
+#include "logic.hpp"
 
 constexpr int c_avatar_width{ 512 };
 constexpr int c_avatar_height{ 512 };
@@ -67,6 +68,10 @@ class Bandas
 		Player m_me;
 		Player m_enemy;
 		Music music;
+
+	public: // game logic
+		Board m_board;
+		Logic m_logic;
 };
 
 #endif
