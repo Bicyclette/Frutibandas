@@ -82,11 +82,13 @@ struct Logic
 
 	int turn; // 0 = orange, 1 = banane
 	MOVE move;
+	bool end_move;
 
 	Logic::Logic()
 	{
 		move.dir = -1;
 		move.dir_vec = glm::vec2(0, 0);
+		end_move = false;
 	}
 };
 
@@ -125,12 +127,12 @@ struct Board
 	{
 		banana_anims[0].load("assets/animation/banana/mv_right", 22);
 		banana_anims[1].load("assets/animation/banana/mv_left", 22);
-		banana_anims[3].load("assets/animation/banana/mv_down", 22);
 		banana_anims[2].load("assets/animation/banana/mv_up", 22);
+		banana_anims[3].load("assets/animation/banana/mv_down", 22);
 		orange_anims[0].load("assets/animation/orange/mv_right", 22);
 		orange_anims[1].load("assets/animation/orange/mv_left", 22);
-		orange_anims[3].load("assets/animation/orange/mv_down", 22);
 		orange_anims[2].load("assets/animation/orange/mv_up", 22);
+		orange_anims[3].load("assets/animation/orange/mv_down", 22);
 	}
 
 	void init(std::string board);
@@ -144,6 +146,9 @@ struct Board
 	bool is_pushed_x(int col, int line, char pusher, int dir, int origin);
 	bool is_pushed_y(int col, int line, char pusher, int dir, int origin);
 	void update(Logic& logic);
+	void check_dying_tiles(int& col, int& line); // fill col and line with the index of the col/line which must be deleted
+	void set_tileDeleteTimerColumn(int c);
+	void set_tileDeleteTimerLine(int l);
 };
 
 #endif

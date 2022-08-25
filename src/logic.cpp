@@ -195,6 +195,7 @@ void Board::set_animTimer(Logic& logic)
 	int origin = 42;
 	float max_delay = 0.0f;
 	set_pusher_index(move_direction, fruit_pusher, first_pusher, origin);
+	
 	std::cout << "turn = " << (logic.turn == 0 ? " orange\n" : " banane\n");
 	std::cout << "origin = " << origin << std::endl;
 
@@ -246,6 +247,7 @@ void Board::set_animTimer(Logic& logic)
 					else
 					{
 						tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						tile[col][line].fruit.animTimer = 42.0f;
 					}
 				}
 			}
@@ -344,7 +346,7 @@ bool Board::is_pushed_y(int col, int line, char pusher, int dir, int origin)
 
 void Board::update(Logic& logic)
 {
-	bool end_movement{ true };
+	bool end_move = true;
 	for (int line = bounds.top; line <= bounds.bottom; ++line)
 	{
 		for (int col = bounds.left; col <= bounds.right; ++col)
@@ -355,7 +357,7 @@ void Board::update(Logic& logic)
 				{
 					if (tile[col][line].fruit.animTimer <= banana_anims[logic.move.dir].duration)
 					{
-						end_movement = false;
+						end_move = false;
 						break;
 					}
 				}
@@ -363,7 +365,7 @@ void Board::update(Logic& logic)
 				{
 					if (tile[col][line].fruit.animTimer <= orange_anims[logic.move.dir].duration)
 					{
-						end_movement = false;
+						end_move = false;
 						break;
 					}
 				}
@@ -371,8 +373,9 @@ void Board::update(Logic& logic)
 		}
 	}
 
-	if (end_movement && logic.move.dir != -1)
+	if (end_move && logic.move.dir != -1)
 	{
+		logic.end_move = true;
 		if (logic.move.dir == 0)
 		{
 			for (int line = bounds.top; line <= bounds.bottom; ++line)
@@ -544,7 +547,6 @@ void Board::update(Logic& logic)
 						// else if up tile exists & up tile contains a fruit & that fruit is not moving
 						else if (line - 1 >= bounds.top && tile[col][line - 1].fruit.type != 'x' && tile[col][line - 1].fruit.state == Fruit::STATE::STAND_STILL) {
 							tile[col][line].fruit.type = 'x';
-							tile[col][line].fruit.type = 'x';
 							tile[col][line].fruit.animTimer = 0.0f;
 							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
 						}
@@ -575,4 +577,72 @@ void Board::update(Logic& logic)
 		logic.move.dir_vec = glm::vec2(0);
 		logic.move.max_animTimer = 0.0f;
 	}
+
+	if (logic.end_move)
+	{
+		// check if a row/column of tiles can be deleted
+		int c = -1;
+		int l = -1;
+		check_dying_tiles(c, l);
+		if (c != -1)
+		{
+			set_tileDeleteTimerColumn(c);
+		}
+		else if (l != -1)
+		{
+			set_tileDeleteTimerLine(l);
+		}
+
+		logic.end_move = false;
+	}
+}
+
+void Board::check_dying_tiles(int& col, int& line)
+{
+	int l = 0;
+	int c = 0;
+
+	// check rows
+	for (l = bounds.top; l <= bounds.bottom; ++l)
+	{
+		line = l;
+		for (c = bounds.left; c <= bounds.right; ++c)
+		{
+			if (tile[c][l].fruit.type != 'x') {
+				line = -1;
+				break;
+			}
+		}
+		if (line != -1) {
+			break;
+		}
+	}
+	// check columns
+	for (c = bounds.left; c <= bounds.right; ++c)
+	{
+		col = c;
+		for (l = bounds.top; l <= bounds.bottom; ++l)
+		{
+			if (tile[c][l].fruit.type != 'x') {
+				col = -1;
+				break;
+			}
+		}
+		if (col != -1) {
+			break;
+		}
+	}
+}
+
+void Board::set_tileDeleteTimerColumn(int c)
+{
+	for (int line = bounds.top; line <= bounds.bottom; ++line)
+	{
+		//tile[c][line].
+	}
+}
+
+void Board::set_tileDeleteTimerLine(int l)
+{
+
 }
