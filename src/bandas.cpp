@@ -1387,8 +1387,8 @@ void Bandas::draw_game_page(float delta)
 	}
 
 	//print remaining fruits
-	m_text.print(std::to_string(32), 190, 728 - 52, 1, glm::vec3(0));
-	m_text.print(std::to_string(32), 856, 728 - 52, 1, glm::vec3(0));
+	m_text.print(std::to_string(m_board.orange_count), 190, 728 - 52, 1, glm::vec3(0));
+	m_text.print(std::to_string(m_board.banana_count), 856, 728 - 52, 1, glm::vec3(0));
 
 	// print chat
 	draw_chat(delta);
