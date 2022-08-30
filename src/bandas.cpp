@@ -1183,6 +1183,14 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 		music.grab_ctrl = false;
 	}
 	update_chat_input(user_input, txt_input, delta);
+
+	// check winner
+	if ((m_me.m_team == 0 && m_board.orange_count == 0) || (m_me.m_team == 1 && m_board.banana_count == 0))
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("6:" + std::to_string(m_me.m_team));
+		g_msg2server_mtx.unlock();
+	}
 }
 
 void Bandas::hovering_game_page(Page& page, int id)
@@ -1358,7 +1366,7 @@ void Bandas::draw_game_page(float delta)
 	
 	// draw background
 
-	if (m_logic.turn == m_me.m_team) {
+	if (m_logic.turn == m_me.m_team && m_logic.move.dir == -1 && !m_logic.change_turn) {
 		m_ui.get_page(1).get_layer(2).set_visibility(true);
 	}
 	else {

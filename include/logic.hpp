@@ -83,19 +83,19 @@ struct Logic
 
 	int turn; // 0 = orange, 1 = banane
 	MOVE move;
-	bool end_move;
 	bool kill_tiles;
 	int delete_line_id;
 	int delete_column_id;
+	bool change_turn;
 
 	Logic::Logic()
 	{
 		move.dir = -1;
 		move.dir_vec = glm::vec2(0, 0);
-		end_move = false;
 		kill_tiles = false;
 		delete_line_id = -1;
 		delete_column_id = -1;
+		change_turn = false;
 	}
 };
 

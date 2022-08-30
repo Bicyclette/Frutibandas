@@ -437,8 +437,6 @@ void Board::update(Logic& logic)
 
 	if (end_move && logic.move.dir != -1)
 	{
-		std::cout << "end move\n";
-		logic.end_move = true;
 		if (logic.move.dir == 0)
 		{
 			for (int line = bounds.top; line <= bounds.bottom; ++line)
@@ -638,6 +636,7 @@ void Board::update(Logic& logic)
 
 		logic.move.dir = -1;
 		logic.move.dir_vec = glm::vec2(0);
+		logic.change_turn = true;
 	}
 
 	if (!logic.kill_tiles)
@@ -658,7 +657,6 @@ void Board::update(Logic& logic)
 			set_tileDeleteTimerLine(l);
 			logic.delete_line_id = l;
 		}
-		//logic.end_move = false;
 	}
 
 	if (logic.kill_tiles)
@@ -713,6 +711,11 @@ void Board::update(Logic& logic)
 				logic.delete_line_id = -1;
 			}
 		}
+	}
+	else if (logic.change_turn)
+	{
+		logic.turn = (logic.turn == 0) ? 1 : 0;
+		logic.change_turn = false;
 	}
 }
 

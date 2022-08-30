@@ -79,6 +79,10 @@ void send_message(std::shared_ptr<Game> & game)
 	{
 		game->m_bandas.m_net.send_data("mv:" + message.substr(2));
 	}
+	else if (code == 6) // winner detected
+	{
+		game->m_bandas.m_net.send_data("win:" + message.substr(2));
+	}
 }
 
 void receive_message(std::shared_ptr<Game> & game)
@@ -178,6 +182,10 @@ void receive_message(std::shared_ptr<Game> & game)
 					game->m_bandas.m_logic.move.dir_vec = glm::vec2(0, -1);
 				}
 				game->m_bandas.m_board.set_animTimer(game->m_bandas.m_logic);
+			}
+			else if (type == "end")
+			{
+				std::cout << "SOMEONE HAS WON !";
 			}
 		}
 		else if (game->m_bandas.m_net.m_event.type == ENET_EVENT_TYPE_DISCONNECT)
