@@ -87,6 +87,7 @@ struct Logic
 	int delete_line_id;
 	int delete_column_id;
 	bool change_turn;
+	bool game_is_finished;
 
 	Logic::Logic()
 	{
@@ -96,6 +97,7 @@ struct Logic
 		delete_line_id = -1;
 		delete_column_id = -1;
 		change_turn = false;
+		game_is_finished = false;
 	}
 };
 

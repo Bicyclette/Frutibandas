@@ -390,6 +390,7 @@ void Bandas::create_game_page()
 	game_page.add_layer(0); // game background + avatar + sound & abandon buttons
 	game_page.add_layer(1); // chat input
 	game_page.add_layer(2); // game arrows
+	game_page.add_layer(3); // match finished
 
 	Layer& g_layer0 = game_page.get_layer(0);
 	g_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(c_screen_width, c_screen_height), c_screen_width, c_screen_height);
@@ -433,6 +434,17 @@ void Bandas::create_game_page()
 	g_layer2.get_sprite(9)->set_background_img("assets/game_page/arrow_left.tga");
 	g_layer2.get_sprite(9)->set_background_img_selected("assets/game_page/arrow_left_hover.tga");
 	g_layer2.get_sprite(9)->use_background_img();
+
+	Layer& g_layer3 = game_page.get_layer(3);
+	g_layer3.set_visibility(false);
+	g_layer3.add_sprite(10, glm::vec2(191,728-337-196), glm::vec2(667, 337), c_screen_width, c_screen_height);
+	g_layer3.get_sprite(10)->set_background_img("assets/game_page/victory.tga");
+	g_layer3.get_sprite(10)->set_background_img_selected("assets/game_page/defeat.tga");
+	g_layer3.get_sprite(10)->use_background_img();
+	g_layer3.add_sprite(11, glm::vec2(436, 728 - 78 - 196 - 212), glm::vec2(178, 78), c_screen_width, c_screen_height);
+	g_layer3.get_sprite(11)->set_background_img("assets/game_page/ok.tga");
+	g_layer3.get_sprite(11)->set_background_img_selected("assets/game_page/ok_hover.tga");
+	g_layer3.get_sprite(11)->use_background_img();
 }
 
 void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input, float delta)
@@ -1187,9 +1199,13 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	// check winner
 	if ((m_me.m_team == 0 && m_board.orange_count == 0) || (m_me.m_team == 1 && m_board.banana_count == 0))
 	{
-		g_msg2server_mtx.lock();
-		g_msg2server.emplace("6:" + std::to_string(m_me.m_team));
-		g_msg2server_mtx.unlock();
+		if (!m_logic.game_is_finished)
+		{
+			m_logic.game_is_finished = true;
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("6:" + std::to_string(m_me.m_team));
+			g_msg2server_mtx.unlock();
+		}
 	}
 }
 
@@ -1385,13 +1401,13 @@ void Bandas::draw_game_page(float delta)
 	// print pseudo
 	if (m_me.m_team == 0)
 	{
-		m_text.print(m_me.m_pseudo, 19, 728 - 159 - 27, 1, glm::vec3(0));
-		m_text.print(m_enemy.m_pseudo, 839, 728 - 159 - 27, 1, glm::vec3(0));
+		m_text.print(m_me.m_pseudo, 19, 728 - 159 - 20, 1, glm::vec3(0));
+		m_text.print(m_enemy.m_pseudo, 839, 728 - 159 - 20, 1, glm::vec3(0));
 	}
 	else
 	{
-		m_text.print(m_enemy.m_pseudo, 19, 728 - 159 - 27, 1, glm::vec3(0));
-		m_text.print(m_me.m_pseudo, 839, 728 - 159 - 27, 1, glm::vec3(0));
+		m_text.print(m_enemy.m_pseudo, 19, 728 - 159 - 20, 1, glm::vec3(0));
+		m_text.print(m_me.m_pseudo, 839, 728 - 159 - 20, 1, glm::vec3(0));
 	}
 
 	//print remaining fruits
