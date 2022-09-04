@@ -99,6 +99,17 @@ struct Logic
 		change_turn = false;
 		game_is_finished = false;
 	}
+
+	void reset()
+	{
+		move.dir = -1;
+		move.dir_vec = glm::vec2(0, 0);
+		kill_tiles = false;
+		delete_line_id = -1;
+		delete_column_id = -1;
+		change_turn = false;
+		game_is_finished = false;
+	}
 };
 
 struct Board
@@ -126,8 +137,10 @@ struct Board
 	Animation2D dying_tile;
 	// banana animations
 	std::array<Animation2D, 8> banana_anims; // right, left, up, down, p_right, p_left, p_up, p_down
+	//std::array<Animation2D, 8> banana_death_anims; // right, left, up, down, p_right, p_left, p_up, p_down
 	// orange animations
 	std::array<Animation2D, 8> orange_anims; // right, left, up, down, p_right, p_left, p_up, p_down
+	//std::array<Animation2D, 8> orange_death_anims; // right, left, up, down, p_right, p_left, p_up, p_down
 	
 	// draw stuff
 	Sprite m_sprite;
@@ -176,6 +189,7 @@ struct Board
 	void check_dying_tiles(int& col, int& line); // fill col and line with the index of the col/line which must be deleted
 	void set_tileDeleteTimerColumn(int c);
 	void set_tileDeleteTimerLine(int l);
+	void reset();
 };
 
 #endif

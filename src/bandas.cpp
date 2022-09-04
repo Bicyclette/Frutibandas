@@ -18,7 +18,9 @@ Bandas::Bandas(Graphics& graphics) :
 Bandas::~Bandas()
 {
 	m_me.m_avatar.cleanup();
+	m_me.m_chrono.cleanup();
 	m_enemy.m_avatar.cleanup();
+	m_enemy.m_chrono.cleanup();
 }
 
 void Bandas::createUI()
@@ -371,14 +373,14 @@ void Bandas::create_home_page()
 
 	Layer& h_layer17 = home_page.get_layer(17);
 	h_layer17.set_visibility(false);
-	h_layer17.add_sprite(69, glm::vec2(184, 728 - 168 - 393), glm::vec2(683, 393), c_screen_width, c_screen_height);
+	h_layer17.add_sprite(69, glm::vec2(191, 728 - 337 - 196), glm::vec2(667, 337), c_screen_width, c_screen_height);
 	h_layer17.get_sprite(69)->add_texture("assets/home_page/opponent_gave_up.tga");
 	h_layer17.get_sprite(69)->add_texture("assets/home_page/opponent_disconnected.tga");
 	h_layer17.get_sprite(69)->add_texture("assets/home_page/connection_server_lost.tga");
 	h_layer17.get_sprite(69)->use_background_img_gl();
-	h_layer17.add_sprite(70, glm::vec2(525 - 90, 728 - 168 - 350), glm::vec2(180, 85), c_screen_width, c_screen_height);
-	h_layer17.get_sprite(70)->set_background_img("assets/home_page/ok.tga");
-	h_layer17.get_sprite(70)->set_background_img_selected("assets/home_page/ok_hover.tga");
+	h_layer17.add_sprite(70, glm::vec2(436, 728 - 78 - 196 - 212), glm::vec2(178, 78), c_screen_width, c_screen_height);
+	h_layer17.get_sprite(70)->set_background_img("assets/common/ok.tga");
+	h_layer17.get_sprite(70)->set_background_img_selected("assets/common/ok_hover.tga");
 	h_layer17.get_sprite(70)->use_background_img();
 }
 
@@ -435,16 +437,21 @@ void Bandas::create_game_page()
 	g_layer2.get_sprite(9)->set_background_img_selected("assets/game_page/arrow_left_hover.tga");
 	g_layer2.get_sprite(9)->use_background_img();
 
-	Layer& g_layer3 = game_page.get_layer(3);
-	g_layer3.set_visibility(false);
-	g_layer3.add_sprite(10, glm::vec2(191,728-337-196), glm::vec2(667, 337), c_screen_width, c_screen_height);
-	g_layer3.get_sprite(10)->set_background_img("assets/game_page/victory.tga");
-	g_layer3.get_sprite(10)->set_background_img_selected("assets/game_page/defeat.tga");
-	g_layer3.get_sprite(10)->use_background_img();
-	g_layer3.add_sprite(11, glm::vec2(436, 728 - 78 - 196 - 212), glm::vec2(178, 78), c_screen_width, c_screen_height);
-	g_layer3.get_sprite(11)->set_background_img("assets/game_page/ok.tga");
-	g_layer3.get_sprite(11)->set_background_img_selected("assets/game_page/ok_hover.tga");
-	g_layer3.get_sprite(11)->use_background_img();
+	m_ui_end_game.add_page();
+	m_ui_end_game.set_active_page(0);
+	Page& end_game_page = m_ui_end_game.get_page(0);
+	end_game_page.add_layer(0); // end game message (victory/defeat) + button to leave game
+
+	Layer& popup_layer = end_game_page.get_layer(0);
+	popup_layer.add_sprite(0, glm::vec2(191,728-337-196), glm::vec2(667, 337), c_screen_width, c_screen_height);
+	popup_layer.get_sprite(0)->add_texture("assets/game_page/victory.tga");
+	popup_layer.get_sprite(0)->add_texture("assets/game_page/defeat.tga");
+	popup_layer.get_sprite(0)->use_background_img_gl();
+	popup_layer.get_sprite(0)->set_background_img_gl(popup_layer.get_sprite(0)->get_texture_id(1));
+	popup_layer.add_sprite(1, glm::vec2(436, 728 - 78 - 196 - 212), glm::vec2(178, 78), c_screen_width, c_screen_height);
+	popup_layer.get_sprite(1)->set_background_img("assets/common/ok.tga");
+	popup_layer.get_sprite(1)->set_background_img_selected("assets/common/ok_hover.tga");
+	popup_layer.get_sprite(1)->use_background_img();
 }
 
 void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input, float delta)
@@ -1134,6 +1141,16 @@ void Bandas::quit_game()
 	m_writer.m_chatLog.clear();
 	// hide music sound controller
 	music.visible = false;
+	// reset board
+	m_board.reset();
+	// reset game logic
+	m_logic.reset();
+	// reset base end game texture to "defeat"
+	GLuint tex_id = m_ui_end_game.get_page(0).get_layer(0).get_sprite(0)->get_texture_id(1);
+	m_ui_end_game.get_page(0).get_layer(0).get_sprite(0)->set_background_img_gl(tex_id);
+	// reset chrono
+	m_me.m_chrono.reset();
+	m_enemy.m_chrono.reset();
 }
 
 void Bandas::enemy_gave_up()
@@ -1177,7 +1194,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	glm::ivec2 mouse_pos = m_mouse.get_position();
 	std::shared_ptr<Sprite> hovered = m_ui.get_hovered_sprite(mouse_pos.x, c_screen_height - mouse_pos.y);
 
-	if (!hovered) { return; }
+	if (!hovered && !m_logic.game_is_finished) { return; }
 	Page& game_page{ m_ui.get_page(1) };
 	int sprite_id{ hovered->get_id() };
 
@@ -1197,14 +1214,43 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	update_chat_input(user_input, txt_input, delta);
 
 	// check winner
-	if ((m_me.m_team == 0 && m_board.orange_count == 0) || (m_me.m_team == 1 && m_board.banana_count == 0))
+	if ((m_me.m_team == 0 && m_board.banana_count == 0) || (m_me.m_team == 1 && m_board.orange_count == 0))
 	{
 		if (!m_logic.game_is_finished)
 		{
 			m_logic.game_is_finished = true;
+			GLuint tex_id = m_ui_end_game.get_page(0).get_layer(0).get_sprite(0)->get_texture_id(0);
+			m_ui_end_game.get_page(0).get_layer(0).get_sprite(0)->set_background_img_gl(tex_id);
 			g_msg2server_mtx.lock();
 			g_msg2server.emplace("6:" + std::to_string(m_me.m_team));
 			g_msg2server_mtx.unlock();
+		}
+	}
+
+	// events on end game popup
+	if (m_logic.game_is_finished)
+	{
+		Page& popup{ m_ui_end_game.get_page(0) };
+		hovered = m_ui_end_game.get_hovered_sprite(mouse_pos.x, c_screen_height - mouse_pos.y);
+		if (!hovered)
+		{
+			return;
+		}
+		sprite_id = hovered->get_id();
+		if (sprite_id == 1) // ok button
+		{
+			popup.get_layer(0).get_sprite(1)->use_background_img_selected();
+		}
+		else
+		{
+			popup.get_layer(0).get_sprite(1)->use_background_img();
+		}
+		if (user_input.test(2) && user_input.test(9)) // if click & release events
+		{
+			if (sprite_id == 1) // ok button
+			{
+				quit_game();
+			}
 		}
 	}
 }
@@ -1381,7 +1427,6 @@ void Bandas::draw_game_page(float delta)
 	draw_avatar_game_page();
 	
 	// draw background
-
 	if (m_logic.turn == m_me.m_team && m_logic.move.dir == -1 && !m_logic.change_turn) {
 		m_ui.get_page(1).get_layer(2).set_visibility(true);
 	}
@@ -1394,6 +1439,18 @@ void Bandas::draw_game_page(float delta)
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	m_ui.get_page(1).draw();
+
+	// draw chrono
+	m_me.m_chrono.draw(m_me.m_team, m_logic, delta);
+	m_enemy.m_chrono.draw(m_enemy.m_team, m_logic, delta);
+	if (m_me.m_team == 0) {
+		m_text.print(m_me.m_chrono.to_string(), 159, 728-152, 1, glm::vec3(0));
+		m_text.print(m_enemy.m_chrono.to_string(), 829, 728-152, 1, glm::vec3(0));
+	}
+	else {
+		m_text.print(m_me.m_chrono.to_string(), 829, 728 - 152, 1, glm::vec3(0));
+		m_text.print(m_enemy.m_chrono.to_string(), 159, 728 - 152, 1, glm::vec3(0));
+	}
 
 	// board
 	m_board.draw(m_logic, delta);
@@ -1419,6 +1476,12 @@ void Bandas::draw_game_page(float delta)
 
 	// draw music controller
 	music.draw();
+
+	// draw end game popup
+	if (m_logic.game_is_finished)
+	{
+		m_ui_end_game.get_page(0).draw();
+	}
 }
 
 void Bandas::add_chat_message(std::string msg)

@@ -8,7 +8,7 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "92.88.236.2"
+#define SERVER "192.168.3.61"
 #define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
@@ -136,9 +136,11 @@ void receive_message(std::shared_ptr<Game> & game)
 
 				// set my data
 				game->m_bandas.m_me.m_team = team;
+				game->m_bandas.m_me.m_chrono.m_color = c_green;
 
 				// set enemy data
 				game->m_bandas.m_enemy.m_team = (team == 0) ? 1 : 0;
+				game->m_bandas.m_enemy.m_chrono.m_color = c_red;
 				game->m_bandas.m_enemy.m_pseudo = pseudo;
 				game->m_bandas.m_enemy.m_avatar.create_from_net_data(avatar);
 				// switch to game page
@@ -185,7 +187,7 @@ void receive_message(std::shared_ptr<Game> & game)
 			}
 			else if (type == "end")
 			{
-				std::cout << "SOMEONE HAS WON !";
+				game->m_bandas.m_logic.game_is_finished = true;
 			}
 		}
 		else if (game->m_bandas.m_net.m_event.type == ENET_EVENT_TYPE_DISCONNECT)

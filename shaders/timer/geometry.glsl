@@ -15,8 +15,9 @@ void main()
 
 	float angle_step = radians(6.0f);
 	float max_angle = radians(360.0f * ratio);
+	float halfPI = radians(90.0f);
 
-	for(float a = 0.0f; a <= max_angle; a += angle_step)
+	for(float a = halfPI; a <= max_angle + halfPI; a += angle_step)
 	{
 		gl_Position = center;
 		EmitVertex();

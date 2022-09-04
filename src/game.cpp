@@ -104,12 +104,14 @@ void Game::sound_manager()
 		}
 		scenes[0].getSoundSource(0).set_volume(m_bandas.music.volume);
 	}
-	else
+	else if(m_bandas.m_ui.get_active_page() == 0)
 	{
 		if (scenes[0].getSoundSource(0).is_playing())
 		{
 			scenes[0].stopSound(0, 0);
 			scenes[0].stopSound(0, 1);
+			scenes[0].getSoundSource(0).set_looping(false);
+			m_bandas.music.intro_done = false;
 		}
 	}
 }

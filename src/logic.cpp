@@ -315,7 +315,9 @@ void Board::set_animTimer(Logic& logic)
 			}
 		}
 	}
+
 	// print timer
+	/*
 	for (int i = bounds.top; i <= bounds.bottom; ++i)
 	{
 		for (int j = bounds.left; j <= bounds.right; ++j)
@@ -331,6 +333,7 @@ void Board::set_animTimer(Logic& logic)
 		}
 		std::cout << "\n";
 	}
+	*/
 }
 
 void Board::set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& origin)
@@ -774,5 +777,18 @@ void Board::set_tileDeleteTimerLine(int l)
 	{
 		tile[col][l].animTimer = (bounds.left - col) * c_animLength + abs(bounds.left - col) * (c_animLength * 0.625f);
 		tile[col][l].state = Tile::STATE::DYING;
+	}
+}
+
+void Board::reset()
+{
+	for (int line = 0; line <= 7; ++line)
+	{
+		for (int col = 0; col <= 7; ++col)
+		{
+			tile[col][line].animTimer = 42.0f;
+			tile[col][line].pos = glm::vec2(0);
+			tile[col][line].state = Tile::STATE::ALIVE;
+		}
 	}
 }
