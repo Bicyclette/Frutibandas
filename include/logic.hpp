@@ -137,10 +137,10 @@ struct Board
 	Animation2D dying_tile;
 	// banana animations
 	std::array<Animation2D, 8> banana_anims; // right, left, up, down, p_right, p_left, p_up, p_down
-	//std::array<Animation2D, 8> banana_death_anims; // right, left, up, down, p_right, p_left, p_up, p_down
+	//Animation2D banana_death;
 	// orange animations
 	std::array<Animation2D, 8> orange_anims; // right, left, up, down, p_right, p_left, p_up, p_down
-	//std::array<Animation2D, 8> orange_death_anims; // right, left, up, down, p_right, p_left, p_up, p_down
+	std::array<Animation2D, 4> orange_death;
 	
 	// draw stuff
 	Sprite m_sprite;
@@ -148,10 +148,16 @@ struct Board
 	Board() :
 		m_sprite(0, glm::vec2(0), glm::vec2(256), 1050, 728),
 		dying_tile(c_animLength),
+		orange_death{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) },
 		banana_anims{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) },
 		orange_anims{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) }
 	{
 		dying_tile.load("assets/animation/board", 34);
+
+		orange_death[0].load("assets/animation/orange/death/right", 16);
+		orange_death[1].load("assets/animation/orange/death/left", 16);
+		orange_death[2].load("assets/animation/orange/death/up", 16);
+		orange_death[3].load("assets/animation/orange/death/down", 16);
 
 		banana_anims[0].load("assets/animation/banana/mv_right", 22);
 		banana_anims[1].load("assets/animation/banana/mv_left", 22);
@@ -177,8 +183,8 @@ struct Board
 	int get_banana_count();
 	int get_orange_count();
 	void draw(Logic& logic, float delta);
-	GLuint get_banana_texture(Logic& logic, int col, int line, float delta);
-	GLuint get_orange_texture(Logic& logic, int col, int line, float delta);
+	GLuint get_banana_texture(Logic& logic, int col, int line, float timer);
+	GLuint get_orange_texture(Logic& logic, int col, int line, float timer);
 	void set_animTimer(Logic& logic);
 	GLuint get_animationFrame(Logic& logic, int col, int line, float delta, bool stand_still);
 	GLuint get_tileFrame(Logic& logic, int col, int line, float delta);

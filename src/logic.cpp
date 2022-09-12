@@ -211,11 +211,11 @@ GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, b
 	}
 }
 
-GLuint Board::get_banana_texture(Logic& logic, int col, int line, float delta)
+GLuint Board::get_banana_texture(Logic& logic, int col, int line, float timer)
 {
 	int frame = 0;
 	Animation2D& anim = (logic.turn == 1) ? banana_anims[logic.move.dir] : banana_anims[logic.move.dir+4];
-	float percent = delta / anim.duration;
+	float percent = timer / anim.duration;
 	if (percent < 0.0f) {
 		return banana_tex.id;
 	}
@@ -223,17 +223,17 @@ GLuint Board::get_banana_texture(Logic& logic, int col, int line, float delta)
 		frame = static_cast<int>(percent * (anim.frames.size()-1));
 		return anim.frames[frame].id;
 	}
-	else if (percent > 1.0f) {
+	else {
 		frame = anim.frames.size() - 1;
 		return anim.frames[frame].id;
 	}
 }
 
-GLuint Board::get_orange_texture(Logic& logic, int col, int line, float delta)
+GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 {
 	int frame = 0;
 	Animation2D& anim = (logic.turn == 0) ? orange_anims[logic.move.dir] : orange_anims[logic.move.dir+4];
-	float percent = delta / anim.duration;
+	float percent = timer / anim.duration;
 	if (percent < 0.0f) {
 		return orange_tex.id;
 	}
@@ -241,7 +241,7 @@ GLuint Board::get_orange_texture(Logic& logic, int col, int line, float delta)
 		frame = static_cast<int>(percent * (anim.frames.size() - 1));
 		return anim.frames[frame].id;
 	}
-	else if (percent > 1.0f) {
+	else {
 		frame = anim.frames.size() - 1;
 		return anim.frames[frame].id;
 	}
@@ -420,7 +420,8 @@ void Board::update(Logic& logic)
 			{
 				if (tile[col][line].fruit.type == 'b')
 				{
-					if (tile[col][line].fruit.animTimer <= banana_anims[logic.move.dir].duration)
+					Animation2D& anim = (logic.turn == 0) ? banana_anims[logic.move.dir] : banana_anims[logic.move.dir + 4];
+					if (tile[col][line].fruit.animTimer <= anim.duration)
 					{
 						end_move = false;
 						break;
@@ -428,7 +429,8 @@ void Board::update(Logic& logic)
 				}
 				else
 				{
-					if (tile[col][line].fruit.animTimer <= orange_anims[logic.move.dir].duration)
+					Animation2D& anim = (logic.turn == 0) ? orange_anims[logic.move.dir] : orange_anims[logic.move.dir + 4];
+					if (tile[col][line].fruit.animTimer <= anim.duration)
 					{
 						end_move = false;
 						break;

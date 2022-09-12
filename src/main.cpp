@@ -120,19 +120,20 @@ void receive_message(std::shared_ptr<Game> & game)
 				// get turn
 				next_token = message.find_first_of(':');
 				int turn = std::stoi(message.substr(0, next_token));
-				if (turn == team)
-				{
-					message = message.substr(next_token + 3);
-					//get set of cards
-					next_token = message.find_first_of(':');
-					std::string cards = message.substr(0, next_token);
-				}
+				message = message.substr(next_token + 3);
+
+				//get set of cards
+				next_token = message.find_first_of(':');
+				std::string cards = message.substr(0, next_token);
 
 				// init board
 				game->m_bandas.m_board.init(plateau);
 
 				// set turn
 				game->m_bandas.m_logic.turn = turn;
+
+				// set cards
+				game->m_bandas.init_cards(cards);
 
 				// set my data
 				game->m_bandas.m_me.m_team = team;
@@ -165,7 +166,13 @@ void receive_message(std::shared_ptr<Game> & game)
 			}
 			else if (type == "mv")
 			{
-				int move_dir = std::atoi(&message[3]);
+				std::string move_dir_str = message.substr(3, 1);
+				std::string chrono_timer_str = message.substr(5);
+				int move_dir = std::atoi(move_dir_str.data());
+				float chrono_timer = std::atof(chrono_timer_str.data());
+				if (game->m_bandas.m_me.m_team != game->m_bandas.m_logic.turn) {
+					game->m_bandas.m_enemy.m_chrono.m_time = chrono_timer;
+				}
 				game->m_bandas.m_logic.move.dir = move_dir;
 				if (move_dir == 0)
 				{

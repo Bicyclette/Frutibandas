@@ -15,6 +15,7 @@
 #include "network_client.hpp"
 #include "music.hpp"
 #include "logic.hpp"
+#include "card.hpp"
 
 constexpr int c_avatar_width{ 512 };
 constexpr int c_avatar_height{ 512 };
@@ -27,6 +28,11 @@ constexpr glm::vec2 c_banana_chrono_pos(858, 728 - 95);
 
 constexpr glm::vec3 c_green(0.0f, 0.694f, 0.082f);
 constexpr glm::vec3 c_red(1,0,0);
+
+constexpr glm::vec2 c_shift_up(0, 45);
+constexpr glm::vec2 c_shift_down(0, -45);
+constexpr glm::vec2 c_shift_right(44, 0);
+constexpr glm::vec2 c_shift_left(-44, 0);
 
 struct Chrono
 {
@@ -99,7 +105,7 @@ struct Chrono
 	{
 		// update look
 		if (logic.turn == team && logic.move.dir == -1 && !logic.change_turn) {
-			m_time -= delta;
+			m_time = (m_time > 0.0f) ? m_time - delta : 0.0f;
 			m_second += delta;
 			if (m_second >= 0.5f && m_second <= 1.0f) {
 				m_lightness = 0.5f;
@@ -141,6 +147,7 @@ class Bandas
 		void createUI();
 		inline void create_home_page();
 		inline void create_game_page();
+		void init_cards(std::string cards);
 		void update_home_page(std::bitset<10> user_input, std::string txt_input, float delta);
 		void hovering_home_page(Page& page, int id);
 		void click_home_page(Page& page, int id);
@@ -161,6 +168,7 @@ class Bandas
 		void add_chat_message(std::string msg);
 		void update_chat_input(std::bitset<10> user_input, std::string txt_input, float delta);
 		void draw_avatar_game_page();
+		void draw_cards();
 
 	public: // properties
 		NetworkClient m_net;
@@ -177,6 +185,8 @@ class Bandas
 	public: // game logic
 		Board m_board;
 		Logic m_logic;
+		Card m_orange_cards[3];
+		Card m_banana_cards[3];
 };
 
 #endif

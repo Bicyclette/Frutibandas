@@ -392,7 +392,8 @@ void Bandas::create_game_page()
 	game_page.add_layer(0); // game background + avatar + sound & abandon buttons
 	game_page.add_layer(1); // chat input
 	game_page.add_layer(2); // game arrows
-	game_page.add_layer(3); // match finished
+	game_page.add_layer(3); // cards
+	game_page.add_layer(4); // card description
 
 	Layer& g_layer0 = game_page.get_layer(0);
 	g_layer0.add_sprite(0, glm::vec2(0.0f), glm::vec2(c_screen_width, c_screen_height), c_screen_width, c_screen_height);
@@ -437,6 +438,51 @@ void Bandas::create_game_page()
 	g_layer2.get_sprite(9)->set_background_img_selected("assets/game_page/arrow_left_hover.tga");
 	g_layer2.get_sprite(9)->use_background_img();
 
+	Layer& g_layer3 = game_page.get_layer(3);
+	g_layer3.add_sprite(10, c_orange_card_pos[0][0], c_card_size_140, c_screen_width, c_screen_height);
+	for (int i = 0; i < 14; ++i) {
+		g_layer3.get_sprite(10)->add_texture(c_card_texture[i]);
+	}
+	g_layer3.get_sprite(10)->use_background_img_gl();
+
+	g_layer3.add_sprite(11, c_orange_card_pos[1][0], c_card_size_140, c_screen_width, c_screen_height);
+	for (int i = 0; i < 14; ++i) {
+		g_layer3.get_sprite(11)->add_texture(c_card_texture[i]);
+	}
+	g_layer3.get_sprite(11)->use_background_img_gl();
+
+	g_layer3.add_sprite(12, c_orange_card_pos[0][1], c_card_size_140, c_screen_width, c_screen_height);
+	for (int i = 0; i < 14; ++i) {
+		g_layer3.get_sprite(12)->add_texture(c_card_texture[i]);
+	}
+	g_layer3.get_sprite(12)->use_background_img_gl();
+
+	g_layer3.add_sprite(13, c_banana_card_pos[0][0], c_card_size_140, c_screen_width, c_screen_height);
+	for (int i = 0; i < 14; ++i) {
+		g_layer3.get_sprite(13)->add_texture(c_card_texture[i]);
+	}
+	g_layer3.get_sprite(13)->use_background_img_gl();
+
+	g_layer3.add_sprite(14, c_banana_card_pos[1][0], c_card_size_140, c_screen_width, c_screen_height);
+	for (int i = 0; i < 14; ++i) {
+		g_layer3.get_sprite(14)->add_texture(c_card_texture[i]);
+	}
+	g_layer3.get_sprite(14)->use_background_img_gl();
+
+	g_layer3.add_sprite(15, c_banana_card_pos[0][1], c_card_size_140, c_screen_width, c_screen_height);
+	for (int i = 0; i < 14; ++i) {
+		g_layer3.get_sprite(15)->add_texture(c_card_texture[i]);
+	}
+	g_layer3.get_sprite(15)->use_background_img_gl();
+
+	Layer& g_layer4 = game_page.get_layer(4);
+	g_layer4.set_visibility(false);
+	g_layer4.add_sprite(16, glm::vec2(237, 728-559-164), glm::vec2(577, 164), c_screen_width, c_screen_height);
+	for (int i = 0; i < 12; ++i) {
+		g_layer4.get_sprite(16)->add_texture(c_card_desc_texture[i]);
+	}
+	g_layer4.get_sprite(16)->use_background_img_gl();
+
 	m_ui_end_game.add_page();
 	m_ui_end_game.set_active_page(0);
 	Page& end_game_page = m_ui_end_game.get_page(0);
@@ -452,6 +498,45 @@ void Bandas::create_game_page()
 	popup_layer.get_sprite(1)->set_background_img("assets/common/ok.tga");
 	popup_layer.get_sprite(1)->set_background_img_selected("assets/common/ok_hover.tga");
 	popup_layer.get_sprite(1)->use_background_img();
+}
+
+void Bandas::init_cards(std::string cards)
+{
+	Layer& g_layer3 = m_ui.get_page(1).get_layer(3);
+	int next_token{ -1 };
+	int card_id{ -1 };
+
+	// orange cards
+	next_token = cards.find_first_of('.');
+	card_id = std::atoi(cards.substr(0, next_token).data());
+	cards = cards.substr(next_token + 1);
+	m_orange_cards[0].m_id = card_id;
+
+	next_token = cards.find_first_of('.');
+	card_id = std::atoi(cards.substr(0, next_token).data());
+	cards = cards.substr(next_token + 1);
+	m_orange_cards[1].m_id = card_id;
+
+	next_token = cards.find_first_of('.');
+	card_id = std::atoi(cards.substr(0, next_token).data());
+	cards = cards.substr(next_token + 1);
+	m_orange_cards[2].m_id = card_id;
+
+	// banana cards
+	next_token = cards.find_first_of('.');
+	card_id = std::atoi(cards.substr(0, next_token).data());
+	cards = cards.substr(next_token + 1);
+	m_banana_cards[0].m_id = card_id;
+
+	next_token = cards.find_first_of('.');
+	card_id = std::atoi(cards.substr(0, next_token).data());
+	cards = cards.substr(next_token + 1);
+	m_banana_cards[1].m_id = card_id;
+
+	next_token = cards.find_first_of('.');
+	card_id = std::atoi(cards.substr(0, next_token).data());
+	cards = cards.substr(next_token + 1);
+	m_banana_cards[2].m_id = card_id;
 }
 
 void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input, float delta)
@@ -1134,6 +1219,8 @@ void Bandas::start_game()
 void Bandas::quit_game()
 {
 	m_ui.set_active_page(0);
+	// if end game, set abandon button as selectable again
+	m_ui.get_page(1).get_layer(0).get_sprite(3)->set_selectable(true);
 	// stop focus text input
 	m_writer.m_cursor.m_focus = 2;
 	m_writer.m_cursor.m_pos = static_cast<int>(m_writer.m_textInput[0].size());
@@ -1214,7 +1301,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	update_chat_input(user_input, txt_input, delta);
 
 	// check winner
-	if ((m_me.m_team == 0 && m_board.banana_count == 0) || (m_me.m_team == 1 && m_board.orange_count == 0))
+	if ((m_me.m_team == 0 && m_board.banana_count == 0) || (m_me.m_team == 1 && m_board.orange_count == 0) || m_enemy.m_chrono.m_time == 0.0f)
 	{
 		if (!m_logic.game_is_finished)
 		{
@@ -1230,6 +1317,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	// events on end game popup
 	if (m_logic.game_is_finished)
 	{
+		m_ui.get_page(1).get_layer(0).get_sprite(3)->set_selectable(false);
 		Page& popup{ m_ui_end_game.get_page(0) };
 		hovered = m_ui_end_game.get_hovered_sprite(mouse_pos.x, c_screen_height - mouse_pos.y);
 		if (!hovered)
@@ -1307,6 +1395,43 @@ void Bandas::hovering_game_page(Page& page, int id)
 	{
 		page.get_layer(2).get_sprite(9)->use_background_img();
 	}
+
+	// print card description
+	Layer& g_layer4 = m_ui.get_page(1).get_layer(4);
+	if (id == 10 && m_me.m_team == 0 && m_orange_cards[0].m_id != -1)
+	{
+		g_layer4.set_visibility(true);
+		g_layer4.get_sprite(16)->set_background_img_gl(g_layer4.get_sprite(16)->get_texture_id(m_orange_cards[0].m_id));
+	}
+	else if(id == 11 && m_me.m_team == 0 && m_orange_cards[1].m_id != -1)
+	{
+		g_layer4.set_visibility(true);
+		g_layer4.get_sprite(16)->set_background_img_gl(g_layer4.get_sprite(16)->get_texture_id(m_orange_cards[1].m_id));
+	}
+	else if (id == 12 && m_me.m_team == 0 && m_orange_cards[2].m_id != -1)
+	{
+		g_layer4.set_visibility(true);
+		g_layer4.get_sprite(16)->set_background_img_gl(g_layer4.get_sprite(16)->get_texture_id(m_orange_cards[2].m_id));
+	}
+	else if (id == 13 && m_me.m_team == 1 && m_banana_cards[0].m_id != -1)
+	{
+		g_layer4.set_visibility(true);
+		g_layer4.get_sprite(16)->set_background_img_gl(g_layer4.get_sprite(16)->get_texture_id(m_banana_cards[0].m_id));
+	}
+	else if (id == 14 && m_me.m_team == 1 && m_banana_cards[1].m_id != -1)
+	{
+		g_layer4.set_visibility(true);
+		g_layer4.get_sprite(16)->set_background_img_gl(g_layer4.get_sprite(16)->get_texture_id(m_banana_cards[1].m_id));
+	}
+	else if (id == 15 && m_me.m_team == 1 && m_banana_cards[2].m_id != -1)
+	{
+		g_layer4.set_visibility(true);
+		g_layer4.get_sprite(16)->set_background_img_gl(g_layer4.get_sprite(16)->get_texture_id(m_banana_cards[2].m_id));
+	}
+	else
+	{
+		g_layer4.set_visibility(false);
+	}
 }
 
 void Bandas::hold_left_click_game_page(Page& page, int id, std::array<int, 3> mouse_data)
@@ -1350,28 +1475,28 @@ void Bandas::click_game_page(Page& page, int id)
 	if (id == 6) // up arrow
 	{
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:2");
+		g_msg2server.emplace("5:2." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
 	}
 
 	if (id == 7) // down arrow
 	{
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:3");
+		g_msg2server.emplace("5:3." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
 	}
 
 	if (id == 8) // right arrow
 	{
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:0");
+		g_msg2server.emplace("5:0." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
 	}
 
 	if (id == 9) // left arrow
 	{
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:1");
+		g_msg2server.emplace("5:1." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
 	}
 }
@@ -1471,6 +1596,9 @@ void Bandas::draw_game_page(float delta)
 	m_text.print(std::to_string(m_board.orange_count), 190, 728 - 52, 1, glm::vec3(0));
 	m_text.print(std::to_string(m_board.banana_count), 856, 728 - 52, 1, glm::vec3(0));
 
+	// draw cards
+	draw_cards();
+
 	// print chat
 	draw_chat(delta);
 
@@ -1540,5 +1668,30 @@ void Bandas::update_chat_input(std::bitset<10> user_input, std::string txt_input
 			// reset cursor pos to zero
 			m_writer.m_cursor.m_pos = 0;
 		}
+	}
+}
+
+void Bandas::draw_cards()
+{
+	Layer& g_layer3 = m_ui.get_page(1).get_layer(3);
+	if (m_me.m_team == 0)
+	{
+		g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(m_orange_cards[0].m_id));
+		g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(m_orange_cards[1].m_id));
+		g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(m_orange_cards[2].m_id));
+
+		g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(12));
+		g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(12));
+		g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(12));
+	}
+	else
+	{
+		g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(12));
+		g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(12));
+		g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(12));
+
+		g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(m_banana_cards[0].m_id));
+		g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(m_banana_cards[1].m_id));
+		g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(m_banana_cards[2].m_id));
 	}
 }

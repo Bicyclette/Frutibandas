@@ -90,10 +90,6 @@ set(HEADERS
 	include/avatar.hpp
 	include/writer.hpp
 	include/bandas.hpp
-	include/timer.hpp
-	include/cow.hpp
-	include/anvil.hpp
-	include/advertiser.hpp
 	include/communication.hpp
 	include/logic.hpp
 	include/imgui.h
@@ -104,8 +100,9 @@ set(HEADERS
 	include/imstb_truetype.h
 	include/imgui_impl_sdl.h
 	include/imgui_impl_opengl3.h
+	include/music.hpp
 	include/tinyutf8/tinyutf8.h
-	include/music.hpp)
+	include/card.hpp)
 
 add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 

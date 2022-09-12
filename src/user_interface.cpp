@@ -313,15 +313,19 @@ void Sprite::draw(glm::vec2 translate)
     glBindVertexArray(m_vao);
     m_shader.use();
     m_shader.setMatrix("proj", m_projection);
-    if (m_img_index != -1)
+    if (m_img_index != -1) {
         m_shader.setBool("use_bkg_img", true);
-    else
+    }
+    else {
         m_shader.setBool("use_bkg_img", false);
+    }
     glActiveTexture(GL_TEXTURE0);
-    if (m_img_index > -1)
+    if (m_img_index > -1) {
         glBindTexture(GL_TEXTURE_2D, m_img[m_img_index].id);
-    else if (m_img_index == -2)
+    }
+    else if (m_img_index == -2) {
         glBindTexture(GL_TEXTURE_2D, m_img_gl);
+    }
     m_shader.setInt("image", 0);
     m_shader.setVec4f("bkg_color", m_color);
     m_shader.setFloat("bloom_strength", m_bloom_strength);
@@ -342,6 +346,7 @@ void Sprite::draw(GLuint image)
     m_shader.setInt("image", 0);
     m_shader.setVec4f("bkg_color", m_color);
     m_shader.setFloat("bloom_strength", 1.0f);
+    m_shader.setVec2f("translate", glm::vec2(0.0f));
     m_shader.setBool("grey", false);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
