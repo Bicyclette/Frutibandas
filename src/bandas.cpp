@@ -483,6 +483,18 @@ void Bandas::create_game_page()
 	}
 	g_layer4.get_sprite(16)->use_background_img_gl();
 
+	m_ui_advertiser.add_page();
+	m_ui_advertiser.set_active_page(0);
+	Page& advert_page = m_ui_advertiser.get_page(0);
+	advert_page.add_layer(0);
+	Layer& advert_layer0 = advert_page.get_layer(0);
+	advert_layer0.add_sprite(0, glm::vec2(-50, 339), glm::vec2(1150, 60), c_screen_width, c_screen_height);
+	for (int i = 0; i < 24; ++i) {
+		advert_layer0.get_sprite(0)->add_texture(c_advertiser_texture[i]);
+	}
+	advert_layer0.get_sprite(0)->use_background_img_gl();
+	advert_layer0.get_sprite(0)->set_background_img_gl(advert_layer0.get_sprite(0)->get_texture_id(0));
+
 	m_ui_end_game.add_page();
 	m_ui_end_game.set_active_page(0);
 	Page& end_game_page = m_ui_end_game.get_page(0);
@@ -1299,6 +1311,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 		music.grab_ctrl = false;
 	}
 	update_chat_input(user_input, txt_input, delta);
+	//process_card_effect();
 
 	// check winner
 	if ((m_me.m_team == 0 && m_board.banana_count == 0) || (m_me.m_team == 1 && m_board.orange_count == 0) || m_enemy.m_chrono.m_time == 0.0f)
@@ -1474,30 +1487,56 @@ void Bandas::click_game_page(Page& page, int id)
 
 	if (id == 6) // up arrow
 	{
+		int move_direction = 2;
+		if (m_logic.card_effect.disorder && m_logic.card_effect.disorder_destination == m_me.m_team) {
+			move_direction = 3;
+		}
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:2." + std::to_string(m_me.m_chrono.m_time));
+		g_msg2server.emplace("5:" + std::to_string(move_direction) + "." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
 	}
 
 	if (id == 7) // down arrow
 	{
+		int move_direction = 3;
+		if (m_logic.card_effect.disorder && m_logic.card_effect.disorder_destination == m_me.m_team) {
+			move_direction = 2;
+		}
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:3." + std::to_string(m_me.m_chrono.m_time));
+		g_msg2server.emplace("5:" + std::to_string(move_direction) + "." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
 	}
 
 	if (id == 8) // right arrow
 	{
+		int move_direction = 0;
+		if (m_logic.card_effect.disorder && m_logic.card_effect.disorder_destination == m_me.m_team) {
+			move_direction = 1;
+		}
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:0." + std::to_string(m_me.m_chrono.m_time));
+		g_msg2server.emplace("5:" + std::to_string(move_direction) + "." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
 	}
 
 	if (id == 9) // left arrow
 	{
+		int move_direction = 1;
+		if (m_logic.card_effect.disorder && m_logic.card_effect.disorder_destination == m_me.m_team) {
+			move_direction = 0;
+		}
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("5:1." + std::to_string(m_me.m_chrono.m_time));
+		g_msg2server.emplace("5:" + std::to_string(move_direction) + "." + std::to_string(m_me.m_chrono.m_time));
 		g_msg2server_mtx.unlock();
+	}
+
+	if (m_me.m_team == 0 && m_logic.turn == 0 && (id == 10 || id == 11 || id == 12)) // clicked on orange card
+	{
+		click_on_orange_card(id - 10);
+	}
+
+	if (m_me.m_team == 1 && m_logic.turn == 1 && (id == 13 || id == 14 || id == 15)) // clicked on banana card
+	{
+		click_on_banana_card(id - 13);
 	}
 }
 
@@ -1578,7 +1617,7 @@ void Bandas::draw_game_page(float delta)
 	}
 
 	// board
-	m_board.draw(m_logic, delta);
+	m_board.draw(m_logic, m_advertiser, delta);
 
 	// print pseudo
 	if (m_me.m_team == 0)
@@ -1598,6 +1637,17 @@ void Bandas::draw_game_page(float delta)
 
 	// draw cards
 	draw_cards();
+
+	// draw advertiser
+	if (m_advertiser.m_show) {
+		Layer& advert_layer = m_ui_advertiser.get_page(0).get_layer(0);
+		glm::vec2 position = m_advertiser.get_pos(delta);
+		int texture_index = m_advertiser.m_index * 2;
+		texture_index = (m_advertiser.m_green) ? texture_index : texture_index + 1;
+		advert_layer.get_sprite(0)->set_background_img_gl(advert_layer.get_sprite(0)->get_texture_id(texture_index));
+		advert_layer.get_sprite(0)->set_pos(position);
+		m_ui_advertiser.get_page(0).draw();
+	}
 
 	// print chat
 	draw_chat(delta);
@@ -1676,22 +1726,279 @@ void Bandas::draw_cards()
 	Layer& g_layer3 = m_ui.get_page(1).get_layer(3);
 	if (m_me.m_team == 0)
 	{
-		g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(m_orange_cards[0].m_id));
-		g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(m_orange_cards[1].m_id));
-		g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(m_orange_cards[2].m_id));
+		if (m_orange_cards[0].m_id == -1) {
+			g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(m_orange_cards[0].m_id));
+		}
+		if (m_orange_cards[1].m_id == -1) {
+			g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(m_orange_cards[1].m_id));
+		}
+		if (m_orange_cards[2].m_id == -1) {
+			g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(m_orange_cards[2].m_id));
+		}
 
-		g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(12));
-		g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(12));
-		g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(12));
+		if (m_banana_cards[0].m_id == -1) {
+			g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(12));
+		}
+		if (m_banana_cards[1].m_id == -1) {
+			g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(12));
+		}
+		if (m_banana_cards[2].m_id == -1) {
+			g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(12));
+		}
 	}
 	else
 	{
-		g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(12));
-		g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(12));
-		g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(12));
+		if (m_banana_cards[0].m_id == -1) {
+			g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(m_banana_cards[0].m_id));
+		}
+		if (m_banana_cards[1].m_id == -1) {
+			g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(m_banana_cards[1].m_id));
+		}
+		if (m_banana_cards[2].m_id == -1) {
+			g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(m_banana_cards[2].m_id));
+		}
 
-		g_layer3.get_sprite(13)->set_background_img_gl(g_layer3.get_sprite(13)->get_texture_id(m_banana_cards[0].m_id));
-		g_layer3.get_sprite(14)->set_background_img_gl(g_layer3.get_sprite(14)->get_texture_id(m_banana_cards[1].m_id));
-		g_layer3.get_sprite(15)->set_background_img_gl(g_layer3.get_sprite(15)->get_texture_id(m_banana_cards[2].m_id));
+		if (m_orange_cards[0].m_id == -1) {
+			g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(10)->set_background_img_gl(g_layer3.get_sprite(10)->get_texture_id(12));
+		}
+		if (m_orange_cards[1].m_id == -1) {
+			g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(11)->set_background_img_gl(g_layer3.get_sprite(11)->get_texture_id(12));
+		}
+		if (m_orange_cards[2].m_id == -1) {
+			g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(13));
+		}
+		else {
+			g_layer3.get_sprite(12)->set_background_img_gl(g_layer3.get_sprite(12)->get_texture_id(12));
+		}
+	}
+}
+
+void Bandas::remove_card(int id)
+{
+	if (m_me.m_team == 0)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (m_orange_cards[i].m_id == id && m_orange_cards[i].m_selected)
+			{
+				m_orange_cards[i].m_id = -1;
+				return;
+			}
+		}
+		for (int i = 0; i < 3; ++i)
+		{
+			if (m_banana_cards[i].m_id == id && m_banana_cards[i].m_selected)
+			{
+				m_banana_cards[i].m_id = -1;
+				return;
+			}
+		}
+	}
+	else if (m_me.m_team == 1)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (m_banana_cards[i].m_id == id && m_banana_cards[i].m_selected)
+			{
+				m_banana_cards[i].m_id = -1;
+				return;
+			}
+		}
+		for (int i = 0; i < 3; ++i)
+		{
+			if (m_orange_cards[i].m_id == id && m_orange_cards[i].m_selected)
+			{
+				m_orange_cards[i].m_id = -1;
+				return;
+			}
+		}
+	}
+}
+
+void Bandas::process_card_effect(bool delay)
+{
+	if (m_advertiser.m_index != -1 && !delay)
+	{
+		remove_card(m_advertiser.m_index);
+		switch (m_advertiser.m_index)
+		{
+		case 2:
+			m_logic.card_effect.second_wave = true;
+			break;
+		case 3:
+			m_logic.card_effect.charge = true;
+			break;
+		case 5:
+			m_logic.turn = (m_advertiser.m_green) ? m_enemy.m_team : m_me.m_team;
+			break;
+		default:
+			break;
+		}
+	}
+	else if (m_advertiser.m_index != -1 && delay)
+	{
+		switch (m_advertiser.m_index)
+		{
+		case 4:
+			m_logic.card_effect.disorder = true;
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+void Bandas::click_on_orange_card(int index)
+{
+	m_orange_cards[index].m_selected = true;
+
+	switch (m_orange_cards[index].m_id)
+	{
+	case 0: // conversion
+		std::cout << "clicked on conversion card" << std::endl;
+		break;
+	case 1: // confiscation
+		std::cout << "clicked on confiscation card" << std::endl;
+		break;
+	case 2: // celerite
+		std::cout << "clicked on celerite card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:2." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		break;
+	case 3: // charge
+		std::cout << "clicked on charge card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:3." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		break;
+	case 4: // desordre
+		std::cout << "clicked on desordre card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:4." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		remove_card(4);
+		break;
+	case 5: // entracte
+		std::cout << "clicked on entracte card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:5." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		break;
+	case 6: // enclume
+		std::cout << "clicked on enclume card" << std::endl;
+		break;
+	case 7: // petrification
+		std::cout << "clicked on petrification card" << std::endl;
+		break;
+	case 8: // piege
+		std::cout << "clicked on piege card" << std::endl;
+		break;
+	case 9: // renfort
+		std::cout << "clicked on renfort card" << std::endl;
+		break;
+	case 10: // solo
+		std::cout << "clicked on solo card" << std::endl;
+		break;
+	case 11: // vachette
+		std::cout << "clicked on vachette card" << std::endl;
+		break;
+	default:
+		break;
+	}
+}
+
+void Bandas::click_on_banana_card(int index)
+{
+	m_banana_cards[index].m_selected = true;
+
+	switch (m_banana_cards[index].m_id)
+	{
+	case 0: // conversion
+		std::cout << "clicked on conversion card" << std::endl;
+		break;
+	case 1: // confiscation
+		std::cout << "clicked on confiscation card" << std::endl;
+		break;
+	case 2: // celerite
+		std::cout << "clicked on celerite card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:2." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		break;
+	case 3: // charge
+		std::cout << "clicked on charge card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:3." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		break;
+	case 4: // desordre
+		std::cout << "clicked on desordre card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:4." + std::to_string(index) + "." + std::to_string(m_enemy.m_team));
+		g_msg2server_mtx.unlock();
+		remove_card(4);
+		break;
+	case 5: // entracte
+		std::cout << "clicked on entracte card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:5." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		break;
+	case 6: // enclume
+		std::cout << "clicked on enclume card" << std::endl;
+		break;
+	case 7: // petrification
+		std::cout << "clicked on petrification card" << std::endl;
+		break;
+	case 8: // piege
+		std::cout << "clicked on piege card" << std::endl;
+		//m_logic.select_empty_tile = true;
+		m_mouse.use_target();
+		break;
+	case 9: // renfort
+		std::cout << "clicked on renfort card" << std::endl;
+		break;
+	case 10: // solo
+		std::cout << "clicked on solo card" << std::endl;
+		break;
+	case 11: // vachette
+		std::cout << "clicked on vachette card" << std::endl;
+		break;
+	default:
+		break;
 	}
 }

@@ -162,6 +162,8 @@ class Bandas
 		void update_game_page(std::array<int, 3> mouse_data, std::bitset<10> user_input, std::string txt_input, float delta);
 		void hovering_game_page(Page& page, int id);
 		void click_game_page(Page& page, int id);
+		void click_on_orange_card(int index);
+		void click_on_banana_card(int index);
 		void hold_left_click_game_page(Page& page, int id, std::array<int, 3> mouse_data);
 		void draw_game_page(float delta);
 		void draw_chat(float delta);
@@ -169,11 +171,14 @@ class Bandas
 		void update_chat_input(std::bitset<10> user_input, std::string txt_input, float delta);
 		void draw_avatar_game_page();
 		void draw_cards();
+		void remove_card(int id);
+		void process_card_effect(bool delay = false);
 
 	public: // properties
 		NetworkClient m_net;
 		Graphics& m_graphics;
 		UI m_ui;
+		UI m_ui_advertiser;
 		UI m_ui_end_game;
 		Text m_text;
 		Writer m_writer;
@@ -187,6 +192,7 @@ class Bandas
 		Logic m_logic;
 		Card m_orange_cards[3];
 		Card m_banana_cards[3];
+		struct Advertiser m_advertiser;
 };
 
 #endif

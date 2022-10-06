@@ -120,7 +120,7 @@ int Board::get_orange_count()
 	return count;
 }
 
-void Board::draw(Logic& logic, float delta)
+void Board::draw(Logic& logic, Advertiser& advertiser, float delta)
 {
 	for (int line = bounds.top; line <= bounds.bottom; ++line)
 	{
@@ -145,7 +145,7 @@ void Board::draw(Logic& logic, float delta)
 				{
 					// fruit position
 					bool stand_still = tile[col][line].fruit.state == Fruit::STATE::STAND_STILL;
-					GLuint frame = get_animationFrame(logic, col, line, delta, stand_still);
+					GLuint frame = get_animationFrame(logic, advertiser, col, line, delta, stand_still);
 					m_sprite.set_pos(tile[col][line].pos);
 					m_sprite.draw(frame);
 				}
@@ -183,11 +183,11 @@ GLuint Board::get_tileFrame(Logic& logic, int col, int line, float delta)
 	}
 }
 
-GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, bool stand_still)
+GLuint Board::get_animationFrame(Logic& logic, Advertiser& advertiser, int col, int line, float delta, bool stand_still)
 {
 	if (tile[col][line].fruit.type == 'b')
 	{
-		if (logic.move.dir == -1 || stand_still)
+		if (logic.move.dir == -1 || stand_still || advertiser.m_show)
 		{
 			return banana_tex.id;
 		}
@@ -199,7 +199,7 @@ GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, b
 	}
 	else
 	{
-		if (logic.move.dir == -1 || stand_still)
+		if (logic.move.dir == -1 || stand_still || advertiser.m_show)
 		{
 			return orange_tex.id;
 		}
@@ -638,10 +638,24 @@ void Board::update(Logic& logic)
 				}
 			}
 		}
-
-		logic.move.dir = -1;
-		logic.move.dir_vec = glm::vec2(0);
-		logic.change_turn = true;
+		if (logic.card_effect.charge)
+		{
+			set_animTimer(logic);
+			logic.card_effect.charge = false;
+		}
+		else
+		{
+			logic.move.dir = -1;
+			logic.move.dir_vec = glm::vec2(0);
+			if (logic.card_effect.second_wave)
+			{
+				logic.card_effect.second_wave = false;
+			}
+			else
+			{
+				logic.change_turn = true;
+			}
+		}
 	}
 
 	if (!logic.kill_tiles)

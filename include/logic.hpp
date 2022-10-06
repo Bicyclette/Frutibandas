@@ -73,12 +73,75 @@ struct Tile
 	Fruit fruit;
 };
 
+struct Advertiser
+{
+	bool m_show;
+	bool m_green;
+	int m_index; // texture index
+	const float m_stand_still_timer;
+	const float m_moving_timer;
+	float m_timer;
+
+	Advertiser() :
+		m_show(false),
+		m_green(true),
+		m_index(-1),
+		m_stand_still_timer(0.75f),
+		m_moving_timer(0.35f),
+		m_timer(0.0f)
+	{}
+
+	glm::vec2 get_pos(float delta)
+	{
+		m_timer += delta;
+		if (m_timer <= m_moving_timer) {
+			float pos_x = 1100.0f * (m_timer / m_moving_timer);
+			return glm::vec2(pos_x - 1150.0f, 339);
+		}
+		else if (m_timer > m_moving_timer && m_timer < (m_moving_timer + m_stand_still_timer)) {
+			return glm::vec2(-50, 339);
+		}
+		else if (m_timer >= (m_moving_timer + m_stand_still_timer) && m_timer <= (m_moving_timer * 2.0f + m_stand_still_timer)) {
+			float pos_x = 1100.0f * ((m_timer - (m_moving_timer + m_stand_still_timer)) / m_moving_timer);
+			return glm::vec2(-50 + pos_x, 339);
+		}
+		else {
+			m_index = -1;
+			m_show = false;
+			m_timer = 0.0f;
+			return glm::vec2();
+		}
+	}
+};
+
 struct Logic
 {
 	struct MOVE
 	{
 		int dir; // -1 = still, 0 = right, 1 = left, 2 = up, 3 = down
 		glm::vec2 dir_vec;
+	};
+
+	struct CardEffect
+	{
+		bool charge;
+		bool second_wave;
+		bool disorder;
+		int disorder_destination;
+		CardEffect()
+		{
+			charge = false;
+			second_wave = false;
+			disorder = false;
+			disorder_destination = -1;
+		}
+		void reset()
+		{
+			charge = false;
+			second_wave = false;
+			disorder = false;
+			disorder_destination = -1;
+		}
 	};
 
 	int turn; // 0 = orange, 1 = banane
@@ -88,6 +151,7 @@ struct Logic
 	int delete_column_id;
 	bool change_turn;
 	bool game_is_finished;
+	CardEffect card_effect;
 
 	Logic::Logic()
 	{
@@ -109,6 +173,7 @@ struct Logic
 		delete_column_id = -1;
 		change_turn = false;
 		game_is_finished = false;
+		card_effect.reset();
 	}
 };
 
@@ -182,11 +247,11 @@ struct Board
 	std::string to_string();
 	int get_banana_count();
 	int get_orange_count();
-	void draw(Logic& logic, float delta);
+	void draw(Logic& logic, Advertiser& advertiser, float delta);
 	GLuint get_banana_texture(Logic& logic, int col, int line, float timer);
 	GLuint get_orange_texture(Logic& logic, int col, int line, float timer);
 	void set_animTimer(Logic& logic);
-	GLuint get_animationFrame(Logic& logic, int col, int line, float delta, bool stand_still);
+	GLuint get_animationFrame(Logic& logic, Advertiser& advertiser, int col, int line, float delta, bool stand_still);
 	GLuint get_tileFrame(Logic& logic, int col, int line, float delta);
 	void set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& origin);
 	bool is_pushed_x(int col, int line, char pusher, int dir, int origin);

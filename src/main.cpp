@@ -8,7 +8,7 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "192.168.3.61"
+#define SERVER "127.0.0.1"
 #define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
@@ -82,6 +82,35 @@ void send_message(std::shared_ptr<Game> & game)
 	else if (code == 6) // winner detected
 	{
 		game->m_bandas.m_net.send_data("win:" + message.substr(2));
+	}
+	else if (code == 7) // used a card
+	{
+		message = message.substr(2);
+		int next_token = message.find_first_of('.');
+		int card_id = std::atoi(message.substr(0, next_token).c_str());
+		message = message.substr(next_token + 1);
+		next_token = message.find_first_of('.');
+		std::string card_index = message.substr(0, next_token);
+		message = message.substr(next_token + 1);
+		next_token = message.find_first_of('.');
+		std::string effect_destination = message.substr(0, next_token);
+		switch (card_id)
+		{
+		case 2:
+			game->m_bandas.m_net.send_data("card:2." + card_index);
+			break;
+		case 3:
+			game->m_bandas.m_net.send_data("card:3." + card_index);
+			break;
+		case 4:
+			game->m_bandas.m_net.send_data("card:4." + card_index + "." + effect_destination);
+			break;
+		case 5:
+			game->m_bandas.m_net.send_data("card:5." + card_index);
+			break;
+		default:
+			break;
+		}
 	}
 }
 
@@ -173,6 +202,10 @@ void receive_message(std::shared_ptr<Game> & game)
 				if (game->m_bandas.m_me.m_team != game->m_bandas.m_logic.turn) {
 					game->m_bandas.m_enemy.m_chrono.m_time = chrono_timer;
 				}
+				if (game->m_bandas.m_logic.card_effect.disorder && game->m_bandas.m_logic.turn == game->m_bandas.m_logic.card_effect.disorder_destination) {
+					game->m_bandas.m_advertiser.m_show = true;
+					game->m_bandas.m_logic.card_effect.reset();
+				}
 				game->m_bandas.m_logic.move.dir = move_dir;
 				if (move_dir == 0)
 				{
@@ -191,6 +224,42 @@ void receive_message(std::shared_ptr<Game> & game)
 					game->m_bandas.m_logic.move.dir_vec = glm::vec2(0, -1);
 				}
 				game->m_bandas.m_board.set_animTimer(game->m_bandas.m_logic);
+			}
+			else if (type == "card")
+			{
+				message = message.substr(5);
+				int next_token = message.find_first_of('.');
+				std::string card_id_str = message.substr(0, next_token);
+				message = message.substr(next_token + 1);
+				next_token = message.find_first_of('.');
+				std::string green_str = message.substr(0, next_token);
+				message = message.substr(next_token + 1);
+				next_token = message.find_first_of('.');
+				std::string card_index_str = message.substr(0, next_token);
+				message = message.substr(next_token + 1);
+				next_token = message.find_first_of('.');
+				int effect_destination = std::atoi(message.substr(0, next_token).data());
+				int card_id = std::atoi(card_id_str.data());
+				bool green = std::atoi(green_str.data()) == 1;
+				int card_index = std::atoi(card_index_str.data());
+				game->m_bandas.m_advertiser.m_green = green;
+				game->m_bandas.m_advertiser.m_show = (card_id == 1 || card_id == 4 || card_id == 8) ? false : true;
+				game->m_bandas.m_advertiser.m_index = card_id;
+				if (!green) {
+					if (game->m_bandas.m_enemy.m_team == 0) {
+						game->m_bandas.m_orange_cards[card_index].m_selected = true;
+					}
+					else {
+						game->m_bandas.m_banana_cards[card_index].m_selected = true;
+					}
+				}
+				if (card_id == 4) {
+					game->m_bandas.m_logic.card_effect.disorder_destination = effect_destination;
+					game->m_bandas.process_card_effect(true);
+				}
+				else {
+					game->m_bandas.process_card_effect(false);
+				}
 			}
 			else if (type == "end")
 			{

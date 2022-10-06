@@ -48,9 +48,39 @@ inline const std::string c_card_desc_texture[12] = {
 	"assets/cartes/vachette_desc.tga"
 };
 
+inline const std::string c_advertiser_texture[24] = {
+	"assets/advertiser/conversion_g.tga",
+	"assets/advertiser/conversion_r.tga",
+	"assets/advertiser/confiscation_g.tga",
+	"assets/advertiser/confiscation_r.tga",
+	"assets/advertiser/celerite_g.tga",
+	"assets/advertiser/celerite_r.tga",
+	"assets/advertiser/charge_g.tga",
+	"assets/advertiser/charge_r.tga",
+	"assets/advertiser/desordre_g.tga",
+	"assets/advertiser/desordre_r.tga",
+	"assets/advertiser/entracte_g.tga",
+	"assets/advertiser/entracte_r.tga",
+	"assets/advertiser/enclume_g.tga",
+	"assets/advertiser/enclume_r.tga",
+	"assets/advertiser/petrification_g.tga",
+	"assets/advertiser/petrification_r.tga",
+	"assets/advertiser/piege_g.tga",
+	"assets/advertiser/piege_r.tga",
+	"assets/advertiser/renfort_g.tga",
+	"assets/advertiser/renfort_r.tga",
+	"assets/advertiser/solo_g.tga",
+	"assets/advertiser/solo_r.tga",
+	"assets/advertiser/vachette_g.tga",
+	"assets/advertiser/vachette_r.tga"
+};
+
 struct Card
 {
 	int m_id;
+	bool m_selected;
+	Card() : m_id(-1), m_selected(false)
+	{}
 };
 
 #endif
