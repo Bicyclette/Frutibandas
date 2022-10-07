@@ -85,32 +85,10 @@ void send_message(std::shared_ptr<Game> & game)
 	}
 	else if (code == 7) // used a card
 	{
+		// ignore useless data
 		message = message.substr(2);
-		int next_token = message.find_first_of('.');
-		int card_id = std::atoi(message.substr(0, next_token).c_str());
-		message = message.substr(next_token + 1);
-		next_token = message.find_first_of('.');
-		std::string card_index = message.substr(0, next_token);
-		message = message.substr(next_token + 1);
-		next_token = message.find_first_of('.');
-		std::string effect_destination = message.substr(0, next_token);
-		switch (card_id)
-		{
-		case 2:
-			game->m_bandas.m_net.send_data("card:2." + card_index);
-			break;
-		case 3:
-			game->m_bandas.m_net.send_data("card:3." + card_index);
-			break;
-		case 4:
-			game->m_bandas.m_net.send_data("card:4." + card_index + "." + effect_destination);
-			break;
-		case 5:
-			game->m_bandas.m_net.send_data("card:5." + card_index);
-			break;
-		default:
-			break;
-		}
+		// send message
+		game->m_bandas.m_net.send_data("card:" + message);
 	}
 }
 
@@ -202,9 +180,20 @@ void receive_message(std::shared_ptr<Game> & game)
 				if (game->m_bandas.m_me.m_team != game->m_bandas.m_logic.turn) {
 					game->m_bandas.m_enemy.m_chrono.m_time = chrono_timer;
 				}
+
 				if (game->m_bandas.m_logic.card_effect.disorder && game->m_bandas.m_logic.turn == game->m_bandas.m_logic.card_effect.disorder_destination) {
-					game->m_bandas.m_advertiser.m_show = true;
-					game->m_bandas.m_logic.card_effect.reset();
+					g_advertiser_mtx.lock();
+					if (!game->m_bandas.m_advertiser.empty()) {
+						for (int i = game->m_bandas.m_advertiser.size() - 1; i >= 0; --i) {
+							if (game->m_bandas.m_advertiser[i].m_index == 4) {
+								game->m_bandas.m_advertiser[i].m_show = true;
+								game->m_bandas.m_logic.card_effect.disorder = false;
+								game->m_bandas.m_logic.card_effect.disorder_destination = -1;
+								break;
+							}
+						}
+					}
+					g_advertiser_mtx.unlock();
 				}
 				game->m_bandas.m_logic.move.dir = move_dir;
 				if (move_dir == 0)
@@ -227,24 +216,57 @@ void receive_message(std::shared_ptr<Game> & game)
 			}
 			else if (type == "card")
 			{
+				// ignore useless data
 				message = message.substr(5);
+				
+				// get card identifier
 				int next_token = message.find_first_of('.');
 				std::string card_id_str = message.substr(0, next_token);
+				int card_id = std::atoi(card_id_str.data());
+				
+				// get advertiser color
 				message = message.substr(next_token + 1);
 				next_token = message.find_first_of('.');
 				std::string green_str = message.substr(0, next_token);
+				bool green = std::atoi(green_str.data()) == 1;
+				
+				// get card index in owner's array
 				message = message.substr(next_token + 1);
 				next_token = message.find_first_of('.');
 				std::string card_index_str = message.substr(0, next_token);
-				message = message.substr(next_token + 1);
-				next_token = message.find_first_of('.');
-				int effect_destination = std::atoi(message.substr(0, next_token).data());
-				int card_id = std::atoi(card_id_str.data());
-				bool green = std::atoi(green_str.data()) == 1;
 				int card_index = std::atoi(card_index_str.data());
-				game->m_bandas.m_advertiser.m_green = green;
-				game->m_bandas.m_advertiser.m_show = (card_id == 1 || card_id == 4 || card_id == 8) ? false : true;
-				game->m_bandas.m_advertiser.m_index = card_id;
+				
+				// if card has an effect delayed towards enemy, get to which player it has an effect on
+				int effect_destination;
+				if (card_id == 4) {
+					message = message.substr(next_token + 1);
+					next_token = message.find_first_of('.');
+					effect_destination = std::atoi(message.substr(0, next_token).data());
+				}
+				// else if card is reinforcement (spawn up to 3 bandas)
+				else if (card_id == 9) {
+					char bandas_type = (game->m_bandas.m_logic.turn == 0) ? 'o' : 'b';
+					for (int i = 0; i < 3; ++i) {
+						message = message.substr(next_token + 1);
+						next_token = message.find_first_of('.');
+						if (next_token == std::string::npos) {
+							break;
+						}
+						int x = std::atoi(message.substr(0, next_token).data());
+						message = message.substr(next_token + 1);
+						next_token = message.find_first_of('.');
+						int y = std::atoi(message.substr(0, next_token).data());
+						game->m_bandas.m_logic.card_effect.reinforcement[i * 2] = x;
+						game->m_bandas.m_logic.card_effect.reinforcement[i * 2 + 1] = y;
+					}
+				}
+
+				g_advertiser_mtx.lock();
+				game->m_bandas.m_advertiser.emplace_back();
+				game->m_bandas.m_advertiser.back().m_green = green;
+				game->m_bandas.m_advertiser.back().m_show = (card_id == 1 || card_id == 4 || card_id == 8) ? false : true;
+				game->m_bandas.m_advertiser.back().m_index = card_id;
+				g_advertiser_mtx.unlock();
 				if (!green) {
 					if (game->m_bandas.m_enemy.m_team == 0) {
 						game->m_bandas.m_orange_cards[card_index].m_selected = true;

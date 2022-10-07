@@ -5,10 +5,11 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <cmath>
+#include <random>
 #include "shader_light.hpp"
 #include "helpers.hpp"
 #include "user_interface.hpp"
-#include <cmath>
 
 constexpr glm::vec2 c_tile_size(256);
 constexpr glm::vec2 c_draw_start(243, 477);
@@ -78,9 +79,10 @@ struct Advertiser
 	bool m_show;
 	bool m_green;
 	int m_index; // texture index
-	const float m_stand_still_timer;
-	const float m_moving_timer;
+	float m_stand_still_timer;
+	float m_moving_timer;
 	float m_timer;
+	bool erase;
 
 	Advertiser() :
 		m_show(false),
@@ -88,7 +90,8 @@ struct Advertiser
 		m_index(-1),
 		m_stand_still_timer(0.75f),
 		m_moving_timer(0.35f),
-		m_timer(0.0f)
+		m_timer(0.0f),
+		erase(false)
 	{}
 
 	glm::vec2 get_pos(float delta)
@@ -106,9 +109,10 @@ struct Advertiser
 			return glm::vec2(-50 + pos_x, 339);
 		}
 		else {
-			m_index = -1;
+			//m_index = -1;
 			m_show = false;
 			m_timer = 0.0f;
+			erase = true;
 			return glm::vec2();
 		}
 	}
@@ -128,12 +132,14 @@ struct Logic
 		bool second_wave;
 		bool disorder;
 		int disorder_destination;
+		std::array<int, 6> reinforcement;
 		CardEffect()
 		{
 			charge = false;
 			second_wave = false;
 			disorder = false;
 			disorder_destination = -1;
+			reinforcement = std::array<int, 6>{-1,-1,-1,-1,-1,-1};
 		}
 		void reset()
 		{
@@ -141,10 +147,12 @@ struct Logic
 			second_wave = false;
 			disorder = false;
 			disorder_destination = -1;
+			reinforcement = std::array<int, 6>{-1, -1, -1, -1, -1, -1};
 		}
 	};
 
 	int turn; // 0 = orange, 1 = banane
+	bool used_a_card;
 	MOVE move;
 	bool kill_tiles;
 	int delete_line_id;
@@ -155,6 +163,7 @@ struct Logic
 
 	Logic::Logic()
 	{
+		used_a_card = false;
 		move.dir = -1;
 		move.dir_vec = glm::vec2(0, 0);
 		kill_tiles = false;
@@ -175,6 +184,25 @@ struct Logic
 		game_is_finished = false;
 		card_effect.reset();
 	}
+};
+
+class RandomGenerator
+{
+public:
+	RandomGenerator(int from, int to) :
+		m_random_engine(m_random_device()),
+		m_distribution(from, to)
+	{}
+
+	int gen()
+	{
+		return m_distribution(m_random_engine);
+	}
+
+public:
+	std::random_device m_random_device;
+	std::mt19937 m_random_engine;
+	std::uniform_int_distribution<int> m_distribution;
 };
 
 struct Board
@@ -247,11 +275,11 @@ struct Board
 	std::string to_string();
 	int get_banana_count();
 	int get_orange_count();
-	void draw(Logic& logic, Advertiser& advertiser, float delta);
+	void draw(Logic& logic, float delta, bool standby);
 	GLuint get_banana_texture(Logic& logic, int col, int line, float timer);
 	GLuint get_orange_texture(Logic& logic, int col, int line, float timer);
 	void set_animTimer(Logic& logic);
-	GLuint get_animationFrame(Logic& logic, Advertiser& advertiser, int col, int line, float delta, bool stand_still);
+	GLuint get_animationFrame(Logic& logic, int col, int line, float delta, bool stand_still, bool standby);
 	GLuint get_tileFrame(Logic& logic, int col, int line, float delta);
 	void set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& origin);
 	bool is_pushed_x(int col, int line, char pusher, int dir, int origin);
@@ -261,6 +289,8 @@ struct Board
 	void set_tileDeleteTimerColumn(int c);
 	void set_tileDeleteTimerLine(int l);
 	void reset();
+	std::vector<int> get_free_tiles();
+	std::string get_reinforcement_position(std::vector<int>& list);
 };
 
 #endif

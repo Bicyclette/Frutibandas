@@ -192,7 +192,7 @@ class Bandas
 		Logic m_logic;
 		Card m_orange_cards[3];
 		Card m_banana_cards[3];
-		struct Advertiser m_advertiser;
+		std::vector<struct Advertiser> m_advertiser;
 };
 
 #endif

@@ -1250,6 +1250,8 @@ void Bandas::quit_game()
 	// reset chrono
 	m_me.m_chrono.reset();
 	m_enemy.m_chrono.reset();
+	// flush advertiser queue
+	m_advertiser.clear();
 }
 
 void Bandas::enemy_gave_up()
@@ -1311,7 +1313,6 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 		music.grab_ctrl = false;
 	}
 	update_chat_input(user_input, txt_input, delta);
-	//process_card_effect();
 
 	// check winner
 	if ((m_me.m_team == 0 && m_board.banana_count == 0) || (m_me.m_team == 1 && m_board.orange_count == 0) || m_enemy.m_chrono.m_time == 0.0f)
@@ -1529,14 +1530,16 @@ void Bandas::click_game_page(Page& page, int id)
 		g_msg2server_mtx.unlock();
 	}
 
-	if (m_me.m_team == 0 && m_logic.turn == 0 && (id == 10 || id == 11 || id == 12)) // clicked on orange card
+	if (!m_logic.used_a_card && m_me.m_team == 0 && m_logic.turn == 0 && (id == 10 || id == 11 || id == 12)) // clicked on orange card
 	{
 		click_on_orange_card(id - 10);
+		m_logic.used_a_card = true;
 	}
 
-	if (m_me.m_team == 1 && m_logic.turn == 1 && (id == 13 || id == 14 || id == 15)) // clicked on banana card
+	if (!m_logic.used_a_card && m_me.m_team == 1 && m_logic.turn == 1 && (id == 13 || id == 14 || id == 15)) // clicked on banana card
 	{
 		click_on_banana_card(id - 13);
+		m_logic.used_a_card = true;
 	}
 }
 
@@ -1617,7 +1620,13 @@ void Bandas::draw_game_page(float delta)
 	}
 
 	// board
-	m_board.draw(m_logic, m_advertiser, delta);
+	bool standby = false;
+	g_advertiser_mtx.lock();
+	if (!m_advertiser.empty()) {
+		standby = (m_advertiser.empty()) ? false : (m_advertiser.back().m_show) ? true : false;
+	}
+	g_advertiser_mtx.unlock();
+	m_board.draw(m_logic, delta, standby);
 
 	// print pseudo
 	if (m_me.m_team == 0)
@@ -1639,18 +1648,46 @@ void Bandas::draw_game_page(float delta)
 	draw_cards();
 
 	// draw advertiser
-	if (m_advertiser.m_show) {
-		Layer& advert_layer = m_ui_advertiser.get_page(0).get_layer(0);
-		glm::vec2 position = m_advertiser.get_pos(delta);
-		int texture_index = m_advertiser.m_index * 2;
-		texture_index = (m_advertiser.m_green) ? texture_index : texture_index + 1;
-		advert_layer.get_sprite(0)->set_background_img_gl(advert_layer.get_sprite(0)->get_texture_id(texture_index));
-		advert_layer.get_sprite(0)->set_pos(position);
-		m_ui_advertiser.get_page(0).draw();
+	g_advertiser_mtx.lock();
+	if (!m_advertiser.empty()) {
+		struct Advertiser & advertiser = m_advertiser.back();
+		if (advertiser.m_show) {
+			Layer& advert_layer = m_ui_advertiser.get_page(0).get_layer(0);
+			glm::vec2 position = advertiser.get_pos(delta);
+			int texture_index = advertiser.m_index * 2;
+			texture_index = (advertiser.m_green) ? texture_index : texture_index + 1;
+			advert_layer.get_sprite(0)->set_background_img_gl(advert_layer.get_sprite(0)->get_texture_id(texture_index));
+			advert_layer.get_sprite(0)->set_pos(position);
+			m_ui_advertiser.get_page(0).draw();
+		}
+		else if (advertiser.erase) {
+			if (advertiser.m_index == 9) {
+				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
+				for (int i = 0; i < 3; ++i) {
+					int x = m_logic.card_effect.reinforcement[i * 2];
+					int y = m_logic.card_effect.reinforcement[i * 2 + 1];
+					if (x != -1 && y != -1) {
+						m_board.tile[x][y].fruit.type = bandas_type;
+						m_board.tile[x][y].fruit.state = Fruit::STATE::STAND_STILL;
+						m_board.tile[x][y].fruit.animTimer = 0.0f;
+					}
+					else {
+						m_logic.card_effect.reinforcement = std::array<int, 6>{-1, -1, -1, -1, -1, -1};
+						break;
+					}
+				}
+			}
+			advertiser.m_index = -1;
+			m_advertiser.erase(m_advertiser.begin() + m_advertiser.size()-1);
+		}
 	}
+	g_advertiser_mtx.unlock();
 
 	// print chat
-	draw_chat(delta);
+	Layer& g_layer4 = m_ui.get_page(1).get_layer(4);
+	if (!g_layer4.m_visible) {
+		draw_chat(delta);
+	}
 
 	// draw music controller
 	music.draw();
@@ -1691,7 +1728,12 @@ void Bandas::draw_chat(float delta)
 	// conversation
 	for (int i{ 1 }; i <= m_writer.m_chatLog.size(); ++i)
 	{
-		m_text.print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 20 * i, 1, glm::vec3(0));
+		if (m_writer.m_chatLog[i - 1].find_first_of('>') != std::string::npos) {
+			m_text.print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 20 * i, 1, glm::vec3(0));
+		}
+		else {
+			m_text.print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 20 * i, 1, glm::vec3(1,0,0));
+		}
 	}
 }
 
@@ -1850,10 +1892,10 @@ void Bandas::remove_card(int id)
 
 void Bandas::process_card_effect(bool delay)
 {
-	if (m_advertiser.m_index != -1 && !delay)
+	if (!delay)
 	{
-		remove_card(m_advertiser.m_index);
-		switch (m_advertiser.m_index)
+		remove_card(m_advertiser.back().m_index);
+		switch (m_advertiser.back().m_index)
 		{
 		case 2:
 			m_logic.card_effect.second_wave = true;
@@ -1862,15 +1904,15 @@ void Bandas::process_card_effect(bool delay)
 			m_logic.card_effect.charge = true;
 			break;
 		case 5:
-			m_logic.turn = (m_advertiser.m_green) ? m_enemy.m_team : m_me.m_team;
+			m_logic.turn = (m_advertiser.back().m_green) ? m_enemy.m_team : m_me.m_team;
 			break;
 		default:
 			break;
 		}
 	}
-	else if (m_advertiser.m_index != -1 && delay)
+	else
 	{
-		switch (m_advertiser.m_index)
+		switch (m_advertiser.back().m_index)
 		{
 		case 4:
 			m_logic.card_effect.disorder = true;
@@ -1883,37 +1925,35 @@ void Bandas::process_card_effect(bool delay)
 
 void Bandas::click_on_orange_card(int index)
 {
+	std::vector<int> list;
+	std::string reinforcement_position;
 	m_orange_cards[index].m_selected = true;
-
 	switch (m_orange_cards[index].m_id)
 	{
 	case 0: // conversion
 		std::cout << "clicked on conversion card" << std::endl;
+		//m_mouse.use_target();
 		break;
 	case 1: // confiscation
 		std::cout << "clicked on confiscation card" << std::endl;
 		break;
 	case 2: // celerite
-		std::cout << "clicked on celerite card" << std::endl;
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("7:2." + std::to_string(index));
 		g_msg2server_mtx.unlock();
 		break;
 	case 3: // charge
-		std::cout << "clicked on charge card" << std::endl;
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("7:3." + std::to_string(index));
 		g_msg2server_mtx.unlock();
 		break;
 	case 4: // desordre
-		std::cout << "clicked on desordre card" << std::endl;
 		g_msg2server_mtx.lock();
-		g_msg2server.emplace("7:4." + std::to_string(index));
+		g_msg2server.emplace("7:4." + std::to_string(index) + "." + std::to_string(m_enemy.m_team));
 		g_msg2server_mtx.unlock();
 		remove_card(4);
 		break;
 	case 5: // entracte
-		std::cout << "clicked on entracte card" << std::endl;
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("7:5." + std::to_string(index));
 		g_msg2server_mtx.unlock();
@@ -1928,7 +1968,16 @@ void Bandas::click_on_orange_card(int index)
 		std::cout << "clicked on piege card" << std::endl;
 		break;
 	case 9: // renfort
-		std::cout << "clicked on renfort card" << std::endl;
+		list = m_board.get_free_tiles();
+		if (list.size() < 2) {
+			add_chat_message("Not enough place to spawn up to 3 bandas");
+		}
+		else {
+			reinforcement_position = m_board.get_reinforcement_position(list);
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:9." + std::to_string(index) + "." + reinforcement_position);
+			g_msg2server_mtx.unlock();
+		}
 		break;
 	case 10: // solo
 		std::cout << "clicked on solo card" << std::endl;
@@ -1943,8 +1992,9 @@ void Bandas::click_on_orange_card(int index)
 
 void Bandas::click_on_banana_card(int index)
 {
+	std::vector<int> list;
+	std::string reinforcement_position;
 	m_banana_cards[index].m_selected = true;
-
 	switch (m_banana_cards[index].m_id)
 	{
 	case 0: // conversion
@@ -1954,26 +2004,22 @@ void Bandas::click_on_banana_card(int index)
 		std::cout << "clicked on confiscation card" << std::endl;
 		break;
 	case 2: // celerite
-		std::cout << "clicked on celerite card" << std::endl;
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("7:2." + std::to_string(index));
 		g_msg2server_mtx.unlock();
 		break;
 	case 3: // charge
-		std::cout << "clicked on charge card" << std::endl;
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("7:3." + std::to_string(index));
 		g_msg2server_mtx.unlock();
 		break;
 	case 4: // desordre
-		std::cout << "clicked on desordre card" << std::endl;
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("7:4." + std::to_string(index) + "." + std::to_string(m_enemy.m_team));
 		g_msg2server_mtx.unlock();
 		remove_card(4);
 		break;
 	case 5: // entracte
-		std::cout << "clicked on entracte card" << std::endl;
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("7:5." + std::to_string(index));
 		g_msg2server_mtx.unlock();
@@ -1986,11 +2032,18 @@ void Bandas::click_on_banana_card(int index)
 		break;
 	case 8: // piege
 		std::cout << "clicked on piege card" << std::endl;
-		//m_logic.select_empty_tile = true;
-		m_mouse.use_target();
 		break;
 	case 9: // renfort
-		std::cout << "clicked on renfort card" << std::endl;
+		list = m_board.get_free_tiles();
+		if (list.size() < 2) {
+			add_chat_message("Not enough place to spawn up to 3 bandas");
+		}
+		else {
+			reinforcement_position = m_board.get_reinforcement_position(list);
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:9." + std::to_string(index) + "." + reinforcement_position);
+			g_msg2server_mtx.unlock();
+		}
 		break;
 	case 10: // solo
 		std::cout << "clicked on solo card" << std::endl;

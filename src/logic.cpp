@@ -120,7 +120,7 @@ int Board::get_orange_count()
 	return count;
 }
 
-void Board::draw(Logic& logic, Advertiser& advertiser, float delta)
+void Board::draw(Logic& logic, float delta, bool standby)
 {
 	for (int line = bounds.top; line <= bounds.bottom; ++line)
 	{
@@ -145,7 +145,7 @@ void Board::draw(Logic& logic, Advertiser& advertiser, float delta)
 				{
 					// fruit position
 					bool stand_still = tile[col][line].fruit.state == Fruit::STATE::STAND_STILL;
-					GLuint frame = get_animationFrame(logic, advertiser, col, line, delta, stand_still);
+					GLuint frame = get_animationFrame(logic, col, line, delta, stand_still, standby);
 					m_sprite.set_pos(tile[col][line].pos);
 					m_sprite.draw(frame);
 				}
@@ -183,11 +183,11 @@ GLuint Board::get_tileFrame(Logic& logic, int col, int line, float delta)
 	}
 }
 
-GLuint Board::get_animationFrame(Logic& logic, Advertiser& advertiser, int col, int line, float delta, bool stand_still)
+GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, bool stand_still, bool standby)
 {
 	if (tile[col][line].fruit.type == 'b')
 	{
-		if (logic.move.dir == -1 || stand_still || advertiser.m_show)
+		if (logic.move.dir == -1 || stand_still || standby)
 		{
 			return banana_tex.id;
 		}
@@ -199,7 +199,7 @@ GLuint Board::get_animationFrame(Logic& logic, Advertiser& advertiser, int col, 
 	}
 	else
 	{
-		if (logic.move.dir == -1 || stand_still || advertiser.m_show)
+		if (logic.move.dir == -1 || stand_still || standby)
 		{
 			return orange_tex.id;
 		}
@@ -735,6 +735,7 @@ void Board::update(Logic& logic)
 	{
 		logic.turn = (logic.turn == 0) ? 1 : 0;
 		logic.change_turn = false;
+		logic.used_a_card = false;
 	}
 }
 
@@ -807,4 +808,51 @@ void Board::reset()
 			tile[col][line].state = Tile::STATE::ALIVE;
 		}
 	}
+}
+
+std::vector<int> Board::get_free_tiles()
+{
+	std::vector<int> list;
+	for (int line = 0; line <= 7; ++line)
+	{
+		for (int col = 0; col <= 7; ++col)
+		{
+			if (tile[col][line].state == Tile::STATE::ALIVE && tile[col][line].fruit.type == 'x') {
+				list.push_back(col);
+				list.push_back(line);
+			}
+		}
+	}
+	return list;
+}
+
+std::string Board::get_reinforcement_position(std::vector<int> & list)
+{
+	const int list_size = list.size() / 2;
+	RandomGenerator rg(0, (list_size/2) - 1);
+	
+	std::vector<int> position;
+	std::vector<int> index;
+	int id;
+	int num_bandas = std::min(3, list_size);
+	for (int i = 0; i < num_bandas; ++i) {
+		id = rg.gen();
+		while (std::find(index.begin(), index.end(), id) != index.end()) {
+			id = rg.gen();
+		}
+		index.push_back(id);
+		position.push_back(list[id*2]);
+		position.push_back(list[id*2+1]);
+	}
+	std::string res;
+	for (int i = 0; i < num_bandas; ++i) {
+		res += std::to_string(position[i * 2]) + ".";
+		if (i == (num_bandas - 1)) {
+			res += std::to_string(position[i * 2 + 1]);
+		}
+		else {
+			res += std::to_string(position[i * 2 + 1]) + ".";
+		}
+	}
+	return res;
 }
