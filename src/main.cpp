@@ -260,6 +260,18 @@ void receive_message(std::shared_ptr<Game> & game)
 						game->m_bandas.m_logic.card_effect.reinforcement[i * 2 + 1] = y;
 					}
 				}
+				// else if targeted card
+				else if (card_id == 0) {
+					char bandas_type = (game->m_bandas.m_logic.turn == 0) ? 'o' : 'b';
+					message = message.substr(next_token + 1);
+					next_token = message.find_first_of('.');
+					int x = std::atoi(message.substr(0, next_token).data());
+					message = message.substr(next_token + 1);
+					next_token = message.find_first_of('.');
+					int y = std::atoi(message.substr(0, next_token).data());
+					game->m_bandas.m_logic.card_effect.conversion_coords = glm::ivec2(x,y);
+					std::cout << "convert tile [" << x << "," << y << "] to bandas type = " << bandas_type << std::endl;
+				}
 
 				g_advertiser_mtx.lock();
 				game->m_bandas.m_advertiser.emplace_back();

@@ -161,7 +161,7 @@ class Bandas
 
 		void update_game_page(std::array<int, 3> mouse_data, std::bitset<10> user_input, std::string txt_input, float delta);
 		void hovering_game_page(Page& page, int id);
-		void click_game_page(Page& page, int id);
+		void click_game_page(Page& page, int id, glm::ivec2 mouse_coords);
 		void click_on_orange_card(int index);
 		void click_on_banana_card(int index);
 		void hold_left_click_game_page(Page& page, int id, std::array<int, 3> mouse_data);

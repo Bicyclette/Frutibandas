@@ -1302,7 +1302,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	hovering_game_page(game_page, sprite_id);
 	if (user_input.test(2) && user_input.test(9)) // if click & release events
 	{
-		click_game_page(game_page, sprite_id);
+		click_game_page(game_page, sprite_id, mouse_pos);
 	}
 	else if (user_input.test(2) && !user_input.test(9)) // hold left click
 	{
@@ -1460,8 +1460,30 @@ void Bandas::hold_left_click_game_page(Page& page, int id, std::array<int, 3> mo
 	}
 }
 
-void Bandas::click_game_page(Page& page, int id)
+void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 {
+	// process card events first
+	if (m_logic.card_effect.select_enemy_banda)
+	{
+		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
+		char banda_type = (m_me.m_team == 0) ? 'b' : 'o';
+		int index;
+		if (m_me.m_team == 0) {
+			for (int i = 0; i < 3; ++i) { if (m_orange_cards[i].m_selected) { index = i; } }
+		}
+		else {
+			for (int i = 0; i < 3; ++i) { if (m_banana_cards[i].m_selected) { index = i; } }
+		}
+		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type) {
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:0." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
+			g_msg2server_mtx.unlock();
+		}
+		m_logic.card_effect.select_enemy_banda = false;
+		m_mouse.use_normal();
+		return;
+	}
+
 	if (id == 3) // abandon button
 	{
 		g_msg2server_mtx.lock();
@@ -1661,7 +1683,14 @@ void Bandas::draw_game_page(float delta)
 			m_ui_advertiser.get_page(0).draw();
 		}
 		else if (advertiser.erase) {
-			if (advertiser.m_index == 9) {
+			if (advertiser.m_index == 0) {
+				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
+				int x = m_logic.card_effect.conversion_coords.x;
+				int y = m_logic.card_effect.conversion_coords.y;
+				m_board.tile[x][y].fruit.type = bandas_type;
+				m_logic.card_effect.conversion_coords = glm::ivec2(-1, -1);
+			}
+			else if (advertiser.m_index == 9) {
 				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
 				for (int i = 0; i < 3; ++i) {
 					int x = m_logic.card_effect.reinforcement[i * 2];
@@ -1897,6 +1926,22 @@ void Bandas::process_card_effect(bool delay)
 		remove_card(m_advertiser.back().m_index);
 		switch (m_advertiser.back().m_index)
 		{
+		case 0:
+			/*
+			char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
+			int x = m_logic.card_effect.conversion_coords.x;
+			int y = m_logic.card_effect.conversion_coords.y;
+			m_board.tile[x][y].fruit.type = bandas_type;
+			*/
+			int index;
+			if (m_me.m_team == 0) {
+				for (int i = 0; i < 3; ++i) { if (m_orange_cards[i].m_selected) { index = i; } }
+			}
+			else {
+				for (int i = 0; i < 3; ++i) { if (m_banana_cards[i].m_selected) { index = i; } }
+			}
+			remove_card(index);
+			break;
 		case 2:
 			m_logic.card_effect.second_wave = true;
 			break;
@@ -1931,8 +1976,8 @@ void Bandas::click_on_orange_card(int index)
 	switch (m_orange_cards[index].m_id)
 	{
 	case 0: // conversion
-		std::cout << "clicked on conversion card" << std::endl;
-		//m_mouse.use_target();
+		m_mouse.use_target();
+		m_logic.card_effect.select_enemy_banda = true;
 		break;
 	case 1: // confiscation
 		std::cout << "clicked on confiscation card" << std::endl;
@@ -1998,7 +2043,8 @@ void Bandas::click_on_banana_card(int index)
 	switch (m_banana_cards[index].m_id)
 	{
 	case 0: // conversion
-		std::cout << "clicked on conversion card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.select_enemy_banda = true;
 		break;
 	case 1: // confiscation
 		std::cout << "clicked on confiscation card" << std::endl;

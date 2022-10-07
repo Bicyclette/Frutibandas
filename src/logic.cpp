@@ -856,3 +856,22 @@ std::string Board::get_reinforcement_position(std::vector<int> & list)
 	}
 	return res;
 }
+
+glm::ivec2 Board::get_tile_coords_from_mouse_position(int x, int y)
+{
+	for (int line = 0; line < 8; ++line)
+	{
+		for (int col = 0; col < 8; ++col)
+		{
+			if (tile[col][line].state == Tile::STATE::ALIVE)
+			{
+				if (tile[col][line].pos.x + 106 < x && tile[col][line].pos.x + 150 > x) {
+					if (tile[col][line].pos.y + 105 < y && tile[col][line].pos.y + 150 > y) {
+						return glm::ivec2(col, line);
+					}
+				}
+			}
+		}
+	}
+	return glm::ivec2(-1, -1);
+}

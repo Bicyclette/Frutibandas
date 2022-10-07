@@ -133,6 +133,8 @@ struct Logic
 		bool disorder;
 		int disorder_destination;
 		std::array<int, 6> reinforcement;
+		bool select_enemy_banda;
+		glm::ivec2 conversion_coords;
 		CardEffect()
 		{
 			charge = false;
@@ -140,6 +142,8 @@ struct Logic
 			disorder = false;
 			disorder_destination = -1;
 			reinforcement = std::array<int, 6>{-1,-1,-1,-1,-1,-1};
+			select_enemy_banda = false;
+			conversion_coords = glm::ivec2(-1,-1);
 		}
 		void reset()
 		{
@@ -148,6 +152,8 @@ struct Logic
 			disorder = false;
 			disorder_destination = -1;
 			reinforcement = std::array<int, 6>{-1, -1, -1, -1, -1, -1};
+			select_enemy_banda = false;
+			conversion_coords = glm::ivec2(-1, -1);
 		}
 	};
 
@@ -291,6 +297,7 @@ struct Board
 	void reset();
 	std::vector<int> get_free_tiles();
 	std::string get_reinforcement_position(std::vector<int>& list);
+	glm::ivec2 get_tile_coords_from_mouse_position(int x, int y);
 };
 
 #endif
