@@ -189,6 +189,7 @@ void receive_message(std::shared_ptr<Game> & game)
 								game->m_bandas.m_advertiser[i].m_show = true;
 								game->m_bandas.m_logic.card_effect.disorder = false;
 								game->m_bandas.m_logic.card_effect.disorder_destination = -1;
+								game->m_bandas.remove_card(4);
 								break;
 							}
 						}
@@ -213,6 +214,7 @@ void receive_message(std::shared_ptr<Game> & game)
 					game->m_bandas.m_logic.move.dir_vec = glm::vec2(0, -1);
 				}
 				game->m_bandas.m_board.set_animTimer(game->m_bandas.m_logic);
+				game->m_bandas.m_logic.card_effect.solo_coords = glm::ivec2( -1, -1 );
 			}
 			else if (type == "card")
 			{
@@ -261,16 +263,19 @@ void receive_message(std::shared_ptr<Game> & game)
 					}
 				}
 				// else if targeted card
-				else if (card_id == 0) {
-					char bandas_type = (game->m_bandas.m_logic.turn == 0) ? 'o' : 'b';
+				else if (card_id == 0 || card_id == 10) {
 					message = message.substr(next_token + 1);
 					next_token = message.find_first_of('.');
 					int x = std::atoi(message.substr(0, next_token).data());
 					message = message.substr(next_token + 1);
 					next_token = message.find_first_of('.');
 					int y = std::atoi(message.substr(0, next_token).data());
-					game->m_bandas.m_logic.card_effect.conversion_coords = glm::ivec2(x,y);
-					std::cout << "convert tile [" << x << "," << y << "] to bandas type = " << bandas_type << std::endl;
+					if (card_id == 0) {
+						game->m_bandas.m_logic.card_effect.conversion_coords = glm::ivec2(x, y);
+					}
+					else if (card_id == 10) {
+						game->m_bandas.m_logic.card_effect.solo_coords = glm::ivec2(x, y);
+					}
 				}
 
 				g_advertiser_mtx.lock();
@@ -279,20 +284,13 @@ void receive_message(std::shared_ptr<Game> & game)
 				game->m_bandas.m_advertiser.back().m_show = (card_id == 1 || card_id == 4 || card_id == 8) ? false : true;
 				game->m_bandas.m_advertiser.back().m_index = card_id;
 				g_advertiser_mtx.unlock();
-				if (!green) {
-					if (game->m_bandas.m_enemy.m_team == 0) {
-						game->m_bandas.m_orange_cards[card_index].m_selected = true;
-					}
-					else {
-						game->m_bandas.m_banana_cards[card_index].m_selected = true;
-					}
-				}
+
 				if (card_id == 4) {
 					game->m_bandas.m_logic.card_effect.disorder_destination = effect_destination;
-					game->m_bandas.process_card_effect(true);
+					game->m_bandas.process_card_effect(card_id, true);
 				}
 				else {
-					game->m_bandas.process_card_effect(false);
+					game->m_bandas.process_card_effect(card_id, false);
 				}
 			}
 			else if (type == "end")

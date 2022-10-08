@@ -256,12 +256,6 @@ void Board::set_animTimer(Logic& logic)
 	int first_pusher[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
 	int origin = 42;
 	set_pusher_index(move_direction, fruit_pusher, first_pusher, origin);
-	
-	//std::cout << "turn = " << (logic.turn == 0 ? " orange\n" : " banane\n");
-	//std::cout << "origin = " << origin << std::endl;
-	//for (auto e : first_pusher) {
-	//	std::cout << "first pusher : " << e << std::endl;
-	//}
 
 	int dir_x = static_cast<int>(move_direction.x);
 	int dir_y = static_cast<int>(move_direction.y);
@@ -269,12 +263,39 @@ void Board::set_animTimer(Logic& logic)
 
 	if (dir_x != 0)
 	{
-		for (int i = bounds.top; i <= bounds.bottom; ++i)
+		if (logic.card_effect.solo_coords.x == -1 && logic.card_effect.solo_coords.y == -1)
 		{
-			for (int j = 0; j <= 7; ++j)
+			for (int i = bounds.top; i <= bounds.bottom; ++i)
 			{
-				col = (backward) ? -j + 7 : j;
-				line = i;
+				for (int j = 0; j <= 7; ++j)
+				{
+					col = (backward) ? -j + 7 : j;
+					line = i;
+					if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
+					{
+						if (is_pushed_x(col, line, fruit_pusher, dir_x, origin))
+						{
+							tile[col][line].fruit.animTimer = -c_animLength * abs(col - origin) + ((c_animLength * 0.625f) * abs(col - origin));
+							tile[col][line].fruit.state = Fruit::STATE::MOVING;
+						}
+						else
+						{
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+							tile[col][line].fruit.animTimer = 42.0f;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			origin = logic.card_effect.solo_coords.x;
+			int line = logic.card_effect.solo_coords.y;
+			int inc = (backward) ? -1 : 1;
+			for (int j = origin; (backward) ? j >= 0 : j <= 7; j += inc)
+			{
+				col = j;
+				std::cout << "process col " << col << ", line " << line << std::endl;
 				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
 				{
 					if (is_pushed_x(col, line, fruit_pusher, dir_x, origin))
@@ -288,17 +309,44 @@ void Board::set_animTimer(Logic& logic)
 						tile[col][line].fruit.animTimer = 42.0f;
 					}
 				}
+				else { break; }
 			}
 		}
 	}
 	else
 	{
-		for (int i = bounds.left; i <= bounds.right; ++i)
+		if (logic.card_effect.solo_coords.x == -1 && logic.card_effect.solo_coords.y == -1)
 		{
-			for (int j = 0; j <= 7; ++j)
+			for (int i = bounds.left; i <= bounds.right; ++i)
 			{
-				line = (backward) ? j : -j + 7;
-				col = i;
+				for (int j = 0; j <= 7; ++j)
+				{
+					line = (backward) ? j : -j + 7;
+					col = i;
+					if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
+					{
+						if (is_pushed_y(col, line, fruit_pusher, dir_y, origin))
+						{
+							tile[col][line].fruit.animTimer = -c_animLength * abs(line - origin) + ((c_animLength * 0.625f) * abs(line - origin));
+							tile[col][line].fruit.state = Fruit::STATE::MOVING;
+						}
+						else
+						{
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+							tile[col][line].fruit.animTimer = 42.0f;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			origin = logic.card_effect.solo_coords.y;
+			int col = logic.card_effect.solo_coords.x;
+			int inc = (backward) ? 1 : -1;
+			for (int j = origin; (backward) ? j <= 7 : j >= 0; j += inc)
+			{
+				line = j;
 				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
 				{
 					if (is_pushed_y(col, line, fruit_pusher, dir_y, origin))
@@ -312,6 +360,7 @@ void Board::set_animTimer(Logic& logic)
 						tile[col][line].fruit.animTimer = 42.0f;
 					}
 				}
+				else { break; }
 			}
 		}
 	}

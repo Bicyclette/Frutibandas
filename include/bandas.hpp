@@ -172,7 +172,7 @@ class Bandas
 		void draw_avatar_game_page();
 		void draw_cards();
 		void remove_card(int id);
-		void process_card_effect(bool delay = false);
+		void process_card_effect(int id, bool delay = false);
 
 	public: // properties
 		NetworkClient m_net;

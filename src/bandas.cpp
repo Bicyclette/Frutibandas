@@ -1468,18 +1468,38 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
 		char banda_type = (m_me.m_team == 0) ? 'b' : 'o';
 		int index;
-		if (m_me.m_team == 0) {
-			for (int i = 0; i < 3; ++i) { if (m_orange_cards[i].m_selected) { index = i; } }
-		}
-		else {
-			for (int i = 0; i < 3; ++i) { if (m_banana_cards[i].m_selected) { index = i; } }
+		for (int i = 0; i < 3; ++i) {
+			if (m_orange_cards[i].m_id == 0 || m_banana_cards[i].m_id == 0) { index = i; }
 		}
 		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type) {
 			g_msg2server_mtx.lock();
 			g_msg2server.emplace("7:0." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
 			g_msg2server_mtx.unlock();
 		}
+		else {
+			m_logic.used_a_card = false;
+		}
 		m_logic.card_effect.select_enemy_banda = false;
+		m_mouse.use_normal();
+		return;
+	}
+	if (m_logic.card_effect.select_ally_banda)
+	{
+		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
+		char banda_type = (m_me.m_team == 0) ? 'o' : 'b';
+		int index;
+		for (int i = 0; i < 3; ++i) {
+			if (m_orange_cards[i].m_id == 0 || m_banana_cards[i].m_id == 0) { index = i; }
+		}
+		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type) {
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:10." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
+			g_msg2server_mtx.unlock();
+		}
+		else {
+			m_logic.used_a_card = false;
+		}
+		m_logic.card_effect.select_ally_banda = false;
 		m_mouse.use_normal();
 		return;
 	}
@@ -1879,69 +1899,28 @@ void Bandas::draw_cards()
 
 void Bandas::remove_card(int id)
 {
-	if (m_me.m_team == 0)
+	for (int i = 0; i < 3; ++i)
 	{
-		for (int i = 0; i < 3; ++i)
+		if (m_banana_cards[i].m_id == id)
 		{
-			if (m_orange_cards[i].m_id == id && m_orange_cards[i].m_selected)
-			{
-				m_orange_cards[i].m_id = -1;
-				return;
-			}
+			m_banana_cards[i].m_id = -1;
+			return;
 		}
-		for (int i = 0; i < 3; ++i)
+		else if (m_orange_cards[i].m_id == id)
 		{
-			if (m_banana_cards[i].m_id == id && m_banana_cards[i].m_selected)
-			{
-				m_banana_cards[i].m_id = -1;
-				return;
-			}
-		}
-	}
-	else if (m_me.m_team == 1)
-	{
-		for (int i = 0; i < 3; ++i)
-		{
-			if (m_banana_cards[i].m_id == id && m_banana_cards[i].m_selected)
-			{
-				m_banana_cards[i].m_id = -1;
-				return;
-			}
-		}
-		for (int i = 0; i < 3; ++i)
-		{
-			if (m_orange_cards[i].m_id == id && m_orange_cards[i].m_selected)
-			{
-				m_orange_cards[i].m_id = -1;
-				return;
-			}
+			m_orange_cards[i].m_id = -1;
+			return;
 		}
 	}
 }
 
-void Bandas::process_card_effect(bool delay)
+void Bandas::process_card_effect(int id, bool delay)
 {
 	if (!delay)
 	{
-		remove_card(m_advertiser.back().m_index);
-		switch (m_advertiser.back().m_index)
+		remove_card(id);
+		switch (id)
 		{
-		case 0:
-			/*
-			char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
-			int x = m_logic.card_effect.conversion_coords.x;
-			int y = m_logic.card_effect.conversion_coords.y;
-			m_board.tile[x][y].fruit.type = bandas_type;
-			*/
-			int index;
-			if (m_me.m_team == 0) {
-				for (int i = 0; i < 3; ++i) { if (m_orange_cards[i].m_selected) { index = i; } }
-			}
-			else {
-				for (int i = 0; i < 3; ++i) { if (m_banana_cards[i].m_selected) { index = i; } }
-			}
-			remove_card(index);
-			break;
 		case 2:
 			m_logic.card_effect.second_wave = true;
 			break;
@@ -1957,7 +1936,7 @@ void Bandas::process_card_effect(bool delay)
 	}
 	else
 	{
-		switch (m_advertiser.back().m_index)
+		switch (id)
 		{
 		case 4:
 			m_logic.card_effect.disorder = true;
@@ -1972,7 +1951,6 @@ void Bandas::click_on_orange_card(int index)
 {
 	std::vector<int> list;
 	std::string reinforcement_position;
-	m_orange_cards[index].m_selected = true;
 	switch (m_orange_cards[index].m_id)
 	{
 	case 0: // conversion
@@ -2025,7 +2003,8 @@ void Bandas::click_on_orange_card(int index)
 		}
 		break;
 	case 10: // solo
-		std::cout << "clicked on solo card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.select_ally_banda = true;
 		break;
 	case 11: // vachette
 		std::cout << "clicked on vachette card" << std::endl;
@@ -2039,7 +2018,6 @@ void Bandas::click_on_banana_card(int index)
 {
 	std::vector<int> list;
 	std::string reinforcement_position;
-	m_banana_cards[index].m_selected = true;
 	switch (m_banana_cards[index].m_id)
 	{
 	case 0: // conversion
@@ -2092,7 +2070,8 @@ void Bandas::click_on_banana_card(int index)
 		}
 		break;
 	case 10: // solo
-		std::cout << "clicked on solo card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.select_ally_banda = true;
 		break;
 	case 11: // vachette
 		std::cout << "clicked on vachette card" << std::endl;

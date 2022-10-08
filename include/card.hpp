@@ -78,8 +78,7 @@ inline const std::string c_advertiser_texture[24] = {
 struct Card
 {
 	int m_id;
-	bool m_selected;
-	Card() : m_id(-1), m_selected(false)
+	Card() : m_id(-1)
 	{}
 };
 

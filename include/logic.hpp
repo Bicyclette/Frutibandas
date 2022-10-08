@@ -135,6 +135,8 @@ struct Logic
 		std::array<int, 6> reinforcement;
 		bool select_enemy_banda;
 		glm::ivec2 conversion_coords;
+		bool select_ally_banda;
+		glm::ivec2 solo_coords;
 		CardEffect()
 		{
 			charge = false;
@@ -144,6 +146,8 @@ struct Logic
 			reinforcement = std::array<int, 6>{-1,-1,-1,-1,-1,-1};
 			select_enemy_banda = false;
 			conversion_coords = glm::ivec2(-1,-1);
+			select_ally_banda = false;
+			solo_coords = glm::ivec2(-1, -1);
 		}
 		void reset()
 		{
@@ -154,6 +158,8 @@ struct Logic
 			reinforcement = std::array<int, 6>{-1, -1, -1, -1, -1, -1};
 			select_enemy_banda = false;
 			conversion_coords = glm::ivec2(-1, -1);
+			select_ally_banda = false;
+			solo_coords = glm::ivec2(-1, -1);
 		}
 	};
 
