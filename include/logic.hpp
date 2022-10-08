@@ -173,7 +173,7 @@ struct Logic
 	bool game_is_finished;
 	CardEffect card_effect;
 
-	Logic::Logic()
+	Logic()
 	{
 		used_a_card = false;
 		move.dir = -1;
