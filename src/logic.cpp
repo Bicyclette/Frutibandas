@@ -224,6 +224,22 @@ GLuint Board::get_banana_texture(Logic& logic, int col, int line, float timer)
 		return anim.frames[frame].id;
 	}
 	else {
+		if (logic.move.dir == 0 && col + 1 <= bounds.right && tile[col+1][line].state == Tile::STATE::DEAD) // right
+		{
+			return empty_tex.id;
+		}
+		else if (logic.move.dir == 1 && col - 1 >= bounds.left && tile[col - 1][line].state == Tile::STATE::DEAD) // left
+		{
+			return empty_tex.id;
+		}
+		else if (logic.move.dir == 2 && line - 1 >= bounds.top && tile[col][line - 1].state == Tile::STATE::DEAD) // up
+		{
+			return empty_tex.id;
+		}
+		else if (logic.move.dir == 3 && line + 1 <= bounds.bottom && tile[col][line + 1].state == Tile::STATE::DEAD) // down
+		{
+			return empty_tex.id;
+		}
 		frame = anim.frames.size() - 1;
 		return anim.frames[frame].id;
 	}
@@ -242,6 +258,22 @@ GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 		return anim.frames[frame].id;
 	}
 	else {
+		if (logic.move.dir == 0 && col + 1 <= bounds.right && tile[col + 1][line].state == Tile::STATE::DEAD) // right
+		{
+			return empty_tex.id;
+		}
+		else if (logic.move.dir == 1 && col - 1 >= bounds.left && tile[col - 1][line].state == Tile::STATE::DEAD) // left
+		{
+			return empty_tex.id;
+		}
+		else if (logic.move.dir == 2 && line - 1 >= bounds.top && tile[col][line - 1].state == Tile::STATE::DEAD) // up
+		{
+			return empty_tex.id;
+		}
+		else if (logic.move.dir == 3 && line + 1 <= bounds.bottom && tile[col][line + 1].state == Tile::STATE::DEAD) // down
+		{
+			return empty_tex.id;
+		}
 		frame = anim.frames.size() - 1;
 		return anim.frames[frame].id;
 	}

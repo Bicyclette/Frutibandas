@@ -137,6 +137,9 @@ struct Logic
 		glm::ivec2 conversion_coords;
 		bool select_ally_banda;
 		glm::ivec2 solo_coords;
+		bool anvil;
+		bool throw_anvil;
+		glm::ivec2 anvil_coords;
 		CardEffect()
 		{
 			charge = false;
@@ -148,6 +151,9 @@ struct Logic
 			conversion_coords = glm::ivec2(-1,-1);
 			select_ally_banda = false;
 			solo_coords = glm::ivec2(-1, -1);
+			anvil = false;
+			throw_anvil = false;
+			anvil_coords = glm::ivec2(-1, -1);
 		}
 		void reset()
 		{
@@ -160,6 +166,9 @@ struct Logic
 			conversion_coords = glm::ivec2(-1, -1);
 			select_ally_banda = false;
 			solo_coords = glm::ivec2(-1, -1);
+			anvil = false;
+			throw_anvil = false;
+			anvil_coords = glm::ivec2(-1, -1);
 		}
 	};
 
@@ -237,6 +246,7 @@ struct Board
 	Texture orange_tex = createTexture("assets/game_page/orange.tga", TEXTURE_TYPE::DIFFUSE, true);
 	Texture tile_tex = createTexture("assets/game_page/board.tga", TEXTURE_TYPE::DIFFUSE, true);
 	Texture tile_select_tex = createTexture("assets/animation/board/select/1.tga", TEXTURE_TYPE::DIFFUSE, true);
+	Texture empty_tex = createTexture("assets/game_page/empty.tga", TEXTURE_TYPE::DIFFUSE, true);
 
 	// board animation
 	Animation2D dying_tile;
@@ -304,6 +314,56 @@ struct Board
 	std::vector<int> get_free_tiles();
 	std::string get_reinforcement_position(std::vector<int>& list);
 	glm::ivec2 get_tile_coords_from_mouse_position(int x, int y);
+};
+
+struct Anvil
+{
+	Texture tex = createTexture("assets/game_page/anvil.tga", TEXTURE_TYPE::DIFFUSE, true);
+	Animation2D smoke;
+	bool smoke_on;
+	// draw stuff
+	glm::vec2 pos;
+	glm::vec2 fall_speed;
+	float timer;
+	Sprite m_sprite;
+	int frame;
+
+	Anvil() :
+		smoke(c_animLength),
+		smoke_on(false),
+		fall_speed(0.0f, -750.0f),
+		timer(0.0f),
+		m_sprite(0, glm::vec2(0), glm::vec2(256), 1050, 728)
+	{
+		smoke.load("assets/animation/anvil", 12);
+	}
+
+	void draw(glm::vec2 from, glm::vec2 to, float delta)
+	{
+		timer += delta;
+		pos = from + fall_speed * timer;
+		m_sprite.set_pos(pos);
+		m_sprite.draw(tex.id);
+		if (pos.y <= to.y) {
+			timer = 0.0f;
+			smoke_on = true;
+		}
+	}
+
+	void draw_smoke(glm::vec2 target, float delta)
+	{
+		timer += delta;
+		m_sprite.set_pos(target + glm::vec2(0.0f, 100.0f));
+		float percent = timer / smoke.duration;
+		if (percent <= 1.0f && percent >= 0.0f) {
+			frame = static_cast<int>(percent * (smoke.frames.size() - 1));
+			m_sprite.draw(smoke.frames[frame].id);
+		}
+		else {
+			timer = 0.0f;
+			smoke_on = false;
+		}
+	}
 };
 
 #endif

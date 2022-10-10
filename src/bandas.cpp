@@ -1469,7 +1469,7 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		char banda_type = (m_me.m_team == 0) ? 'b' : 'o';
 		int index;
 		for (int i = 0; i < 3; ++i) {
-			if (m_orange_cards[i].m_id == 0 || m_banana_cards[i].m_id == 0) { index = i; }
+			if (m_orange_cards[i].m_id == 0 || m_banana_cards[i].m_id == 0) { index = i; break; }
 		}
 		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type) {
 			g_msg2server_mtx.lock();
@@ -1489,7 +1489,7 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		char banda_type = (m_me.m_team == 0) ? 'o' : 'b';
 		int index;
 		for (int i = 0; i < 3; ++i) {
-			if (m_orange_cards[i].m_id == 0 || m_banana_cards[i].m_id == 0) { index = i; }
+			if (m_orange_cards[i].m_id == 0 || m_banana_cards[i].m_id == 0) { index = i; break; }
 		}
 		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type) {
 			g_msg2server_mtx.lock();
@@ -1500,6 +1500,25 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 			m_logic.used_a_card = false;
 		}
 		m_logic.card_effect.select_ally_banda = false;
+		m_mouse.use_normal();
+		return;
+	}
+	if (m_logic.card_effect.anvil)
+	{
+		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
+		int index;
+		for (int i = 0; i < 3; ++i) {
+			if (m_orange_cards[i].m_id == 6 || m_banana_cards[i].m_id == 6) { index = i; break; }
+		}
+		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE) {
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:6." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
+			g_msg2server_mtx.unlock();
+		}
+		else {
+			m_logic.used_a_card = false;
+		}
+		m_logic.card_effect.anvil = false;
 		m_mouse.use_normal();
 		return;
 	}
@@ -1670,6 +1689,30 @@ void Bandas::draw_game_page(float delta)
 	g_advertiser_mtx.unlock();
 	m_board.draw(m_logic, delta, standby);
 
+	// draw anvil
+	if (m_logic.card_effect.throw_anvil && m_logic.card_effect.anvil_coords != glm::ivec2(-1, -1)) {
+		int x = m_logic.card_effect.anvil_coords.x;
+		int y = m_logic.card_effect.anvil_coords.y;
+		glm::vec2 from = glm::vec2(m_board.tile[x][y].pos.x, 728.0f);
+		glm::vec2 to = m_board.tile[x][y].pos;
+		if (m_anvil.smoke_on) {
+			m_anvil.draw_smoke(to, delta);
+			if (!m_anvil.smoke_on) {
+				m_logic.card_effect.anvil_coords = glm::ivec2(-1, -1);
+				m_logic.card_effect.throw_anvil = false;
+			}
+		}
+		else {
+			m_anvil.draw(from, to, delta);
+			if (m_anvil.smoke_on) {
+				m_board.tile[x][y].state = Tile::STATE::DEAD;
+				m_board.tile[x][y].animTimer = 0.0f;
+				m_board.tile[x][y].fruit.type = 'x';
+				m_board.tile[x][y].fruit.animTimer = 0.0f;
+			}
+		}
+	}
+
 	// print pseudo
 	if (m_me.m_team == 0)
 	{
@@ -1709,6 +1752,9 @@ void Bandas::draw_game_page(float delta)
 				int y = m_logic.card_effect.conversion_coords.y;
 				m_board.tile[x][y].fruit.type = bandas_type;
 				m_logic.card_effect.conversion_coords = glm::ivec2(-1, -1);
+			}
+			else if (advertiser.m_index == 6) {
+				m_logic.card_effect.throw_anvil = true;
 			}
 			else if (advertiser.m_index == 9) {
 				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
@@ -1982,7 +2028,8 @@ void Bandas::click_on_orange_card(int index)
 		g_msg2server_mtx.unlock();
 		break;
 	case 6: // enclume
-		std::cout << "clicked on enclume card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.anvil = true;
 		break;
 	case 7: // petrification
 		std::cout << "clicked on petrification card" << std::endl;
@@ -2049,7 +2096,8 @@ void Bandas::click_on_banana_card(int index)
 		g_msg2server_mtx.unlock();
 		break;
 	case 6: // enclume
-		std::cout << "clicked on enclume card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.anvil = true;
 		break;
 	case 7: // petrification
 		std::cout << "clicked on petrification card" << std::endl;

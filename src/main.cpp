@@ -220,7 +220,7 @@ void receive_message(std::shared_ptr<Game> & game)
 			{
 				// ignore useless data
 				message = message.substr(5);
-				
+
 				// get card identifier
 				int next_token = message.find_first_of('.');
 				std::string card_id_str = message.substr(0, next_token);
@@ -263,7 +263,7 @@ void receive_message(std::shared_ptr<Game> & game)
 					}
 				}
 				// else if targeted card
-				else if (card_id == 0 || card_id == 10) {
+				else if (card_id == 0 || card_id == 6 || card_id == 10) {
 					message = message.substr(next_token + 1);
 					next_token = message.find_first_of('.');
 					int x = std::atoi(message.substr(0, next_token).data());
@@ -272,6 +272,9 @@ void receive_message(std::shared_ptr<Game> & game)
 					int y = std::atoi(message.substr(0, next_token).data());
 					if (card_id == 0) {
 						game->m_bandas.m_logic.card_effect.conversion_coords = glm::ivec2(x, y);
+					}
+					else if (card_id == 6) {
+						game->m_bandas.m_logic.card_effect.anvil_coords = glm::ivec2(x, y);
 					}
 					else if (card_id == 10) {
 						game->m_bandas.m_logic.card_effect.solo_coords = glm::ivec2(x, y);
