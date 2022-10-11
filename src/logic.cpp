@@ -160,9 +160,14 @@ void Board::draw(Logic& logic, float delta, bool standby)
 
 GLuint Board::get_tileFrame(Logic& logic, int col, int line, float delta)
 {
-	if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].state != Tile::STATE::DYING)
+	if (tile[col][line].state == Tile::STATE::ALIVE)
 	{
-		return tile_tex.id;
+		if (tile[col][line].hovered) {
+			return tile_select_tex.id;
+		}
+		else {
+			return tile_tex.id;
+		}
 	}
 	else if (tile[col][line].state == Tile::STATE::DYING)
 	{
@@ -180,6 +185,14 @@ GLuint Board::get_tileFrame(Logic& logic, int col, int line, float delta)
 			frame = dying_tile.frames.size() - 1;
 			return dying_tile.frames[frame].id;
 		}
+	}
+	else if (tile[col][line].state == Tile::STATE::TRAPPED)
+	{
+		return tile_select_tex.id;
+	}
+	else
+	{
+		return empty_tex.id;
 	}
 }
 
@@ -523,12 +536,17 @@ void Board::update(Logic& logic)
 
 	if (end_move && logic.move.dir != -1)
 	{
-		if (logic.move.dir == 0)
+		if (logic.move.dir == 0) // right
 		{
 			for (int line = bounds.top; line <= bounds.bottom; ++line)
 			{
 				for (int col = bounds.right; col >= bounds.left; --col)
 				{
+					// if tile is dead, pass
+					if (tile[col][line].state == Tile::STATE::DEAD)
+					{
+						continue;
+					}
 					// if tile contains a non moving fruit, pass
 					if (tile[col][line].fruit.type != 'x' && tile[col][line].fruit.state == Fruit::STATE::STAND_STILL)
 					{
@@ -572,12 +590,17 @@ void Board::update(Logic& logic)
 				}
 			}
 		}
-		else if (logic.move.dir == 1)
+		else if (logic.move.dir == 1) // left
 		{
 			for (int line = bounds.top; line <= bounds.bottom; ++line)
 			{
 				for (int col = bounds.left; col <= bounds.right; ++col)
 				{
+					// if tile is dead, pass
+					if (tile[col][line].state == Tile::STATE::DEAD)
+					{
+						continue;
+					}
 					// if tile contains a non moving fruit, pass
 					if (tile[col][line].fruit.type != 'x' && tile[col][line].fruit.state == Fruit::STATE::STAND_STILL)
 					{
@@ -621,12 +644,17 @@ void Board::update(Logic& logic)
 				}
 			}
 		}
-		else if (logic.move.dir == 2)
+		else if (logic.move.dir == 2) // up
 		{
 			for (int col = bounds.left; col <= bounds.right; ++col)
 			{
 				for (int line = bounds.top; line <= bounds.bottom; ++line)
 				{
+					// if tile is dead, pass
+					if (tile[col][line].state == Tile::STATE::DEAD)
+					{
+						continue;
+					}
 					// if tile contains a non moving fruit, pass
 					if (tile[col][line].fruit.type != 'x' && tile[col][line].fruit.state == Fruit::STATE::STAND_STILL)
 					{
@@ -670,12 +698,17 @@ void Board::update(Logic& logic)
 				}
 			}
 		}
-		else if (logic.move.dir == 3)
+		else if (logic.move.dir == 3) // down
 		{
 			for (int col = bounds.left; col <= bounds.right; ++col)
 			{
 				for (int line = bounds.bottom; line >= bounds.top; --line)
 				{
+					// if tile is dead, pass
+					if (tile[col][line].state == Tile::STATE::DEAD)
+					{
+						continue;
+					}
 					// if tile contains a non moving fruit, pass
 					if (tile[col][line].fruit.type != 'x' && tile[col][line].fruit.state == Fruit::STATE::STAND_STILL)
 					{
@@ -834,7 +867,7 @@ void Board::check_dying_tiles(int& col, int& line)
 		line = rows[i];
 		for (c = bounds.left; c <= bounds.right; ++c)
 		{
-			if (tile[c][line].fruit.type != 'x') {
+			if (tile[c][line].fruit.type != 'x' && tile[c][line].state == Tile::STATE::ALIVE) {
 				line = -1;
 				break;
 			}
@@ -849,7 +882,7 @@ void Board::check_dying_tiles(int& col, int& line)
 		col = columns[i];
 		for (l = bounds.top; l <= bounds.bottom; ++l)
 		{
-			if (tile[col][l].fruit.type != 'x') {
+			if (tile[col][l].fruit.type != 'x' && tile[col][l].state == Tile::STATE::ALIVE) {
 				col = -1;
 				break;
 			}
@@ -864,8 +897,10 @@ void Board::set_tileDeleteTimerColumn(int c)
 {
 	for (int line = bounds.top; line <= bounds.bottom; ++line)
 	{
-		tile[c][line].animTimer = (bounds.top - line) * c_animLength + abs(bounds.top - line) * (c_animLength * 0.625f);
-		tile[c][line].state = Tile::STATE::DYING;
+		if (tile[c][line].state != Tile::STATE::DEAD) {
+			tile[c][line].animTimer = (bounds.top - line) * c_animLength + abs(bounds.top - line) * (c_animLength * 0.625f);
+			tile[c][line].state = Tile::STATE::DYING;
+		}
 	}
 }
 
@@ -873,8 +908,10 @@ void Board::set_tileDeleteTimerLine(int l)
 {
 	for (int col = bounds.left; col <= bounds.right; ++col)
 	{
-		tile[col][l].animTimer = (bounds.left - col) * c_animLength + abs(bounds.left - col) * (c_animLength * 0.625f);
-		tile[col][l].state = Tile::STATE::DYING;
+		if (tile[col][l].state != Tile::STATE::DEAD) {
+			tile[col][l].animTimer = (bounds.left - col) * c_animLength + abs(bounds.left - col) * (c_animLength * 0.625f);
+			tile[col][l].state = Tile::STATE::DYING;
+		}
 	}
 }
 
@@ -887,6 +924,17 @@ void Board::reset()
 			tile[col][line].animTimer = 42.0f;
 			tile[col][line].pos = glm::vec2(0);
 			tile[col][line].state = Tile::STATE::ALIVE;
+		}
+	}
+}
+
+void Board::reset_hovered()
+{
+	for (int line = 0; line <= 7; ++line)
+	{
+		for (int col = 0; col <= 7; ++col)
+		{
+			tile[col][line].hovered = false;
 		}
 	}
 }
@@ -952,6 +1000,17 @@ glm::ivec2 Board::get_tile_coords_from_mouse_position(int x, int y)
 					}
 				}
 			}
+		}
+	}
+	return glm::ivec2(-1, -1);
+}
+
+glm::ivec2 Board::get_tile_coords_from_cow_position(int charge_col, glm::vec2 pos)
+{
+	for (int line = 0; line < 8; ++line)
+	{
+		if (pos.y >= tile[charge_col][line].pos.y && pos.y <= tile[charge_col][line].pos.y + 45) {
+			return glm::ivec2(charge_col, line);
 		}
 	}
 	return glm::ivec2(-1, -1);

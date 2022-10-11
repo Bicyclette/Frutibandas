@@ -160,7 +160,7 @@ class Bandas
 		void lost_server_connection();
 
 		void update_game_page(std::array<int, 3> mouse_data, std::bitset<10> user_input, std::string txt_input, float delta);
-		void hovering_game_page(Page& page, int id);
+		void hovering_game_page(Page& page, int id, glm::ivec2 mouse_coords);
 		void click_game_page(Page& page, int id, glm::ivec2 mouse_coords);
 		void click_on_orange_card(int index);
 		void click_on_banana_card(int index);
@@ -193,6 +193,7 @@ class Bandas
 		Card m_orange_cards[3];
 		Card m_banana_cards[3];
 		Anvil m_anvil;
+		Cow m_cow;
 		std::vector<struct Advertiser> m_advertiser;
 };
 

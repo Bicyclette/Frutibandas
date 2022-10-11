@@ -263,7 +263,7 @@ void receive_message(std::shared_ptr<Game> & game)
 					}
 				}
 				// else if targeted card
-				else if (card_id == 0 || card_id == 6 || card_id == 10) {
+				else if (card_id == 0 || card_id == 6 || card_id == 10 || card_id == 11) {
 					message = message.substr(next_token + 1);
 					next_token = message.find_first_of('.');
 					int x = std::atoi(message.substr(0, next_token).data());
@@ -278,6 +278,10 @@ void receive_message(std::shared_ptr<Game> & game)
 					}
 					else if (card_id == 10) {
 						game->m_bandas.m_logic.card_effect.solo_coords = glm::ivec2(x, y);
+					}
+					else if (card_id == 11) {
+						game->m_bandas.m_logic.card_effect.cow_coords = glm::ivec2(x, y);
+						game->m_bandas.m_cow.col = x;
 					}
 				}
 

@@ -1299,7 +1299,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	Page& game_page{ m_ui.get_page(1) };
 	int sprite_id{ hovered->get_id() };
 
-	hovering_game_page(game_page, sprite_id);
+	hovering_game_page(game_page, sprite_id, mouse_pos);
 	if (user_input.test(2) && user_input.test(9)) // if click & release events
 	{
 		click_game_page(game_page, sprite_id, mouse_pos);
@@ -1357,8 +1357,19 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 	}
 }
 
-void Bandas::hovering_game_page(Page& page, int id)
+void Bandas::hovering_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 {
+	// process card events first
+	if (m_logic.card_effect.select_enemy_banda || m_logic.card_effect.select_ally_banda || m_logic.card_effect.anvil || m_logic.card_effect.cow)
+	{
+		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
+		if (tile_coords != glm::ivec2(-1, -1))
+		{
+			m_board.reset_hovered();
+			m_board.tile[tile_coords.x][tile_coords.y].hovered = true;
+		}
+	}
+
 	if (id == 3) // abandon button
 	{
 		page.get_layer(0).get_sprite(id)->use_background_img_selected();
@@ -1481,9 +1492,10 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		}
 		m_logic.card_effect.select_enemy_banda = false;
 		m_mouse.use_normal();
+		m_board.reset_hovered();
 		return;
 	}
-	if (m_logic.card_effect.select_ally_banda)
+	else if (m_logic.card_effect.select_ally_banda)
 	{
 		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
 		char banda_type = (m_me.m_team == 0) ? 'o' : 'b';
@@ -1501,9 +1513,10 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		}
 		m_logic.card_effect.select_ally_banda = false;
 		m_mouse.use_normal();
+		m_board.reset_hovered();
 		return;
 	}
-	if (m_logic.card_effect.anvil)
+	else if (m_logic.card_effect.anvil)
 	{
 		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
 		int index;
@@ -1520,6 +1533,27 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		}
 		m_logic.card_effect.anvil = false;
 		m_mouse.use_normal();
+		m_board.reset_hovered();
+		return;
+	}
+	else if (m_logic.card_effect.cow)
+	{
+		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
+		int index;
+		for (int i = 0; i < 3; ++i) {
+			if (m_orange_cards[i].m_id == 6 || m_banana_cards[i].m_id == 6) { index = i; break; }
+		}
+		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE) {
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:11." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
+			g_msg2server_mtx.unlock();
+		}
+		else {
+			m_logic.used_a_card = false;
+		}
+		m_logic.card_effect.cow = false;
+		m_mouse.use_normal();
+		m_board.reset_hovered();
 		return;
 	}
 
@@ -1712,6 +1746,15 @@ void Bandas::draw_game_page(float delta)
 			}
 		}
 	}
+	// draw cow
+	if (m_logic.card_effect.cow_charge && m_logic.card_effect.cow_coords != glm::ivec2(-1, -1)) {
+		int x = m_logic.card_effect.cow_coords.x;
+		int y = m_logic.card_effect.cow_coords.y;
+		if (!m_cow.draw(m_board, m_board.tile[x][y].pos.x, delta)) {
+			m_logic.card_effect.cow_charge = false;
+			m_logic.card_effect.cow_coords = glm::ivec2(-1, -1);
+		}
+	}
 
 	// print pseudo
 	if (m_me.m_team == 0)
@@ -1771,6 +1814,9 @@ void Bandas::draw_game_page(float delta)
 						break;
 					}
 				}
+			}
+			else if (advertiser.m_index == 11) {
+				m_logic.card_effect.cow_charge = true;
 			}
 			advertiser.m_index = -1;
 			m_advertiser.erase(m_advertiser.begin() + m_advertiser.size()-1);
@@ -2054,7 +2100,8 @@ void Bandas::click_on_orange_card(int index)
 		m_logic.card_effect.select_ally_banda = true;
 		break;
 	case 11: // vachette
-		std::cout << "clicked on vachette card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.cow = true;
 		break;
 	default:
 		break;
@@ -2122,7 +2169,8 @@ void Bandas::click_on_banana_card(int index)
 		m_logic.card_effect.select_ally_banda = true;
 		break;
 	case 11: // vachette
-		std::cout << "clicked on vachette card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.cow = true;
 		break;
 	default:
 		break;

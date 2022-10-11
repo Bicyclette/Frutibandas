@@ -66,12 +66,14 @@ struct Tile
 	{
 		pos = glm::vec2(0, 0);
 		animTimer = 42.0f;
+		hovered = false;
 	}
 
 	STATE state;
 	glm::vec2 pos; // y component is lower left corner
 	float animTimer;
 	Fruit fruit;
+	bool hovered;
 };
 
 struct Advertiser
@@ -140,6 +142,9 @@ struct Logic
 		bool anvil;
 		bool throw_anvil;
 		glm::ivec2 anvil_coords;
+		bool cow;
+		bool cow_charge;
+		glm::ivec2 cow_coords;
 		CardEffect()
 		{
 			charge = false;
@@ -154,6 +159,9 @@ struct Logic
 			anvil = false;
 			throw_anvil = false;
 			anvil_coords = glm::ivec2(-1, -1);
+			cow = false;
+			cow_charge = false;
+			cow_coords = glm::ivec2(-1, -1);
 		}
 		void reset()
 		{
@@ -169,6 +177,9 @@ struct Logic
 			anvil = false;
 			throw_anvil = false;
 			anvil_coords = glm::ivec2(-1, -1);
+			cow = false;
+			cow_charge = false;
+			cow_coords = glm::ivec2(-1, -1);
 		}
 	};
 
@@ -196,6 +207,7 @@ struct Logic
 
 	void reset()
 	{
+		used_a_card = false;
 		move.dir = -1;
 		move.dir_vec = glm::vec2(0, 0);
 		kill_tiles = false;
@@ -311,9 +323,11 @@ struct Board
 	void set_tileDeleteTimerColumn(int c);
 	void set_tileDeleteTimerLine(int l);
 	void reset();
+	void reset_hovered();
 	std::vector<int> get_free_tiles();
 	std::string get_reinforcement_position(std::vector<int>& list);
 	glm::ivec2 get_tile_coords_from_mouse_position(int x, int y);
+	glm::ivec2 get_tile_coords_from_cow_position(int charge_col, glm::vec2 pos);
 };
 
 struct Anvil
@@ -363,6 +377,55 @@ struct Anvil
 			timer = 0.0f;
 			smoke_on = false;
 		}
+	}
+};
+
+struct Cow
+{
+	Sprite m_sprite;
+	Animation2D run;
+	Animation2D smoke_trail;
+	int col;
+
+	// draw stuff
+	glm::vec2 pos;
+	glm::vec2 run_speed;
+	float timer;
+	int frame;
+	float percent;
+
+	Cow() :
+		m_sprite(0, glm::vec2(0), glm::vec2(256), 1050, 728),
+		run(c_animLength),
+		smoke_trail(c_animLength),
+		col(-1),
+		pos(0.0f, 0.0f),
+		run_speed(0.0f, -350.0f),
+		timer(0.0f),
+		frame(0),
+		percent(0.0f)
+	{
+		run.load("assets/animation/cow", 17);
+		smoke_trail.load("assets/animation/cow/trail", 21);
+	}
+
+	bool draw(Board& board, float pos_x, float delta)
+	{
+		timer += delta;
+		pos = glm::vec2(pos_x, 600.0f) + run_speed * timer;
+		percent = std::fmod(timer, run.duration) / run.duration;
+		frame = static_cast<int>(percent * (run.frames.size() - 1));
+		m_sprite.set_pos(pos);
+		m_sprite.draw(run.frames[frame].id);
+		glm::ivec2 tile = board.get_tile_coords_from_cow_position(col, pos);
+		if (tile != glm::ivec2(-1, -1)) {
+			board.tile[tile.x][tile.y].fruit.type = 'x';
+		}
+		if (pos.y <= 100.0f) {
+			timer = 0.0f;
+			return false;
+		}
+		return true;
 	}
 };
 
