@@ -393,10 +393,19 @@ struct Anvil
 
 struct Cow
 {
+	struct Smoke
+	{
+		glm::vec2 position;
+		float timer;
+		Smoke() : position(0.0f, 0.0f), timer(0.0f) {}
+		Smoke(glm::vec2 pos, float t) : position(pos), timer(t){}
+	};
+
 	Sprite m_sprite;
 	Animation2D run;
 	Animation2D smoke_trail;
 	int col;
+	std::vector<Smoke> smoke;
 
 	// draw stuff
 	glm::vec2 pos;
@@ -420,8 +429,28 @@ struct Cow
 		smoke_trail.load("assets/animation/cow/trail", 21);
 	}
 
+	void create_smoke_data(Board& board)
+	{
+		for (int l = board.bounds.top; l <= board.bounds.bottom; ++l)
+		{
+			smoke.emplace_back(board.tile[col][l].pos, -0.13*(l - board.bounds.top)-0.35f);
+		}
+	}
+
 	bool draw(Board& board, float pos_x, float delta)
 	{
+		// draw smoke trail
+		size_t smoke_count = smoke.size();
+		for (size_t i = 0; i < smoke_count; ++i) {
+			m_sprite.set_pos(smoke[i].position);
+			smoke[i].timer += delta;
+			percent = smoke[i].timer / smoke_trail.duration;
+			if (percent <= 1.0f && percent >= 0.0f) {
+				frame = static_cast<int>(percent * (smoke_trail.frames.size() - 1));
+				m_sprite.draw(smoke_trail.frames.at(frame).id);
+			}
+		}
+		// draw cow
 		timer += delta;
 		pos = glm::vec2(pos_x, 600.0f) + run_speed * timer;
 		percent = std::fmod(timer, run.duration) / run.duration;
@@ -439,6 +468,7 @@ struct Cow
 		}
 		if (pos.y <= 100.0f) {
 			timer = 0.0f;
+			smoke.clear();
 			return false;
 		}
 		return true;

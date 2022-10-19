@@ -305,7 +305,7 @@ GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 	else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
 		anim = &orange_flying_right;
 	}
-	else if (logic.turn == 1) {
+	else if (logic.turn == 0) {
 		anim = &orange_anims[logic.move.dir];
 	}
 	else {

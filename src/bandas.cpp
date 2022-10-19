@@ -1822,6 +1822,7 @@ void Bandas::draw_game_page(float delta)
 			}
 			else if (advertiser.m_index == 11) {
 				m_logic.card_effect.cow_charge = true;
+				m_cow.create_smoke_data(m_board);
 			}
 			advertiser.m_index = -1;
 			m_advertiser.erase(m_advertiser.begin() + m_advertiser.size()-1);
