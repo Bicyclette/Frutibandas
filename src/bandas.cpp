@@ -919,6 +919,10 @@ void Bandas::click_home_page(Page& page, int id)
 
 	if (id == 63) // quitter le jeu
 	{
+		g_msg2server_mtx.lock();
+		g_leave_game = true;
+		g_msg2server_mtx.unlock();
+		g_cv_connect_leave.notify_one();
 		SDL_Event event;
 		event.type = SDL_QUIT;
 		SDL_PushEvent(&event);
@@ -934,7 +938,9 @@ void Bandas::click_home_page(Page& page, int id)
 	{
 		g_msg2server_mtx.lock();
 		g_msg2server.emplace("0");
+		g_try2connect = true;
 		g_msg2server_mtx.unlock();
+		g_cv_connect_leave.notify_one();
 	}
 
 	if (id == 67) // clicked on play
@@ -1747,12 +1753,11 @@ void Bandas::draw_game_page(float delta)
 		}
 	}
 	// draw cow
-	if (m_logic.card_effect.cow_charge && m_logic.card_effect.cow_coords != glm::ivec2(-1, -1)) {
+	if (m_logic.card_effect.cow_charge) {
 		int x = m_logic.card_effect.cow_coords.x;
 		int y = m_logic.card_effect.cow_coords.y;
 		if (!m_cow.draw(m_board, m_board.tile[x][y].pos.x, delta)) {
 			m_logic.card_effect.cow_charge = false;
-			m_logic.card_effect.cow_coords = glm::ivec2(-1, -1);
 		}
 	}
 

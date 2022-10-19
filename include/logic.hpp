@@ -41,11 +41,16 @@ struct Fruit
 	{
 		STAND_STILL,
 		MOVING,
+		FLYING_LEFT,
+		FLYING_RIGHT,
 		PETRIFIED
 	};
 
 	Fruit() : type('x'), state(STATE::STAND_STILL) {}
 	Fruit(char t) : type(t), state(STATE::STAND_STILL) {}
+	bool is_flying() {
+		return state == STATE::FLYING_LEFT || state == STATE::FLYING_RIGHT;
+	}
 
 	char type;
 	STATE state;
@@ -264,10 +269,12 @@ struct Board
 	Animation2D dying_tile;
 	// banana animations
 	std::array<Animation2D, 8> banana_anims; // right, left, up, down, p_right, p_left, p_up, p_down
-	//Animation2D banana_death;
+	Animation2D banana_flying_right;
+	Animation2D banana_flying_left;
 	// orange animations
 	std::array<Animation2D, 8> orange_anims; // right, left, up, down, p_right, p_left, p_up, p_down
-	std::array<Animation2D, 4> orange_death;
+	Animation2D orange_flying_right;
+	Animation2D orange_flying_left;
 	
 	// draw stuff
 	Sprite m_sprite;
@@ -275,16 +282,14 @@ struct Board
 	Board() :
 		m_sprite(0, glm::vec2(0), glm::vec2(256), 1050, 728),
 		dying_tile(c_animLength),
-		orange_death{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) },
 		banana_anims{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) },
-		orange_anims{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) }
+		banana_flying_right(c_animLength*0.7f),
+		banana_flying_left(c_animLength*0.7f),
+		orange_anims{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) },
+		orange_flying_right(c_animLength*0.7f),
+		orange_flying_left(c_animLength*0.7f)
 	{
 		dying_tile.load("assets/animation/board", 34);
-
-		orange_death[0].load("assets/animation/orange/death/right", 16);
-		orange_death[1].load("assets/animation/orange/death/left", 16);
-		orange_death[2].load("assets/animation/orange/death/up", 16);
-		orange_death[3].load("assets/animation/orange/death/down", 16);
 
 		banana_anims[0].load("assets/animation/banana/mv_right", 22);
 		banana_anims[1].load("assets/animation/banana/mv_left", 22);
@@ -294,6 +299,9 @@ struct Board
 		banana_anims[5].load("assets/animation/banana/pushed_left", 22);
 		banana_anims[6].load("assets/animation/banana/pushed_up", 22);
 		banana_anims[7].load("assets/animation/banana/pushed_down", 22);
+
+		banana_flying_right.load("assets/animation/banana/flying_right", 15);
+		banana_flying_left.load("assets/animation/banana/flying_left", 15);
 		
 		orange_anims[0].load("assets/animation/orange/mv_right", 22);
 		orange_anims[1].load("assets/animation/orange/mv_left", 22);
@@ -303,6 +311,9 @@ struct Board
 		orange_anims[5].load("assets/animation/orange/pushed_left", 22);
 		orange_anims[6].load("assets/animation/orange/pushed_up", 22);
 		orange_anims[7].load("assets/animation/orange/pushed_down", 22);
+
+		orange_flying_right.load("assets/animation/orange/flying_right", 15);
+		orange_flying_left.load("assets/animation/orange/flying_left", 15);
 	}
 
 	void init(std::string board);
@@ -419,7 +430,12 @@ struct Cow
 		m_sprite.draw(run.frames[frame].id);
 		glm::ivec2 tile = board.get_tile_coords_from_cow_position(col, pos);
 		if (tile != glm::ivec2(-1, -1)) {
-			board.tile[tile.x][tile.y].fruit.type = 'x';
+			if (board.tile[tile.x][tile.y].fruit.type != 'x' && (tile.y - board.bounds.top) % 2 == 0) {
+				board.tile[tile.x][tile.y].fruit.state = Fruit::STATE::FLYING_RIGHT;
+			}
+			else if(board.tile[tile.x][tile.y].fruit.type != 'x') {
+				board.tile[tile.x][tile.y].fruit.state = Fruit::STATE::FLYING_LEFT;
+			}
 		}
 		if (pos.y <= 100.0f) {
 			timer = 0.0f;

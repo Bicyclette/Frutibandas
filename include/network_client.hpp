@@ -6,6 +6,7 @@
 #include <exception>
 #include <enet/enet.h>
 #include <mutex>
+#include <condition_variable>
 
 class NetworkClient
 {

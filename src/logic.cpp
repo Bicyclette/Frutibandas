@@ -141,7 +141,24 @@ void Board::draw(Logic& logic, float delta, bool standby)
 		{
 			if (tile[col][line].state != Tile::STATE::DEAD)
 			{
-				if (tile[col][line].fruit.type != 'x')
+				if (tile[col][line].fruit.type != 'x' && !tile[col][line].fruit.is_flying())
+				{
+					// fruit position
+					bool stand_still = tile[col][line].fruit.state == Fruit::STATE::STAND_STILL;
+					GLuint frame = get_animationFrame(logic, col, line, delta, stand_still, standby);
+					m_sprite.set_pos(tile[col][line].pos);
+					m_sprite.draw(frame);
+				}
+			}
+		}
+	}
+	for (int line = bounds.top; line <= bounds.bottom; ++line)
+	{
+		for (int col = bounds.left; col <= bounds.right; ++col)
+		{
+			if (tile[col][line].state != Tile::STATE::DEAD)
+			{
+				if (tile[col][line].fruit.type != 'x' && tile[col][line].fruit.is_flying())
 				{
 					// fruit position
 					bool stand_still = tile[col][line].fruit.state == Fruit::STATE::STAND_STILL;
@@ -200,7 +217,7 @@ GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, b
 {
 	if (tile[col][line].fruit.type == 'b')
 	{
-		if (logic.move.dir == -1 || stand_still || standby)
+		if ((logic.move.dir == -1 || stand_still || standby) && !tile[col][line].fruit.is_flying())
 		{
 			return banana_tex.id;
 		}
@@ -212,7 +229,7 @@ GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, b
 	}
 	else
 	{
-		if (logic.move.dir == -1 || stand_still || standby)
+		if ((logic.move.dir == -1 || stand_still || standby) && !tile[col][line].fruit.is_flying())
 		{
 			return orange_tex.id;
 		}
@@ -227,14 +244,26 @@ GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, b
 GLuint Board::get_banana_texture(Logic& logic, int col, int line, float timer)
 {
 	int frame = 0;
-	Animation2D& anim = (logic.turn == 1) ? banana_anims[logic.move.dir] : banana_anims[logic.move.dir+4];
-	float percent = timer / anim.duration;
+	Animation2D* anim;
+	if (tile[col][line].fruit.state == Fruit::STATE::FLYING_LEFT) {
+		anim = &banana_flying_left;
+	}
+	else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
+		anim = &banana_flying_right;
+	}
+	else if(logic.turn == 1) {
+		anim = &banana_anims[logic.move.dir];
+	}
+	else {
+		anim = &banana_anims[logic.move.dir + 4];
+	}
+	float percent = timer / anim->duration;
 	if (percent < 0.0f) {
 		return banana_tex.id;
 	}
 	else if (percent <= 1.0f && percent >= 0.0f) {
-		frame = static_cast<int>(percent * (anim.frames.size()-1));
-		return anim.frames[frame].id;
+		frame = static_cast<int>(percent * (anim->frames.size()-1));
+		return anim->frames[frame].id;
 	}
 	else {
 		if (logic.move.dir == 0 && col + 1 <= bounds.right && tile[col+1][line].state == Tile::STATE::DEAD) // right
@@ -253,22 +282,42 @@ GLuint Board::get_banana_texture(Logic& logic, int col, int line, float timer)
 		{
 			return empty_tex.id;
 		}
-		frame = anim.frames.size() - 1;
-		return anim.frames[frame].id;
+		frame = anim->frames.size() - 1;
+		if (tile[col][line].fruit.state == Fruit::STATE::FLYING_LEFT) {
+			tile[col][line].fruit.type = 'x';
+			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+		}
+		else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
+			tile[col][line].fruit.type = 'x';
+			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+		}
+		return anim->frames[frame].id;
 	}
 }
 
 GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 {
 	int frame = 0;
-	Animation2D& anim = (logic.turn == 0) ? orange_anims[logic.move.dir] : orange_anims[logic.move.dir+4];
-	float percent = timer / anim.duration;
+	Animation2D* anim;
+	if (tile[col][line].fruit.state == Fruit::STATE::FLYING_LEFT) {
+		anim = &orange_flying_left;
+	}
+	else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
+		anim = &orange_flying_right;
+	}
+	else if (logic.turn == 1) {
+		anim = &orange_anims[logic.move.dir];
+	}
+	else {
+		anim = &orange_anims[logic.move.dir + 4];
+	}
+	float percent = timer / anim->duration;
 	if (percent < 0.0f) {
 		return orange_tex.id;
 	}
 	else if (percent <= 1.0f && percent >= 0.0f) {
-		frame = static_cast<int>(percent * (anim.frames.size() - 1));
-		return anim.frames[frame].id;
+		frame = static_cast<int>(percent * (anim->frames.size() - 1));
+		return anim->frames[frame].id;
 	}
 	else {
 		if (logic.move.dir == 0 && col + 1 <= bounds.right && tile[col + 1][line].state == Tile::STATE::DEAD) // right
@@ -287,8 +336,16 @@ GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 		{
 			return empty_tex.id;
 		}
-		frame = anim.frames.size() - 1;
-		return anim.frames[frame].id;
+		frame = anim->frames.size() - 1;
+		if (tile[col][line].fruit.state == Fruit::STATE::FLYING_LEFT) {
+			tile[col][line].fruit.type = 'x';
+			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+		}
+		else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
+			tile[col][line].fruit.type = 'x';
+			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+		}
+		return anim->frames[frame].id;
 	}
 }
 

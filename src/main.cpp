@@ -14,7 +14,9 @@
 void connect(std::shared_ptr<Game>& game)
 {
 	std::string message;
-	g_msg2server_mtx.lock();
+	std::unique_lock<std::mutex> lock(g_msg2server_mtx);
+	g_cv_connect_leave.wait(lock, [] () -> bool {return g_try2connect || g_leave_game; });
+	g_try2connect = false;
 	if (!g_msg2server.empty())
 	{
 		message = g_msg2server.front();
@@ -22,12 +24,9 @@ void connect(std::shared_ptr<Game>& game)
 	}
 	else
 	{
-		g_msg2server_mtx.unlock();
 		return;
 	}
-	g_msg2server_mtx.unlock();
 	int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
-
 	if(code == 0)
 	{
 		if (game->m_bandas.m_net.connect(SERVER, PORT))
