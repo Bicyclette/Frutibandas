@@ -43,6 +43,7 @@ struct Fruit
 		MOVING,
 		FLYING_LEFT,
 		FLYING_RIGHT,
+		TURN_STONE,
 		PETRIFIED
 	};
 
@@ -50,6 +51,12 @@ struct Fruit
 	Fruit(char t) : type(t), state(STATE::STAND_STILL) {}
 	bool is_flying() {
 		return state == STATE::FLYING_LEFT || state == STATE::FLYING_RIGHT;
+	}
+	bool is_turning_into_stone() {
+		return state == STATE::TURN_STONE;
+	}
+	bool is_petrified() {
+		return state == STATE::PETRIFIED;
 	}
 
 	char type;
@@ -150,6 +157,8 @@ struct Logic
 		bool cow;
 		bool cow_charge;
 		glm::ivec2 cow_coords;
+		bool petrify;
+		glm::ivec2 petrify_coords;
 		CardEffect()
 		{
 			charge = false;
@@ -167,6 +176,8 @@ struct Logic
 			cow = false;
 			cow_charge = false;
 			cow_coords = glm::ivec2(-1, -1);
+			petrify = false;
+			petrify_coords = glm::ivec2(-1, -1);
 		}
 		void reset()
 		{
@@ -185,6 +196,8 @@ struct Logic
 			cow = false;
 			cow_charge = false;
 			cow_coords = glm::ivec2(-1, -1);
+			petrify = false;
+			petrify_coords = glm::ivec2(-1, -1);
 		}
 	};
 
@@ -271,10 +284,12 @@ struct Board
 	std::array<Animation2D, 8> banana_anims; // right, left, up, down, p_right, p_left, p_up, p_down
 	Animation2D banana_flying_right;
 	Animation2D banana_flying_left;
+	Animation2D banana_petrification;
 	// orange animations
 	std::array<Animation2D, 8> orange_anims; // right, left, up, down, p_right, p_left, p_up, p_down
 	Animation2D orange_flying_right;
 	Animation2D orange_flying_left;
+	Animation2D orange_petrification;
 	
 	// draw stuff
 	Sprite m_sprite;
@@ -284,10 +299,12 @@ struct Board
 		dying_tile(c_animLength),
 		banana_anims{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) },
 		banana_flying_right(c_animLength*0.7f),
-		banana_flying_left(c_animLength*0.7f),
+		banana_flying_left(c_animLength * 0.7f),
+		banana_petrification(c_animLength),
 		orange_anims{ Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength), Animation2D(c_animLength) },
 		orange_flying_right(c_animLength*0.7f),
-		orange_flying_left(c_animLength*0.7f)
+		orange_flying_left(c_animLength*0.7f),
+		orange_petrification(c_animLength)
 	{
 		dying_tile.load("assets/animation/board", 34);
 
@@ -302,6 +319,7 @@ struct Board
 
 		banana_flying_right.load("assets/animation/banana/flying_right", 15);
 		banana_flying_left.load("assets/animation/banana/flying_left", 15);
+		banana_petrification.load("assets/animation/banana/petrification", 17);
 		
 		orange_anims[0].load("assets/animation/orange/mv_right", 22);
 		orange_anims[1].load("assets/animation/orange/mv_left", 22);
@@ -314,6 +332,7 @@ struct Board
 
 		orange_flying_right.load("assets/animation/orange/flying_right", 15);
 		orange_flying_left.load("assets/animation/orange/flying_left", 15);
+		orange_petrification.load("assets/animation/orange/petrification", 13);
 	}
 
 	void init(std::string board);
@@ -457,7 +476,7 @@ struct Cow
 		frame = static_cast<int>(percent * (run.frames.size() - 1));
 		m_sprite.set_pos(pos);
 		m_sprite.draw(run.frames[frame].id);
-		glm::ivec2 tile = board.get_tile_coords_from_cow_position(col, pos);
+		glm::ivec2 tile = board.get_tile_coords_from_cow_position(col, pos + glm::vec2(0.0f, -10.0f));
 		if (tile != glm::ivec2(-1, -1)) {
 			if (board.tile[tile.x][tile.y].fruit.type != 'x' && (tile.y - board.bounds.top) % 2 == 0) {
 				board.tile[tile.x][tile.y].fruit.state = Fruit::STATE::FLYING_RIGHT;

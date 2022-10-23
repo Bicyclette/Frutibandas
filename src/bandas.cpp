@@ -1507,7 +1507,7 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		char banda_type = (m_me.m_team == 0) ? 'o' : 'b';
 		int index;
 		for (int i = 0; i < 3; ++i) {
-			if (m_orange_cards[i].m_id == 0 || m_banana_cards[i].m_id == 0) { index = i; break; }
+			if (m_orange_cards[i].m_id == 10 || m_banana_cards[i].m_id == 10) { index = i; break; }
 		}
 		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type) {
 			g_msg2server_mtx.lock();
@@ -1547,7 +1547,7 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
 		int index;
 		for (int i = 0; i < 3; ++i) {
-			if (m_orange_cards[i].m_id == 6 || m_banana_cards[i].m_id == 6) { index = i; break; }
+			if (m_orange_cards[i].m_id == 11 || m_banana_cards[i].m_id == 11) { index = i; break; }
 		}
 		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE) {
 			g_msg2server_mtx.lock();
@@ -1558,6 +1558,26 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 			m_logic.used_a_card = false;
 		}
 		m_logic.card_effect.cow = false;
+		m_mouse.use_normal();
+		m_board.reset_hovered();
+		return;
+	}
+	else if (m_logic.card_effect.petrify)
+	{
+		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
+		int index;
+		for (int i = 0; i < 3; ++i) {
+			if (m_orange_cards[i].m_id == 7 || m_banana_cards[i].m_id == 7) { index = i; break; }
+		}
+		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type != 'x') {
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:7." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
+			g_msg2server_mtx.unlock();
+		}
+		else {
+			m_logic.used_a_card = false;
+		}
+		m_logic.card_effect.petrify = false;
 		m_mouse.use_normal();
 		m_board.reset_hovered();
 		return;
@@ -1803,6 +1823,11 @@ void Bandas::draw_game_page(float delta)
 			}
 			else if (advertiser.m_index == 6) {
 				m_logic.card_effect.throw_anvil = true;
+			}
+			else if (advertiser.m_index == 7) {
+				int x = m_logic.card_effect.petrify_coords.x;
+				int y = m_logic.card_effect.petrify_coords.y;
+				m_board.tile[x][y].fruit.state = Fruit::STATE::TURN_STONE;
 			}
 			else if (advertiser.m_index == 9) {
 				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
@@ -2084,7 +2109,8 @@ void Bandas::click_on_orange_card(int index)
 		m_logic.card_effect.anvil = true;
 		break;
 	case 7: // petrification
-		std::cout << "clicked on petrification card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.petrify = true;
 		break;
 	case 8: // piege
 		std::cout << "clicked on piege card" << std::endl;
@@ -2153,7 +2179,8 @@ void Bandas::click_on_banana_card(int index)
 		m_logic.card_effect.anvil = true;
 		break;
 	case 7: // petrification
-		std::cout << "clicked on petrification card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.petrify = true;
 		break;
 	case 8: // piege
 		std::cout << "clicked on piege card" << std::endl;

@@ -97,7 +97,7 @@ int Board::get_banana_count()
 	{
 		for (int j = bounds.left; j <= bounds.right; ++j)
 		{
-			if (tile[j][i].state == Tile::STATE::ALIVE && tile[j][i].fruit.type == 'b') {
+			if (tile[j][i].state == Tile::STATE::ALIVE && tile[j][i].fruit.type == 'b' && !tile[j][i].fruit.is_petrified()) {
 				count++;
 			}
 		}
@@ -112,7 +112,7 @@ int Board::get_orange_count()
 	{
 		for (int j = bounds.left; j <= bounds.right; ++j)
 		{
-			if (tile[j][i].state == Tile::STATE::ALIVE && tile[j][i].fruit.type == 'o') {
+			if (tile[j][i].state == Tile::STATE::ALIVE && tile[j][i].fruit.type == 'o' && !tile[j][i].fruit.is_petrified()) {
 				count++;
 			}
 		}
@@ -217,9 +217,14 @@ GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, b
 {
 	if (tile[col][line].fruit.type == 'b')
 	{
-		if ((logic.move.dir == -1 || stand_still || standby) && !tile[col][line].fruit.is_flying())
+		if ((logic.move.dir == -1 || stand_still || standby) && !tile[col][line].fruit.is_flying() && !tile[col][line].fruit.is_turning_into_stone() && !tile[col][line].fruit.is_petrified())
 		{
 			return banana_tex.id;
+		}
+		else if (tile[col][line].fruit.is_petrified())
+		{
+			size_t last_index = banana_petrification.frames.size() - 1;
+			return banana_petrification.frames[last_index].id;
 		}
 		else
 		{
@@ -229,9 +234,14 @@ GLuint Board::get_animationFrame(Logic& logic, int col, int line, float delta, b
 	}
 	else
 	{
-		if ((logic.move.dir == -1 || stand_still || standby) && !tile[col][line].fruit.is_flying())
+		if ((logic.move.dir == -1 || stand_still || standby) && !tile[col][line].fruit.is_flying() && !tile[col][line].fruit.is_turning_into_stone() && !tile[col][line].fruit.is_petrified())
 		{
 			return orange_tex.id;
+		}
+		else if (tile[col][line].fruit.is_petrified())
+		{
+			size_t last_index = orange_petrification.frames.size() - 1;
+			return orange_petrification.frames[last_index].id;
 		}
 		else
 		{
@@ -250,6 +260,9 @@ GLuint Board::get_banana_texture(Logic& logic, int col, int line, float timer)
 	}
 	else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
 		anim = &banana_flying_right;
+	}
+	else if (tile[col][line].fruit.is_turning_into_stone()) {
+		anim = &banana_petrification;
 	}
 	else if(logic.turn == 1) {
 		anim = &banana_anims[logic.move.dir];
@@ -291,6 +304,9 @@ GLuint Board::get_banana_texture(Logic& logic, int col, int line, float timer)
 			tile[col][line].fruit.type = 'x';
 			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
 		}
+		else if (tile[col][line].fruit.is_turning_into_stone()) {
+			tile[col][line].fruit.state = Fruit::STATE::PETRIFIED;
+		}
 		return anim->frames[frame].id;
 	}
 }
@@ -304,6 +320,9 @@ GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 	}
 	else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
 		anim = &orange_flying_right;
+	}
+	else if (tile[col][line].fruit.is_turning_into_stone()) {
+		anim = &orange_petrification;
 	}
 	else if (logic.turn == 0) {
 		anim = &orange_anims[logic.move.dir];
@@ -344,6 +363,9 @@ GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 		else if (tile[col][line].fruit.state == Fruit::STATE::FLYING_RIGHT) {
 			tile[col][line].fruit.type = 'x';
 			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+		}
+		else if (tile[col][line].fruit.is_turning_into_stone()) {
+			tile[col][line].fruit.state = Fruit::STATE::PETRIFIED;
 		}
 		return anim->frames[frame].id;
 	}
