@@ -2,6 +2,7 @@
 #define COM_HPP
 
 #include <mutex>
+#include <condition_variable>
 #include <queue>
 
 inline std::queue<std::string> g_msg2server;

@@ -11,6 +11,7 @@ set(APP_ICON_RESOURCE_WINDOWS "src/resources.rc")
 cmake_policy(SET CMP0072 NEW)
 
 if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+	set(CONAN_DISABLE_CHECK_COMPILER TRUE)
 	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 	conan_basic_setup()
 else()
