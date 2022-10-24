@@ -213,6 +213,7 @@ void receive_message(std::shared_ptr<Game> & game)
 				{
 					game->m_bandas.m_logic.move.dir_vec = glm::vec2(0, -1);
 				}
+				game->m_bandas.m_board.check_activate_trap(game->m_bandas.m_logic);
 				game->m_bandas.m_board.set_animTimer(game->m_bandas.m_logic);
 				game->m_bandas.m_logic.card_effect.solo_coords = glm::ivec2( -1, -1 );
 			}
@@ -263,7 +264,7 @@ void receive_message(std::shared_ptr<Game> & game)
 					}
 				}
 				// else if targeted card
-				else if (card_id == 0 || card_id == 6 || card_id == 7 || card_id == 10 || card_id == 11) {
+				else if (card_id == 0 || card_id == 6 || card_id == 7 || card_id == 8 || card_id == 10 || card_id == 11) {
 					message = message.substr(next_token + 1);
 					next_token = message.find_first_of('.');
 					int x = std::atoi(message.substr(0, next_token).data());
@@ -278,6 +279,9 @@ void receive_message(std::shared_ptr<Game> & game)
 					}
 					else if (card_id == 7) {
 						game->m_bandas.m_logic.card_effect.petrify_coords = glm::ivec2(x, y);
+					}
+					else if (card_id == 8) {
+						game->m_bandas.m_logic.card_effect.trap_coords = glm::ivec2(x, y);
 					}
 					else if (card_id == 10) {
 						game->m_bandas.m_logic.card_effect.solo_coords = glm::ivec2(x, y);
@@ -297,6 +301,9 @@ void receive_message(std::shared_ptr<Game> & game)
 
 				if (card_id == 4) {
 					game->m_bandas.m_logic.card_effect.disorder_destination = effect_destination;
+					game->m_bandas.process_card_effect(card_id, true);
+				}
+				else if (card_id == 8) {
 					game->m_bandas.process_card_effect(card_id, true);
 				}
 				else {

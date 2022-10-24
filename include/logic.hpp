@@ -159,6 +159,9 @@ struct Logic
 		glm::ivec2 cow_coords;
 		bool petrify;
 		glm::ivec2 petrify_coords;
+		bool trap;
+		glm::ivec2 trap_coords;
+		bool activate_trap;
 		CardEffect()
 		{
 			charge = false;
@@ -178,6 +181,9 @@ struct Logic
 			cow_coords = glm::ivec2(-1, -1);
 			petrify = false;
 			petrify_coords = glm::ivec2(-1, -1);
+			trap = false;
+			trap_coords = glm::ivec2(-1, -1);
+			activate_trap = false;
 		}
 		void reset()
 		{
@@ -198,6 +204,9 @@ struct Logic
 			cow_coords = glm::ivec2(-1, -1);
 			petrify = false;
 			petrify_coords = glm::ivec2(-1, -1);
+			trap = false;
+			trap_coords = glm::ivec2(-1, -1);
+			activate_trap = false;
 		}
 	};
 
@@ -358,6 +367,7 @@ struct Board
 	std::string get_reinforcement_position(std::vector<int>& list);
 	glm::ivec2 get_tile_coords_from_mouse_position(int x, int y);
 	glm::ivec2 get_tile_coords_from_cow_position(int charge_col, glm::vec2 pos);
+	void check_activate_trap(Logic& logic);
 	bool exist_petrified_fruit_line(int col, int line, bool backward) {
 		if (backward) {
 			for (int i = col; i >= bounds.left; --i) {

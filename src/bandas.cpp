@@ -1366,7 +1366,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 void Bandas::hovering_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 {
 	// process card events first
-	if (m_logic.card_effect.select_enemy_banda || m_logic.card_effect.select_ally_banda || m_logic.card_effect.anvil || m_logic.card_effect.cow || m_logic.card_effect.petrify)
+	if (m_logic.card_effect.select_enemy_banda || m_logic.card_effect.select_ally_banda || m_logic.card_effect.anvil || m_logic.card_effect.cow || m_logic.card_effect.petrify || m_logic.card_effect.trap)
 	{
 		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
 		if (tile_coords != glm::ivec2(-1, -1))
@@ -1582,6 +1582,28 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		m_board.reset_hovered();
 		return;
 	}
+	else if (m_logic.card_effect.trap)
+	{
+		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
+		int index;
+		for (int i = 0; i < 3; ++i) {
+			if (m_orange_cards[i].m_id == 8 || m_banana_cards[i].m_id == 8) { index = i; break; }
+		}
+		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == 'x') {
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("7:8." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
+			g_msg2server_mtx.unlock();
+			remove_card(8);
+			m_board.tile[tile_coords.x][tile_coords.y].state = Tile::STATE::TRAPPED;
+		}
+		else {
+			m_logic.used_a_card = false;
+		}
+		m_logic.card_effect.trap = false;
+		m_mouse.use_normal();
+		m_board.reset_hovered();
+		return;
+	}
 
 	if (id == 3) // abandon button
 	{
@@ -1748,6 +1770,7 @@ void Bandas::draw_game_page(float delta)
 		standby = (m_advertiser.empty()) ? false : (m_advertiser.back().m_show) ? true : false;
 	}
 	g_advertiser_mtx.unlock();
+	if (m_logic.card_effect.activate_trap) { standby = true; }
 	m_board.draw(m_logic, delta, standby);
 
 	// draw anvil
@@ -1781,6 +1804,18 @@ void Bandas::draw_game_page(float delta)
 			m_logic.card_effect.cow_charge = false;
 		}
 	}
+	// activate trap
+	if (m_logic.card_effect.activate_trap) {
+		remove_card(8);
+		g_advertiser_mtx.lock();
+		for (auto& a : m_advertiser) {
+			if (a.m_index == 8) {
+				a.m_show = true;
+				//m_logic.card_effect.activate_trap = false;
+			}
+		}
+		g_advertiser_mtx.unlock();
+	}
 
 	// print pseudo
 	if (m_me.m_team == 0)
@@ -1805,16 +1840,7 @@ void Bandas::draw_game_page(float delta)
 	g_advertiser_mtx.lock();
 	if (!m_advertiser.empty()) {
 		struct Advertiser & advertiser = m_advertiser.back();
-		if (advertiser.m_show) {
-			Layer& advert_layer = m_ui_advertiser.get_page(0).get_layer(0);
-			glm::vec2 position = advertiser.get_pos(delta);
-			int texture_index = advertiser.m_index * 2;
-			texture_index = (advertiser.m_green) ? texture_index : texture_index + 1;
-			advert_layer.get_sprite(0)->set_background_img_gl(advert_layer.get_sprite(0)->get_texture_id(texture_index));
-			advert_layer.get_sprite(0)->set_pos(position);
-			m_ui_advertiser.get_page(0).draw();
-		}
-		else if (advertiser.erase) {
+		if (advertiser.erase) {
 			if (advertiser.m_index == 0) {
 				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
 				int x = m_logic.card_effect.conversion_coords.x;
@@ -1829,6 +1855,12 @@ void Bandas::draw_game_page(float delta)
 				int x = m_logic.card_effect.petrify_coords.x;
 				int y = m_logic.card_effect.petrify_coords.y;
 				m_board.tile[x][y].fruit.state = Fruit::STATE::TURN_STONE;
+			}
+			else if (advertiser.m_index == 8) {
+				int x = m_logic.card_effect.trap_coords.x;
+				int y = m_logic.card_effect.trap_coords.y;
+				m_board.tile[x][y].state = Tile::STATE::DYING;
+				m_board.tile[x][y].animTimer = 0.0f;
 			}
 			else if (advertiser.m_index == 9) {
 				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
@@ -1852,6 +1884,15 @@ void Bandas::draw_game_page(float delta)
 			}
 			advertiser.m_index = -1;
 			m_advertiser.erase(m_advertiser.begin() + m_advertiser.size()-1);
+		}
+		else if (advertiser.m_show) {
+			Layer& advert_layer = m_ui_advertiser.get_page(0).get_layer(0);
+			glm::vec2 position = advertiser.get_pos(delta);
+			int texture_index = advertiser.m_index * 2;
+			texture_index = (advertiser.m_green) ? texture_index : texture_index + 1;
+			advert_layer.get_sprite(0)->set_background_img_gl(advert_layer.get_sprite(0)->get_texture_id(texture_index));
+			advert_layer.get_sprite(0)->set_pos(position);
+			m_ui_advertiser.get_page(0).draw();
 		}
 	}
 	g_advertiser_mtx.unlock();
@@ -2114,7 +2155,8 @@ void Bandas::click_on_orange_card(int index)
 		m_logic.card_effect.petrify = true;
 		break;
 	case 8: // piege
-		std::cout << "clicked on piege card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.trap = true;
 		break;
 	case 9: // renfort
 		list = m_board.get_free_tiles();
@@ -2184,7 +2226,8 @@ void Bandas::click_on_banana_card(int index)
 		m_logic.card_effect.petrify = true;
 		break;
 	case 8: // piege
-		std::cout << "clicked on piege card" << std::endl;
+		m_mouse.use_target();
+		m_logic.card_effect.trap = true;
 		break;
 	case 9: // renfort
 		list = m_board.get_free_tiles();

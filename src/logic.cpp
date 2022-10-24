@@ -200,6 +200,11 @@ GLuint Board::get_tileFrame(Logic& logic, int col, int line, float delta)
 		}
 		else if (percent > 1.0f) {
 			frame = dying_tile.frames.size() - 1;
+			if (logic.card_effect.activate_trap && col == logic.card_effect.trap_coords.x && line == logic.card_effect.trap_coords.y) {
+				tile[col][line].state = Tile::STATE::DEAD;
+				logic.card_effect.trap_coords = glm::ivec2(-1, -1);
+				logic.card_effect.activate_trap = false;
+			}
 			return dying_tile.frames[frame].id;
 		}
 	}
@@ -1136,4 +1141,48 @@ glm::ivec2 Board::get_tile_coords_from_cow_position(int charge_col, glm::vec2 po
 		}
 	}
 	return glm::ivec2(-1, -1);
+}
+
+void Board::check_activate_trap(Logic& logic)
+{
+	if (logic.card_effect.trap_coords != glm::ivec2(-1, -1) && !logic.card_effect.activate_trap)
+	{
+		int dir_x = static_cast<int>(logic.move.dir_vec.x);
+		int dir_y = static_cast<int>(logic.move.dir_vec.y);
+		bool backward = (dir_x + dir_y) < 0;
+		if (dir_x != 0)
+		{
+			int line = logic.card_effect.trap_coords.y;
+			int col = logic.card_effect.trap_coords.x;
+			if (backward && (col + 1) <= bounds.right) {
+				if (tile[col + 1][line].fruit.type != 'x' && !tile[col + 1][line].fruit.is_petrified()) {
+					std::cout << "activate trap moving left" << std::endl;
+					logic.card_effect.activate_trap = true;
+				}
+			}
+			else if (!backward && (col - 1) >= bounds.left) {
+				if (tile[col - 1][line].fruit.type != 'x' && !tile[col - 1][line].fruit.is_petrified()) {
+					std::cout << "activate trap moving right" << std::endl;
+					logic.card_effect.activate_trap = true;
+				}
+			}
+		}
+		else if (dir_y != 0)
+		{
+			int line = logic.card_effect.trap_coords.y;
+			int col = logic.card_effect.trap_coords.x;
+			if (!backward && (line + 1) <= bounds.bottom) {
+				if (tile[col][line + 1].fruit.type != 'x' && !tile[col][line + 1].fruit.is_petrified()) {
+					std::cout << "activate trap moving up" << std::endl;
+					logic.card_effect.activate_trap = true;
+				}
+			}
+			else if (backward && (line - 1) >= bounds.top) {
+				if (tile[col][line - 1].fruit.type != 'x' && !tile[col][line - 1].fruit.is_petrified()) {
+					std::cout << "activate trap moving down" << std::endl;
+					logic.card_effect.activate_trap = true;
+				}
+			}
+		}
+	}
 }
