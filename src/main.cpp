@@ -172,6 +172,7 @@ void receive_message(std::shared_ptr<Game> & game)
 			}
 			else if (type == "mv")
 			{
+				std::cout << message << std::endl;
 				std::string move_dir_str = message.substr(3, 1);
 				std::string chrono_timer_str = message.substr(5);
 				int move_dir = std::atoi(move_dir_str.data());

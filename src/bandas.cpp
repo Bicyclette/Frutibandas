@@ -1719,6 +1719,7 @@ void Bandas::draw_game_page(float delta)
 		m_ui.get_page(1).get_layer(2).set_visibility(true);
 	}
 	else {
+		//std::cout << "I DONT PLAY : turn = " << m_logic.turn << "m_me.m_team = " << m_me.m_team << "move dir = " << m_logic.move.dir << "change turn = " << m_logic.change_turn << std::endl;
 		m_ui.get_page(1).get_layer(2).set_visibility(false);
 	}
 
@@ -1766,7 +1767,7 @@ void Bandas::draw_game_page(float delta)
 			m_anvil.draw(from, to, delta);
 			if (m_anvil.smoke_on) {
 				m_board.tile[x][y].state = Tile::STATE::DEAD;
-				m_board.tile[x][y].animTimer = 0.0f;
+				m_board.tile[x][y].animTimer = 42.0f;
 				m_board.tile[x][y].fruit.type = 'x';
 				m_board.tile[x][y].fruit.animTimer = 0.0f;
 			}

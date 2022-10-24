@@ -419,7 +419,6 @@ void Board::set_animTimer(Logic& logic)
 			for (int j = origin; (backward) ? j >= 0 : j <= 7; j += inc)
 			{
 				col = j;
-				std::cout << "process col " << col << ", line " << line << std::endl;
 				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
 				{
 					if (is_pushed_x(col, line, fruit_pusher, dir_x, origin))
@@ -489,8 +488,8 @@ void Board::set_animTimer(Logic& logic)
 		}
 	}
 
-	// print timer
 	/*
+	// print timer
 	for (int i = bounds.top; i <= bounds.bottom; ++i)
 	{
 		for (int j = bounds.left; j <= bounds.right; ++j)
