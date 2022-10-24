@@ -358,6 +358,52 @@ struct Board
 	std::string get_reinforcement_position(std::vector<int>& list);
 	glm::ivec2 get_tile_coords_from_mouse_position(int x, int y);
 	glm::ivec2 get_tile_coords_from_cow_position(int charge_col, glm::vec2 pos);
+	bool exist_petrified_fruit_line(int col, int line, bool backward) {
+		if (backward) {
+			for (int i = col; i >= bounds.left; --i) {
+				if (tile[i][line].fruit.type == 'x') {
+					return false;
+				}
+				else if (tile[i][line].fruit.is_petrified()) {
+					return true;
+				}
+			}
+		}
+		else {
+			for (int i = col; i <= bounds.right; ++i) {
+				if (tile[i][line].fruit.type == 'x') {
+					return false;
+				}
+				else if (tile[i][line].fruit.is_petrified()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	bool exist_petrified_fruit_column(int col, int line, bool backward) {
+		if (backward) {
+			for (int i = line; i >= bounds.top; --i) {
+				if (tile[col][i].fruit.type == 'x') {
+					return false;
+				}
+				else if (tile[col][i].fruit.is_petrified()) {
+					return true;
+				}
+			}
+		}
+		else {
+			for (int i = line; i <= bounds.bottom; ++i) {
+				if (tile[col][i].fruit.type == 'x') {
+					return false;
+				}
+				else if (tile[col][i].fruit.is_petrified()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 };
 
 struct Anvil
@@ -471,7 +517,7 @@ struct Cow
 		}
 		// draw cow
 		timer += delta;
-		pos = glm::vec2(pos_x, 600.0f) + run_speed * timer;
+		pos = glm::vec2(pos_x, c_draw_start.y + board.bounds.top * c_draw_shift.y + 90.0f) + run_speed * timer;
 		percent = std::fmod(timer, run.duration) / run.duration;
 		frame = static_cast<int>(percent * (run.frames.size() - 1));
 		m_sprite.set_pos(pos);

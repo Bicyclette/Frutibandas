@@ -1366,7 +1366,7 @@ void Bandas::update_game_page(std::array<int, 3> mouse_data, std::bitset<10> use
 void Bandas::hovering_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 {
 	// process card events first
-	if (m_logic.card_effect.select_enemy_banda || m_logic.card_effect.select_ally_banda || m_logic.card_effect.anvil || m_logic.card_effect.cow)
+	if (m_logic.card_effect.select_enemy_banda || m_logic.card_effect.select_ally_banda || m_logic.card_effect.anvil || m_logic.card_effect.cow || m_logic.card_effect.petrify)
 	{
 		glm::ivec2 tile_coords = m_board.get_tile_coords_from_mouse_position(mouse_coords.x, c_screen_height - mouse_coords.y);
 		if (tile_coords != glm::ivec2(-1, -1))

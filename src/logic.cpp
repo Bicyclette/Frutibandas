@@ -404,7 +404,9 @@ void Board::set_animTimer(Logic& logic)
 						}
 						else
 						{
-							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+							if (!tile[col][line].fruit.is_petrified()) {
+								tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+							}
 							tile[col][line].fruit.animTimer = 42.0f;
 						}
 					}
@@ -428,7 +430,9 @@ void Board::set_animTimer(Logic& logic)
 					}
 					else
 					{
-						tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						if (!tile[col][line].fruit.is_petrified()) {
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						}
 						tile[col][line].fruit.animTimer = 42.0f;
 					}
 				}
@@ -455,7 +459,9 @@ void Board::set_animTimer(Logic& logic)
 						}
 						else
 						{
-							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+							if (!tile[col][line].fruit.is_petrified()) {
+								tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+							}
 							tile[col][line].fruit.animTimer = 42.0f;
 						}
 					}
@@ -479,7 +485,9 @@ void Board::set_animTimer(Logic& logic)
 					}
 					else
 					{
-						tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						if (!tile[col][line].fruit.is_petrified()) {
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						}
 						tile[col][line].fruit.animTimer = 42.0f;
 					}
 				}
@@ -520,15 +528,18 @@ void Board::set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& 
 	{
 		for (int i = bounds.top; i <= bounds.bottom; ++i)
 		{
+			line = i;
 			for (int j = 0; j <= 7; ++j)
 			{
 				col = (backward) ? -j + 7 : j;
-				line = i;
-				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
+				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x' && !tile[col][line].fruit.is_petrified())
 				{
 					if (tile[col][line].fruit.type == pusher_type) {
-						index[i] = col;
-						break;
+						// check if along all consecutive fruits, none of them is petrified
+						if (!exist_petrified_fruit_line(col, line, backward)) {
+							index[i] = col;
+							break;
+						}
 					}
 				}
 			}
@@ -539,15 +550,18 @@ void Board::set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& 
 	{
 		for (int i = bounds.left; i <= bounds.right; ++i)
 		{
+			col = i;
 			for (int j = 0; j <= 7; ++j)
 			{
 				line = (backward) ? j : -j + 7;
-				col = i;
-				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
+				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x' && !tile[col][line].fruit.is_petrified())
 				{
 					if (tile[col][line].fruit.type == pusher_type) {
-						index[i] = line;
-						break;
+						// check if along all consecutive fruits, none of them is petrified
+						if (!exist_petrified_fruit_column(col, line, backward)) {
+							index[i] = line;
+							break;
+						}
 					}
 				}
 			}
@@ -558,10 +572,13 @@ void Board::set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& 
 
 bool Board::is_pushed_x(int col, int line, char pusher, int dir, int origin)
 {
+	bool backward = (dir < 0) ? true : false;
 	do
 	{
-		if (tile[col][line].fruit.type == pusher) {
-			return true;
+		if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
+			if (!exist_petrified_fruit_line(col, line, backward)) {
+				return true;
+			}
 		}
 		col -= dir;
 	} while (col >= bounds.left && col <= bounds.right && line >= bounds.top && line <= bounds.bottom && tile[col][line].fruit.type != 'x');
@@ -570,10 +587,13 @@ bool Board::is_pushed_x(int col, int line, char pusher, int dir, int origin)
 
 bool Board::is_pushed_y(int col, int line, char pusher, int dir, int origin)
 {
+	bool backward = (dir > 0) ? true : false;
 	do
 	{
-		if (tile[col][line].fruit.type == pusher) {
-			return true;
+		if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
+			if (!exist_petrified_fruit_column(col, line, backward)) {
+				return true;
+			}
 		}
 		line += dir;
 	} while (col >= bounds.left && col <= bounds.right && line >= bounds.top && line <= bounds.bottom && tile[col][line].fruit.type != 'x');
@@ -652,6 +672,12 @@ void Board::update(Logic& logic)
 							tile[col][line].fruit.animTimer = 0.0f;
 							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
 						}
+						// else if left tile exists & left tile fruit is petrified
+						else if (col - 1 >= bounds.left && tile[col - 1][line].fruit.is_petrified()) {
+							tile[col][line].fruit.type = 'x';
+							tile[col][line].fruit.animTimer = 0.0f;
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						}
 						// else if left tile does not exists
 						else if (col - 1 < bounds.left) {
 							tile[col][line].fruit.type = 'x';
@@ -702,6 +728,12 @@ void Board::update(Logic& logic)
 						}
 						// else if right tile exists & right tile does not contain a fruit
 						else if (col + 1 <= bounds.right && tile[col + 1][line].fruit.type == 'x') {
+							tile[col][line].fruit.type = 'x';
+							tile[col][line].fruit.animTimer = 0.0f;
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						}
+						// else if right tile exists & right tile fruit is petrified
+						else if (col + 1 <= bounds.right && tile[col + 1][line].fruit.is_petrified()) {
 							tile[col][line].fruit.type = 'x';
 							tile[col][line].fruit.animTimer = 0.0f;
 							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
@@ -760,6 +792,12 @@ void Board::update(Logic& logic)
 							tile[col][line].fruit.animTimer = 0.0f;
 							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
 						}
+						// else if down tile exists & down tile fruit is petrified
+						else if (line + 1 <= bounds.bottom && tile[col][line + 1].fruit.is_petrified()) {
+							tile[col][line].fruit.type = 'x';
+							tile[col][line].fruit.animTimer = 0.0f;
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						}
 						// else if down tile does not exists
 						else if (line + 1 > bounds.bottom) {
 							tile[col][line].fruit.type = 'x';
@@ -810,6 +848,12 @@ void Board::update(Logic& logic)
 						}
 						// else if up tile exists & up tile does not contain a fruit
 						else if (line - 1 >= bounds.top && tile[col][line - 1].fruit.type == 'x') {
+							tile[col][line].fruit.type = 'x';
+							tile[col][line].fruit.animTimer = 0.0f;
+							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
+						}
+						// else if up tile exists & up tile fruit is petrified
+						else if (line - 1 >= bounds.top && tile[col][line - 1].fruit.is_petrified()) {
 							tile[col][line].fruit.type = 'x';
 							tile[col][line].fruit.animTimer = 0.0f;
 							tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
@@ -945,7 +989,7 @@ void Board::check_dying_tiles(int& col, int& line)
 		line = rows[i];
 		for (c = bounds.left; c <= bounds.right; ++c)
 		{
-			if (tile[c][line].fruit.type != 'x' && tile[c][line].state == Tile::STATE::ALIVE) {
+			if (tile[c][line].fruit.type != 'x' && !tile[c][line].fruit.is_petrified() && tile[c][line].state == Tile::STATE::ALIVE) {
 				line = -1;
 				break;
 			}
@@ -960,7 +1004,7 @@ void Board::check_dying_tiles(int& col, int& line)
 		col = columns[i];
 		for (l = bounds.top; l <= bounds.bottom; ++l)
 		{
-			if (tile[col][l].fruit.type != 'x' && tile[col][l].state == Tile::STATE::ALIVE) {
+			if (tile[col][l].fruit.type != 'x' && !tile[col][l].fruit.is_petrified() && tile[col][l].state == Tile::STATE::ALIVE) {
 				col = -1;
 				break;
 			}
