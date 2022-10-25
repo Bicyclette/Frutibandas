@@ -1741,7 +1741,6 @@ void Bandas::draw_game_page(float delta)
 		m_ui.get_page(1).get_layer(2).set_visibility(true);
 	}
 	else {
-		//std::cout << "I DONT PLAY : turn = " << m_logic.turn << "m_me.m_team = " << m_me.m_team << "move dir = " << m_logic.move.dir << "change turn = " << m_logic.change_turn << std::endl;
 		m_ui.get_page(1).get_layer(2).set_visibility(false);
 	}
 
@@ -1856,12 +1855,16 @@ void Bandas::draw_game_page(float delta)
 				m_logic.card_effect.confiscation_id = -1;
 			}
 			else if (advertiser.m_index == 6) {
-				m_logic.card_effect.throw_anvil = true;
+				if (m_logic.card_effect.anvil_coords != glm::ivec2(-1, -1)) {
+					m_logic.card_effect.throw_anvil = true;
+				}
 			}
 			else if (advertiser.m_index == 7) {
 				int x = m_logic.card_effect.petrify_coords.x;
 				int y = m_logic.card_effect.petrify_coords.y;
-				m_board.tile[x][y].fruit.state = Fruit::STATE::TURN_STONE;
+				if (x != -1 && y != -1) {
+					m_board.tile[x][y].fruit.state = Fruit::STATE::TURN_STONE;
+				}
 			}
 			else if (advertiser.m_index == 8) {
 				int x = m_logic.card_effect.trap_coords.x;
@@ -1886,8 +1889,10 @@ void Bandas::draw_game_page(float delta)
 				}
 			}
 			else if (advertiser.m_index == 11) {
-				m_logic.card_effect.cow_charge = true;
-				m_cow.create_smoke_data(m_board);
+				if (m_cow.col != -1) {
+					m_logic.card_effect.cow_charge = true;
+					m_cow.create_smoke_data(m_board);
+				}
 			}
 			advertiser.m_index = -1;
 			m_advertiser.erase(m_advertiser.begin() + m_advertiser.size()-1);
@@ -2159,6 +2164,36 @@ void Bandas::process_card_effect(int id, bool delay)
 				m_logic.turn = (m_advertiser.back().m_green) ? m_enemy.m_team : m_me.m_team;
 			}
 			break;
+		case 6: // anvil
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 6;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				m_logic.card_effect.anvil_coords = glm::ivec2(-1, -1);
+			}
+			break;
+		case 7: // petrification
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 7;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				m_logic.card_effect.petrify_coords = glm::ivec2(-1, -1);
+			}
+			break;
 		case 9: // renfort
 			if (m_logic.card_effect.confiscation) {
 				m_logic.card_effect.confiscation = false;
@@ -2189,6 +2224,22 @@ void Bandas::process_card_effect(int id, bool delay)
 				m_logic.card_effect.solo_coords = glm::ivec2(-1, -1);
 			}
 			break;
+		case 11: // vachette
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 11;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				m_logic.card_effect.cow_coords = glm::ivec2(-1, -1);
+				m_cow.col = -1;
+			}
+			break;
 		default:
 			break;
 		}
@@ -2202,7 +2253,46 @@ void Bandas::process_card_effect(int id, bool delay)
 			m_logic.card_effect.confiscation_expiration = 2;
 			break;
 		case 4:
-			m_logic.card_effect.disorder = true;
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 4;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+					else if (a.m_index == 4) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				m_logic.card_effect.disorder_destination = -1;
+			}
+			else {
+				m_logic.card_effect.disorder = true;
+			}
+			break;
+		case 8:
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 8;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+					else if (a.m_index == 8) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				int x = m_logic.card_effect.trap_coords.x;
+				int y = m_logic.card_effect.trap_coords.y;
+				m_logic.card_effect.trap_coords = glm::ivec2(-1, -1);
+				m_board.tile[x][y].state = Tile::STATE::ALIVE;
+			}
 			break;
 		default:
 			break;

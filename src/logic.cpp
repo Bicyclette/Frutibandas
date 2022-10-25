@@ -61,12 +61,14 @@ void Board::init(std::string board)
 		{
 			tile[col][line].fruit.type = 'b';
 			tile[col][line].fruit.animTimer = 0.0f;
+			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
 			col += 1;
 		}
 		else if (c == 'o')
 		{
 			tile[col][line].fruit.type = 'o';
 			tile[col][line].fruit.animTimer = 0.0f;
+			tile[col][line].fruit.state = Fruit::STATE::STAND_STILL;
 			col += 1;
 		}
 		else if (c == '\n')
@@ -1170,13 +1172,11 @@ void Board::check_activate_trap(Logic& logic)
 			int col = logic.card_effect.trap_coords.x;
 			if (backward && (col + 1) <= bounds.right) {
 				if (tile[col + 1][line].fruit.type != 'x' && !tile[col + 1][line].fruit.is_petrified()) {
-					std::cout << "activate trap moving left" << std::endl;
 					logic.card_effect.activate_trap = true;
 				}
 			}
 			else if (!backward && (col - 1) >= bounds.left) {
 				if (tile[col - 1][line].fruit.type != 'x' && !tile[col - 1][line].fruit.is_petrified()) {
-					std::cout << "activate trap moving right" << std::endl;
 					logic.card_effect.activate_trap = true;
 				}
 			}
@@ -1187,13 +1187,11 @@ void Board::check_activate_trap(Logic& logic)
 			int col = logic.card_effect.trap_coords.x;
 			if (!backward && (line + 1) <= bounds.bottom) {
 				if (tile[col][line + 1].fruit.type != 'x' && !tile[col][line + 1].fruit.is_petrified()) {
-					std::cout << "activate trap moving up" << std::endl;
 					logic.card_effect.activate_trap = true;
 				}
 			}
 			else if (backward && (line - 1) >= bounds.top) {
 				if (tile[col][line - 1].fruit.type != 'x' && !tile[col][line - 1].fruit.is_petrified()) {
-					std::cout << "activate trap moving down" << std::endl;
 					logic.card_effect.activate_trap = true;
 				}
 			}
