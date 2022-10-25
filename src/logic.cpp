@@ -120,7 +120,7 @@ int Board::get_orange_count()
 	return count;
 }
 
-void Board::draw(Logic& logic, float delta, bool standby)
+void Board::draw(Logic& logic, std::vector<Advertiser>& advertiser, float delta, bool standby)
 {
 	for (int line = bounds.top; line <= bounds.bottom; ++line)
 	{
@@ -170,7 +170,7 @@ void Board::draw(Logic& logic, float delta, bool standby)
 		}
 	}
 
-	update(logic);
+	update(logic, advertiser);
 	orange_count = get_orange_count();
 	banana_count = get_banana_count();
 }
@@ -605,7 +605,7 @@ bool Board::is_pushed_y(int col, int line, char pusher, int dir, int origin)
 	return false;
 }
 
-void Board::update(Logic& logic)
+void Board::update(Logic& logic, std::vector<Advertiser> & advertiser)
 {
 	bool end_move = true;
 	bool kill_tiles = false;
@@ -977,6 +977,20 @@ void Board::update(Logic& logic)
 		logic.turn = (logic.turn == 0) ? 1 : 0;
 		logic.change_turn = false;
 		logic.used_a_card = false;
+		if (logic.card_effect.confiscation) {
+			logic.card_effect.confiscation_expiration -= 1;
+			if (logic.card_effect.confiscation_expiration == 0) {
+				logic.card_effect.confiscation = false;
+				logic.card_effect.confiscation_id = -1;
+				g_advertiser_mtx.lock();
+				for (auto& a : advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+			}
+		}
 	}
 }
 

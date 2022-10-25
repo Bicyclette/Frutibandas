@@ -1771,7 +1771,7 @@ void Bandas::draw_game_page(float delta)
 	}
 	g_advertiser_mtx.unlock();
 	if (m_logic.card_effect.activate_trap) { standby = true; }
-	m_board.draw(m_logic, delta, standby);
+	m_board.draw(m_logic, m_advertiser, delta, standby);
 
 	// draw anvil
 	if (m_logic.card_effect.throw_anvil && m_logic.card_effect.anvil_coords != glm::ivec2(-1, -1)) {
@@ -1845,8 +1845,15 @@ void Bandas::draw_game_page(float delta)
 				char bandas_type = (m_logic.turn == 0) ? 'o' : 'b';
 				int x = m_logic.card_effect.conversion_coords.x;
 				int y = m_logic.card_effect.conversion_coords.y;
-				m_board.tile[x][y].fruit.type = bandas_type;
+				if (x != -1 && y != -1) {
+					m_board.tile[x][y].fruit.type = bandas_type;
+				}
 				m_logic.card_effect.conversion_coords = glm::ivec2(-1, -1);
+			}
+			else if (advertiser.m_index == 1) {
+				remove_card(1);
+				get_card(m_logic.card_effect.confiscation_id, (m_logic.turn + 1) % 2);
+				m_logic.card_effect.confiscation_id = -1;
 			}
 			else if (advertiser.m_index == 6) {
 				m_logic.card_effect.throw_anvil = true;
@@ -2086,14 +2093,101 @@ void Bandas::process_card_effect(int id, bool delay)
 		remove_card(id);
 		switch (id)
 		{
+		case 0: // conversion
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 0;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				m_logic.card_effect.conversion_coords = glm::ivec2(-1, -1);
+			}
+			break;
 		case 2:
-			m_logic.card_effect.second_wave = true;
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 2;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+			}
+			else {
+				m_logic.card_effect.second_wave = true;
+			}
 			break;
 		case 3:
-			m_logic.card_effect.charge = true;
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 3;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+			}
+			else {
+				m_logic.card_effect.charge = true;
+			}
 			break;
 		case 5:
-			m_logic.turn = (m_advertiser.back().m_green) ? m_enemy.m_team : m_me.m_team;
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 5;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+			}
+			else {
+				m_logic.turn = (m_advertiser.back().m_green) ? m_enemy.m_team : m_me.m_team;
+			}
+			break;
+		case 9: // renfort
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 9;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				m_logic.card_effect.reinforcement = std::array<int, 6>{-1, -1, -1, -1, -1, -1};
+			}
+			break;
+		case 10: // solo
+			if (m_logic.card_effect.confiscation) {
+				m_logic.card_effect.confiscation = false;
+				m_logic.card_effect.confiscation_expiration = 0;
+				m_logic.card_effect.confiscation_id = 10;
+				g_advertiser_mtx.lock();
+				for (auto& a : m_advertiser) {
+					if (a.m_index == 1) {
+						a.m_show = true;
+					}
+				}
+				g_advertiser_mtx.unlock();
+				m_logic.card_effect.solo_coords = glm::ivec2(-1, -1);
+			}
 			break;
 		default:
 			break;
@@ -2103,6 +2197,10 @@ void Bandas::process_card_effect(int id, bool delay)
 	{
 		switch (id)
 		{
+		case 1:
+			m_logic.card_effect.confiscation = true;
+			m_logic.card_effect.confiscation_expiration = 2;
+			break;
 		case 4:
 			m_logic.card_effect.disorder = true;
 			break;
@@ -2123,7 +2221,10 @@ void Bandas::click_on_orange_card(int index)
 		m_logic.card_effect.select_enemy_banda = true;
 		break;
 	case 1: // confiscation
-		std::cout << "clicked on confiscation card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:1." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		remove_card(1);
 		break;
 	case 2: // celerite
 		g_msg2server_mtx.lock();
@@ -2194,7 +2295,10 @@ void Bandas::click_on_banana_card(int index)
 		m_logic.card_effect.select_enemy_banda = true;
 		break;
 	case 1: // confiscation
-		std::cout << "clicked on confiscation card" << std::endl;
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("7:1." + std::to_string(index));
+		g_msg2server_mtx.unlock();
+		remove_card(1);
 		break;
 	case 2: // celerite
 		g_msg2server_mtx.lock();
@@ -2251,5 +2355,29 @@ void Bandas::click_on_banana_card(int index)
 		break;
 	default:
 		break;
+	}
+}
+
+void Bandas::get_card(int card_id, int owner)
+{
+	if (owner == 0) // oranges
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (m_orange_cards[i].m_id == -1) {
+				m_orange_cards[i].m_id = card_id;
+				break;
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (m_banana_cards[i].m_id == -1) {
+				m_banana_cards[i].m_id = card_id;
+				break;
+			}
+		}
 	}
 }

@@ -173,6 +173,7 @@ class Bandas
 		void draw_cards();
 		void remove_card(int id);
 		void process_card_effect(int id, bool delay = false);
+		void get_card(int card_id, int owner);
 
 	public: // properties
 		NetworkClient m_net;

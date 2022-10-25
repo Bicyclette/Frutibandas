@@ -303,7 +303,7 @@ void receive_message(std::shared_ptr<Game> & game)
 					game->m_bandas.m_logic.card_effect.disorder_destination = effect_destination;
 					game->m_bandas.process_card_effect(card_id, true);
 				}
-				else if (card_id == 8) {
+				else if (card_id == 1 || card_id == 8) {
 					game->m_bandas.process_card_effect(card_id, true);
 				}
 				else {

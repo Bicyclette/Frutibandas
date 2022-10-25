@@ -10,6 +10,7 @@
 #include "shader_light.hpp"
 #include "helpers.hpp"
 #include "user_interface.hpp"
+#include "communication.hpp"
 
 constexpr glm::vec2 c_tile_size(256);
 constexpr glm::vec2 c_draw_start(243, 477);
@@ -162,6 +163,9 @@ struct Logic
 		bool trap;
 		glm::ivec2 trap_coords;
 		bool activate_trap;
+		bool confiscation;
+		int confiscation_id;
+		int confiscation_expiration;
 		CardEffect()
 		{
 			charge = false;
@@ -184,6 +188,9 @@ struct Logic
 			trap = false;
 			trap_coords = glm::ivec2(-1, -1);
 			activate_trap = false;
+			confiscation = false;
+			confiscation_id = -1;
+			confiscation_expiration = 0;
 		}
 		void reset()
 		{
@@ -207,6 +214,9 @@ struct Logic
 			trap = false;
 			trap_coords = glm::ivec2(-1, -1);
 			activate_trap = false;
+			confiscation = false;
+			confiscation_id = -1;
+			confiscation_expiration = 0;
 		}
 	};
 
@@ -348,7 +358,7 @@ struct Board
 	std::string to_string();
 	int get_banana_count();
 	int get_orange_count();
-	void draw(Logic& logic, float delta, bool standby);
+	void draw(Logic& logic, std::vector<Advertiser>& advertiser, float delta, bool standby);
 	GLuint get_banana_texture(Logic& logic, int col, int line, float timer);
 	GLuint get_orange_texture(Logic& logic, int col, int line, float timer);
 	void set_animTimer(Logic& logic);
@@ -357,7 +367,7 @@ struct Board
 	void set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& origin);
 	bool is_pushed_x(int col, int line, char pusher, int dir, int origin);
 	bool is_pushed_y(int col, int line, char pusher, int dir, int origin);
-	void update(Logic& logic);
+	void update(Logic& logic, std::vector<Advertiser>& advertiser);
 	void check_dying_tiles(int& col, int& line); // fill col and line with the index of the col/line which must be deleted
 	void set_tileDeleteTimerColumn(int c);
 	void set_tileDeleteTimerLine(int l);
