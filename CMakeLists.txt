@@ -49,13 +49,7 @@ set(SRCS
 	src/mouse.cpp
 	src/writer.cpp
 	src/bandas.cpp
-	src/logic.cpp
-	src/imgui.cpp
-	src/imgui_draw.cpp
-	src/imgui_tables.cpp
-	src/imgui_widgets.cpp
-	src/imgui_impl_sdl.cpp
-	src/imgui_impl_opengl3.cpp)
+	src/logic.cpp)
 
 set(HEADERS
 	include/stb_image.h
@@ -93,14 +87,6 @@ set(HEADERS
 	include/bandas.hpp
 	include/communication.hpp
 	include/logic.hpp
-	include/imgui.h
-	include/imconfig.h
-	include/imgui_internal.h
-	include/imstb_textedit.h
-	include/imstb_rectpack.h
-	include/imstb_truetype.h
-	include/imgui_impl_sdl.h
-	include/imgui_impl_opengl3.h
 	include/music.hpp
 	include/tinyutf8/tinyutf8.h
 	include/card.hpp)
