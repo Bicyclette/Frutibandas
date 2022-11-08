@@ -1509,7 +1509,7 @@ void Bandas::click_game_page(Page& page, int id, glm::ivec2 mouse_coords)
 		for (int i = 0; i < 3; ++i) {
 			if (m_orange_cards[i].m_id == 10 || m_banana_cards[i].m_id == 10) { index = i; break; }
 		}
-		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type) {
+		if (m_board.tile[tile_coords.x][tile_coords.y].state == Tile::STATE::ALIVE && m_board.tile[tile_coords.x][tile_coords.y].fruit.type == banda_type && !m_board.tile[tile_coords.x][tile_coords.y].fruit.is_petrified()) {
 			g_msg2server_mtx.lock();
 			g_msg2server.emplace("7:10." + std::to_string(index) + "." + std::to_string(tile_coords.x) + "." + std::to_string(tile_coords.y));
 			g_msg2server_mtx.unlock();

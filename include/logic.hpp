@@ -365,8 +365,8 @@ struct Board
 	GLuint get_animationFrame(Logic& logic, int col, int line, float delta, bool stand_still, bool standby);
 	GLuint get_tileFrame(Logic& logic, int col, int line, float delta);
 	void set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& origin);
-	bool is_pushed_x(int col, int line, char pusher, int dir, int origin);
-	bool is_pushed_y(int col, int line, char pusher, int dir, int origin);
+	bool is_pushed_x(int col, int line, char pusher, int dir, int origin, bool solo, int solo_x, int solo_y);
+	bool is_pushed_y(int col, int line, char pusher, int dir, int origin, bool solo, int solo_x, int solo_y);
 	void update(Logic& logic, std::vector<Advertiser>& advertiser);
 	void check_dying_tiles(int& col, int& line); // fill col and line with the index of the col/line which must be deleted
 	void set_tileDeleteTimerColumn(int c);

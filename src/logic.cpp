@@ -404,7 +404,7 @@ void Board::set_animTimer(Logic& logic)
 					line = i;
 					if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
 					{
-						if (is_pushed_x(col, line, fruit_pusher, dir_x, origin))
+						if (is_pushed_x(col, line, fruit_pusher, dir_x, origin, false, -1, -1))
 						{
 							tile[col][line].fruit.animTimer = -c_animLength * abs(col - origin) + ((c_animLength * 0.625f) * abs(col - origin));
 							tile[col][line].fruit.state = Fruit::STATE::MOVING;
@@ -430,7 +430,7 @@ void Board::set_animTimer(Logic& logic)
 				col = j;
 				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
 				{
-					if (is_pushed_x(col, line, fruit_pusher, dir_x, origin))
+					if (is_pushed_x(col, line, fruit_pusher, dir_x, origin, true, logic.card_effect.solo_coords.x, logic.card_effect.solo_coords.y))
 					{
 						tile[col][line].fruit.animTimer = -c_animLength * abs(col - origin) + ((c_animLength * 0.625f) * abs(col - origin));
 						tile[col][line].fruit.state = Fruit::STATE::MOVING;
@@ -459,7 +459,7 @@ void Board::set_animTimer(Logic& logic)
 					col = i;
 					if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
 					{
-						if (is_pushed_y(col, line, fruit_pusher, dir_y, origin))
+						if (is_pushed_y(col, line, fruit_pusher, dir_y, origin, false, -1, -1))
 						{
 							tile[col][line].fruit.animTimer = -c_animLength * abs(line - origin) + ((c_animLength * 0.625f) * abs(line - origin));
 							tile[col][line].fruit.state = Fruit::STATE::MOVING;
@@ -485,7 +485,7 @@ void Board::set_animTimer(Logic& logic)
 				line = j;
 				if (tile[col][line].state != Tile::STATE::DEAD && tile[col][line].fruit.type != 'x')
 				{
-					if (is_pushed_y(col, line, fruit_pusher, dir_y, origin))
+					if (is_pushed_y(col, line, fruit_pusher, dir_y, origin, true, logic.card_effect.solo_coords.x, logic.card_effect.solo_coords.y))
 					{
 						tile[col][line].fruit.animTimer = -c_animLength * abs(line - origin) + ((c_animLength * 0.625f) * abs(line - origin));
 						tile[col][line].fruit.state = Fruit::STATE::MOVING;
@@ -577,33 +577,63 @@ void Board::set_pusher_index(glm::vec2 dir, char pusher_type, int index[], int& 
 	}
 }
 
-bool Board::is_pushed_x(int col, int line, char pusher, int dir, int origin)
+bool Board::is_pushed_x(int col, int line, char pusher, int dir, int origin, bool solo, int solo_x, int solo_y)
 {
 	bool backward = (dir < 0) ? true : false;
-	do
+	if(solo)
 	{
-		if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
-			if (!exist_petrified_fruit_line(col, line, backward)) {
-				return true;
+		do
+		{
+			if (col == solo_x) {
+				if (!exist_petrified_fruit_line(col, line, backward)) {
+					return true;
+				}
 			}
-		}
-		col -= dir;
-	} while (col >= bounds.left && col <= bounds.right && line >= bounds.top && line <= bounds.bottom && tile[col][line].fruit.type != 'x');
+			col -= dir;
+		} while (col >= bounds.left && col <= bounds.right && tile[col][line].fruit.type != 'x' && !tile[col][line].fruit.is_petrified());
+	}
+	else
+	{
+		do
+		{
+			if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
+				if (!exist_petrified_fruit_line(col, line, backward)) {
+					return true;
+				}
+			}
+			col -= dir;
+		} while (col >= bounds.left && col <= bounds.right && tile[col][line].fruit.type != 'x');
+	}
 	return false;
 }
 
-bool Board::is_pushed_y(int col, int line, char pusher, int dir, int origin)
+bool Board::is_pushed_y(int col, int line, char pusher, int dir, int origin, bool solo, int solo_x, int solo_y)
 {
 	bool backward = (dir > 0) ? true : false;
-	do
+	if(solo)
 	{
-		if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
-			if (!exist_petrified_fruit_column(col, line, backward)) {
-				return true;
+		do
+		{
+			if (line == solo_y) {
+				if (!exist_petrified_fruit_column(col, line, backward)) {
+					return true;
+				}
 			}
-		}
-		line += dir;
-	} while (col >= bounds.left && col <= bounds.right && line >= bounds.top && line <= bounds.bottom && tile[col][line].fruit.type != 'x');
+			line += dir;
+		} while (line >= bounds.top && line <= bounds.bottom && tile[col][line].fruit.type != 'x' && !tile[col][line].fruit.is_petrified());
+	}
+	else
+	{
+		do
+		{
+			if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
+				if (!exist_petrified_fruit_column(col, line, backward)) {
+					return true;
+				}
+			}
+			line += dir;
+		} while (line >= bounds.top && line <= bounds.bottom && tile[col][line].fruit.type != 'x');
+	}
 	return false;
 }
 
