@@ -429,11 +429,11 @@ void Bandas::create_game_page()
 	g_layer2.get_sprite(7)->set_background_img("assets/game_page/arrow_down.tga");
 	g_layer2.get_sprite(7)->set_background_img_selected("assets/game_page/arrow_down_hover.tga");
 	g_layer2.get_sprite(7)->use_background_img();
-	g_layer2.add_sprite(8, glm::vec2(719 - 10, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.add_sprite(8, glm::vec2(719 - 14, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
 	g_layer2.get_sprite(8)->set_background_img("assets/game_page/arrow_right.tga");
 	g_layer2.get_sprite(8)->set_background_img_selected("assets/game_page/arrow_right_hover.tga");
 	g_layer2.get_sprite(8)->use_background_img();
-	g_layer2.add_sprite(9, glm::vec2(229 + 10, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.add_sprite(9, glm::vec2(229 + 14, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
 	g_layer2.get_sprite(9)->set_background_img("assets/game_page/arrow_left.tga");
 	g_layer2.get_sprite(9)->set_background_img_selected("assets/game_page/arrow_left_hover.tga");
 	g_layer2.get_sprite(9)->use_background_img();
@@ -1737,7 +1737,7 @@ void Bandas::draw_game_page(float delta)
 	draw_avatar_game_page();
 	
 	// draw background
-	if (m_logic.turn == m_me.m_team && m_logic.move.dir == -1 && !m_logic.change_turn) {
+	if (m_logic.turn == m_me.m_team && m_logic.move.dir == -1 && !m_logic.change_turn && !m_logic.card_effect.cow_charge && (m_logic.card_effect.petrify_coords == glm::ivec2(-1, -1))) {
 		m_ui.get_page(1).get_layer(2).set_visibility(true);
 	}
 	else {

@@ -313,6 +313,7 @@ GLuint Board::get_banana_texture(Logic& logic, int col, int line, float timer)
 		}
 		else if (tile[col][line].fruit.is_turning_into_stone()) {
 			tile[col][line].fruit.state = Fruit::STATE::PETRIFIED;
+			logic.card_effect.petrify_coords = glm::ivec2(-1, -1);
 		}
 		return anim->frames[frame].id;
 	}
@@ -373,6 +374,7 @@ GLuint Board::get_orange_texture(Logic& logic, int col, int line, float timer)
 		}
 		else if (tile[col][line].fruit.is_turning_into_stone()) {
 			tile[col][line].fruit.state = Fruit::STATE::PETRIFIED;
+			logic.card_effect.petrify_coords = glm::ivec2(-1, -1);
 		}
 		return anim->frames[frame].id;
 	}
