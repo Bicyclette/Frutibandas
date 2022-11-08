@@ -421,19 +421,19 @@ void Bandas::create_game_page()
 	g_layer1.get_sprite(5)->use_background_img();
 
 	Layer& g_layer2 = game_page.get_layer(2);
-	g_layer2.add_sprite(6, glm::vec2(473, 728 + 17 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.add_sprite(6, glm::vec2(473, 728 + 17 - 105 -10), glm::vec2(105), c_screen_width, c_screen_height);
 	g_layer2.get_sprite(6)->set_background_img("assets/game_page/arrow_up.tga");
 	g_layer2.get_sprite(6)->set_background_img_selected("assets/game_page/arrow_up_hover.tga");
 	g_layer2.get_sprite(6)->use_background_img();
-	g_layer2.add_sprite(7, glm::vec2(473, 728 - 465 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.add_sprite(7, glm::vec2(473, 728 - 465 - 105 + 10), glm::vec2(105), c_screen_width, c_screen_height);
 	g_layer2.get_sprite(7)->set_background_img("assets/game_page/arrow_down.tga");
 	g_layer2.get_sprite(7)->set_background_img_selected("assets/game_page/arrow_down_hover.tga");
 	g_layer2.get_sprite(7)->use_background_img();
-	g_layer2.add_sprite(8, glm::vec2(719, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.add_sprite(8, glm::vec2(719 - 10, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
 	g_layer2.get_sprite(8)->set_background_img("assets/game_page/arrow_right.tga");
 	g_layer2.get_sprite(8)->set_background_img_selected("assets/game_page/arrow_right_hover.tga");
 	g_layer2.get_sprite(8)->use_background_img();
-	g_layer2.add_sprite(9, glm::vec2(229, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
+	g_layer2.add_sprite(9, glm::vec2(229 + 10, 728 - 225 - 105), glm::vec2(105), c_screen_width, c_screen_height);
 	g_layer2.get_sprite(9)->set_background_img("assets/game_page/arrow_left.tga");
 	g_layer2.get_sprite(9)->set_background_img_selected("assets/game_page/arrow_left_hover.tga");
 	g_layer2.get_sprite(9)->use_background_img();

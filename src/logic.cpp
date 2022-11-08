@@ -1193,20 +1193,32 @@ void Board::check_activate_trap(Logic& logic)
 {
 	if (logic.card_effect.trap_coords != glm::ivec2(-1, -1) && !logic.card_effect.activate_trap)
 	{
+		char pusher = (logic.turn == 0) ? 'o' : 'b';
+		int first_pusher[8] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+		int origin = 42;
+		set_pusher_index(logic.move.dir_vec, pusher, first_pusher, origin);
+		
 		int dir_x = static_cast<int>(logic.move.dir_vec.x);
 		int dir_y = static_cast<int>(logic.move.dir_vec.y);
 		bool backward = (dir_x + dir_y) < 0;
+
+		bool solo = logic.card_effect.select_ally_banda;
+		int solo_x = logic.card_effect.solo_coords.x;
+		int solo_y = logic.card_effect.solo_coords.y;
+
 		if (dir_x != 0)
 		{
 			int line = logic.card_effect.trap_coords.y;
 			int col = logic.card_effect.trap_coords.x;
 			if (backward && (col + 1) <= bounds.right) {
-				if (tile[col + 1][line].fruit.type != 'x' && !tile[col + 1][line].fruit.is_petrified()) {
+				bool pushed = is_pushed_x(col + 1, line, pusher, dir_x, origin, solo, solo_x, solo_y);
+				if (tile[col + 1][line].fruit.type != 'x' && !tile[col + 1][line].fruit.is_petrified() && pushed) {
 					logic.card_effect.activate_trap = true;
 				}
 			}
 			else if (!backward && (col - 1) >= bounds.left) {
-				if (tile[col - 1][line].fruit.type != 'x' && !tile[col - 1][line].fruit.is_petrified()) {
+				bool pushed = is_pushed_x(col - 1, line, pusher, dir_x, origin, solo, solo_x, solo_y);
+				if (tile[col - 1][line].fruit.type != 'x' && !tile[col - 1][line].fruit.is_petrified() && pushed) {
 					logic.card_effect.activate_trap = true;
 				}
 			}
@@ -1216,12 +1228,14 @@ void Board::check_activate_trap(Logic& logic)
 			int line = logic.card_effect.trap_coords.y;
 			int col = logic.card_effect.trap_coords.x;
 			if (!backward && (line + 1) <= bounds.bottom) {
-				if (tile[col][line + 1].fruit.type != 'x' && !tile[col][line + 1].fruit.is_petrified()) {
+				bool pushed = is_pushed_y(col, line + 1, pusher, dir_y, origin, solo, solo_x, solo_y);
+				if (tile[col][line + 1].fruit.type != 'x' && !tile[col][line + 1].fruit.is_petrified() && pushed) {
 					logic.card_effect.activate_trap = true;
 				}
 			}
 			else if (backward && (line - 1) >= bounds.top) {
-				if (tile[col][line - 1].fruit.type != 'x' && !tile[col][line - 1].fruit.is_petrified()) {
+				bool pushed = is_pushed_y(col, line - 1, pusher, dir_y, origin, solo, solo_x, solo_y);
+				if (tile[col][line - 1].fruit.type != 'x' && !tile[col][line - 1].fruit.is_petrified() && pushed) {
 					logic.card_effect.activate_trap = true;
 				}
 			}
