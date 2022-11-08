@@ -1121,7 +1121,7 @@ std::vector<int> Board::get_free_tiles()
 	{
 		for (int col = 0; col <= 7; ++col)
 		{
-			if (tile[col][line].state == Tile::STATE::ALIVE && tile[col][line].fruit.type == 'x') {
+			if (tile[col][line].state == Tile::STATE::ALIVE && tile[col][line].fruit.type == 'x' && tile[col][line].state != Tile::STATE::TRAPPED) {
 				list.push_back(col);
 				list.push_back(line);
 			}
