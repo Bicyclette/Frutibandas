@@ -19,5 +19,5 @@ class Frutibandas(ConanFile):
         self.copy("*.so*", "", "./build/bin")
 
     def system_requirements(self):
-        tools.system.package_manager:mode="install"
+        tools.system.package_manager:mode=install
         tools.system.package_manager.update()
