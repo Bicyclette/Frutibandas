@@ -21,7 +21,7 @@ jobs:
       uses: turtlebrowser/get-conan@main
 
     - name: Conan profile
-      run: conan profile show default
+      run: conan profile list
       
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
