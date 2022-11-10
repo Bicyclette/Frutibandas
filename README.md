@@ -19,6 +19,7 @@ Bringing the game Frutibandas back to life.<br><br>
 ```
 conan install . -s build_type=Release --build missing --install-folder=build
 cmake -B build -S .
+cmake --build build
 ```
 
 ## Credit
