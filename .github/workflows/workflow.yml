@@ -22,8 +22,11 @@ jobs:
     - name: Conan profile
       run: conan profile new default --detect
 
-    - name: Conan profile update
+    - name: Conan profile update compiler
       run: conan profile update settings.compiler.libcxx=libstdc++11 default
+    
+    - name: Conan profile update package manager mode
+      run: conan profile update conf.tools.system.package_manager:mode=install default
 
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
