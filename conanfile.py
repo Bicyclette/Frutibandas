@@ -19,3 +19,6 @@ class Frutibandas(ConanFile):
         self.copy("*.dll", "", "./build/bin")
         self.copy("*.dylib*", "", "./build/bin")
         self.copy("*.so*", "", "./build/bin")
+
+    def system_requirements(self):
+        self.run("apt-get install ...", sudo=True)
