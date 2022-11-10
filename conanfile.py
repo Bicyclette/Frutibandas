@@ -1,4 +1,5 @@
 from conans import ConanFile
+from conan.tools.system.package_manager import Apt, Dnf, PacMan, Pkg, Yum, Zypper
 
 class Frutibandas(ConanFile):
     requires = (("assimp/5.2.2"),
