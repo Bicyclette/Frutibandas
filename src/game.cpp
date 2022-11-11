@@ -119,7 +119,7 @@ void Game::sound_manager()
 void Game::resizeScreen(int clientWidth, int clientHeight)
 {
 	#pragma omp parallel for
-	for(int i{0}; i < scenes.size(); ++i)
+	for(int i = 0; i < scenes.size(); ++i)
 	{
 		scenes[i].updateCameraPerspective(glm::ivec2(clientWidth, clientHeight));
 	}
