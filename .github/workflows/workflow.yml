@@ -39,7 +39,7 @@ jobs:
 
     steps:
     - name: Get Conan
-      run: pip3 install conan
+      run: brew install conan
 
     - name: Conan version
       run: conan -v
