@@ -15,7 +15,9 @@ class Frutibandas(ConanFile):
     generators = "cmake"
 
     def requirements(self):
+        print("===== SELF DATA\n")
         print(vars(self))
+        print("===== SELF DATA\n")
         if True:
             self.requires("llvm-openmp/12.0.1")
     
