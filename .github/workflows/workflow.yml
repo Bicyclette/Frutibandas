@@ -55,8 +55,14 @@ jobs:
     - name: Get llvm
       run: brew install llvm
 
-    - name: llvm LDFLAGS
-      run: LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
+    - name: CC
+      run: CC=/usr/local/opt/llvm/bin/clang
+    - name: CXX
+      run: CXX=/usr/local/opt/llvm/bin/clang++
+    - name: LDFLAGS
+      run: LDFLAGS="-L/usr/local/opt/llvm/lib"
+    - name: CPPFLAGS
+      run: CPPFLAGS="-I/usr/local/opt/llvm/include"
 
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
