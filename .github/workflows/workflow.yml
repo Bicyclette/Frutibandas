@@ -57,18 +57,9 @@ jobs:
 
     - name: Set compiler
       run: conan profile update settings.compiler=gcc default
-
-    - name: Get llvm
-      run: brew install llvm
-
-    - name: CC
-      run: CC=/usr/local/opt/llvm/bin/clang
-    - name: CXX
-      run: CXX=/usr/local/opt/llvm/bin/clang++
-    - name: LDFLAGS
-      run: LDFLAGS="-L/usr/local/opt/llvm/lib"
-    - name: CPPFLAGS
-      run: CPPFLAGS="-I/usr/local/opt/llvm/include"
+    
+    - name: Set compiler settings
+      run: conan profile update settings.compiler.libcxx=libstdc++11 default
 
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
