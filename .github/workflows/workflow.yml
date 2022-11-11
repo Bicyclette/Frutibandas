@@ -40,29 +40,17 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Get GCC
-      run: brew install gcc
-
     - name: Get Conan
       run: brew install conan
 
-    - name: Conan version
-      run: conan -v
-  
     - name: Conan profile
       run: conan profile new default --detect
 
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
 
-    - name: Set compiler
-      run: conan profile update settings.compiler=gcc default
-    
-    - name: Set compiler std
-      run: conan profile update settings.compiler.libcxx=libstdc++11 default
-    
-    - name: Set compiler version settings
-      run: conan profile update settings.compiler.version=12 default
+    - name: Conan profile set compiler to clang
+      run: conan profile update settings.compiler=clang default
 
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
