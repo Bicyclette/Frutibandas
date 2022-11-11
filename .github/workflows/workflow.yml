@@ -40,6 +40,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Get GCC
+      run: brew install gcc
+
     - name: Get Conan
       run: brew install conan
 
@@ -52,8 +55,8 @@ jobs:
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
 
-    - name: set compiler
-      run: conan profile update settings.compiler=clang++ default
+    - name: Set compiler
+      run: conan profile update settings.compiler=gcc default
 
     - name: Get llvm
       run: brew install llvm
