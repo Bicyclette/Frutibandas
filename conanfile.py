@@ -3,6 +3,8 @@ import platform
 
 class Frutibandas(ConanFile):
 
+    os = platform.system()
+
     requires = (("assimp/5.2.2"),
                 ("bullet3/3.24"),
                 ("enet/1.3.17"),
@@ -16,7 +18,7 @@ class Frutibandas(ConanFile):
     generators = "cmake"
 
     def requirements(self):
-        print("PLATFORM = ", platform.system())
+        print("PLATFORM = ", os)
             #self.requires("llvm-openmp/12.0.1")
     
     def imports(self):
