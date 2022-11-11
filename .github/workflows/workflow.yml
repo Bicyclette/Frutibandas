@@ -52,10 +52,11 @@ jobs:
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
 
-    - name: Get OMP
-      run: |
-        brew install llvm
-        LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
+    - name: Get llvm
+      run: brew install llvm
+
+    - name: llvm LDFLAGS
+      run: LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
 
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
