@@ -1,4 +1,5 @@
 from conans import ConanFile
+import platform
 
 class Frutibandas(ConanFile):
 
@@ -15,11 +16,8 @@ class Frutibandas(ConanFile):
     generators = "cmake"
 
     def requirements(self):
-        print("===== SELF DATA\n")
-        print(vars(self.settings))
-        print("===== SELF DATA\n")
-        if True:
-            self.requires("llvm-openmp/12.0.1")
+        print("PLATFORM = ", platform.system())
+            #self.requires("llvm-openmp/12.0.1")
     
     def imports(self):
         self.copy("*.dll", "", "./build/bin")
