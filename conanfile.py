@@ -18,8 +18,8 @@ class Frutibandas(ConanFile):
     generators = "cmake"
 
     def requirements(self):
-        print("PLATFORM = ", self.os)
-            #self.requires("llvm-openmp/12.0.1")
+        if(self.os == "Darwin"):
+            self.requires("llvm-openmp/12.0.1")
     
     def imports(self):
         self.copy("*.dll", "", "./build/bin")
