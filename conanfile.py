@@ -14,7 +14,7 @@ class Frutibandas(ConanFile):
 
     generators = "cmake"
     
-    def configure(self):
+    def requirements(self):
         if self.settings.os == "Macos":
             self.requires("llvm-openmp/12.0.1")
 
