@@ -52,6 +52,9 @@ jobs:
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
 
+    - name: Get OMP
+      run: brew install libomp
+
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
       
