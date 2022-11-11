@@ -52,6 +52,9 @@ jobs:
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
 
+    - name: set compiler
+      run: conan profile update settings.compiler=clang++
+
     - name: Get llvm
       run: brew install llvm
 
