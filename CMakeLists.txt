@@ -93,6 +93,13 @@ set(HEADERS
 
 add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+	target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
+else()
+	message(FATAL_ERROR "OpenMP not found.")
+endif()
+
 find_package(OPENMP REQUIRED)
 if(OPENMP_FOUND)
 	target_link_libraries(${PROJECT_NAME} ${OpenMP_LD_FLAGS})
