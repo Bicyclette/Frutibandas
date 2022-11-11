@@ -10,14 +10,11 @@ class Frutibandas(ConanFile):
                 ("libsndfile/1.0.31"),
                 ("openal/1.21.1"),
                 ("sdl/2.0.20"),
-                ("zlib/1.2.13", "override"))
+                ("zlib/1.2.13", "override"),
+                ("llvm-openmp/12.0.1"))
 
     generators = "cmake"
     
-    def requirements(self):
-        if self.settings.os == "Macos":
-            self.requires("llvm-openmp/12.0.1")
-
     def imports(self):
         self.copy("*.dll", "", "./build/bin")
         self.copy("*.dylib*", "", "./build/bin")
