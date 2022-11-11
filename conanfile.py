@@ -1,6 +1,7 @@
 from conans import ConanFile
 
 class Frutibandas(ConanFile):
+
     requires = (("assimp/5.2.2"),
                 ("bullet3/3.24"),
                 ("enet/1.3.17"),
@@ -9,10 +10,13 @@ class Frutibandas(ConanFile):
                 ("libsndfile/1.0.31"),
                 ("openal/1.21.1"),
                 ("sdl/2.0.20"),
-                ("zlib/1.2.13", "override"),
-                ("llvm-openmp/12.0.1"))
+                ("zlib/1.2.13", "override"))
 
     generators = "cmake"
+    
+    def configure(self):
+        if self.settings.os == "Macos":
+            self.requires("llvm-openmp/12.0.1")
 
     def imports(self):
         self.copy("*.dll", "", "./build/bin")

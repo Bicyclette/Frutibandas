@@ -93,11 +93,13 @@ set(HEADERS
 
 add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 
-find_package(OPENMP REQUIRED)
-if(OPENMP_FOUND)
-	target_link_libraries(${PROJECT_NAME} ${OpenMP_LD_FLAGS})
-else()
-	message(FATAL_ERROR "OpenMP not found.")
+if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+	find_package(OPENMP REQUIRED)
+	if(OPENMP_FOUND)
+		target_link_libraries(${PROJECT_NAME} ${OpenMP_LD_FLAGS})
+	else()
+		message(FATAL_ERROR "OpenMP not found.")
+	endif()
 endif()
 
 find_package(OpenGL REQUIRED)
