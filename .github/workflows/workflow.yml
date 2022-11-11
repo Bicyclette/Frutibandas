@@ -54,7 +54,7 @@ jobs:
 
     - name: Get OMP
       run: |
-        brew install llvm \
+        brew install llvm
         LDFLAGS="-L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++"
 
     - name: Dependencies
