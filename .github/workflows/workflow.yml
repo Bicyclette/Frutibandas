@@ -39,6 +39,8 @@ jobs:
     container: conanio/gcc7
     
     steps:
+    - name: ls
+      run: ls
     - name: Get source code
       run: git clone https://github.com/Bicyclette/Frutibandas.git
 
