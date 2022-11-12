@@ -36,29 +36,32 @@ jobs:
 
   build_ubuntu:
     runs-on: ubuntu-latest
-    container:
-      image: conanio/gcc7
-      volumes:
-        - ${{github.workspace}}:/github/home
-    
-    steps:
-      #- name: Get source code
-      #run: git clone https://github.com/Bicyclette/Frutibandas.git
 
-    - name: checkout to frutibandas directory
-      run: cd /github/home/Frutibandas/Frutibandas
+    steps:
+    - uses: actions/checkout@v3
+    - name: remove microsoft repos
+      run: |
+         sudo rm /etc/apt/sources.list.d/microsoft-prod*
+         sudo rm /etc/apt/sources.list.d/azure-cli*
+         sudo apt-get update
+    
+    - name: Get Conan
+      run: pip3 install conan
+
+    - name: Conan profile
+      run: conan profile new default --detect
 
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
 
     - name: Dependencies
-      run: conan install . -s build_type=Release --build missing --install-folder=build
+      run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
       
     - name: Configure CMake
-      run: cmake -B build -S .
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      run: cmake --build build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
   build_mac:
     runs-on: macos-latest
