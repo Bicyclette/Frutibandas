@@ -35,28 +35,28 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
   build_ubuntu:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - uses: actions/checkout@v3
+    runs-on: ubuntu:latest
+    container:
+      image: conanio/gcc7
     
-    - name: Get Conan
-      run: pip3 install conan
+    steps:
+    - name: Get source code
+      run: git clone https://github.com/Bicyclette/Frutibandas.git
 
-    - name: Conan profile
-      run: conan profile new default --detect
+    - name: checkout to bandas' root directory
+      run: cd Frutibandas
 
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
 
     - name: Dependencies
-      run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
+      run: conan install . -s build_type=Release --build missing --install-folder=build
       
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B build -S .
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build build
 
   build_mac:
     runs-on: macos-latest
