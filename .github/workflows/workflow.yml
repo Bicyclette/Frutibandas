@@ -37,8 +37,8 @@ jobs:
   build_ubuntu:
     runs-on: ubuntu-latest
     container:
-      - image: conanio/gcc7
-      - volumes: ${{github.workspace}}:.
+      image: conanio/gcc7
+      volumes: ${{github.workspace}}:.
     
     steps:
       #- name: Get source code
