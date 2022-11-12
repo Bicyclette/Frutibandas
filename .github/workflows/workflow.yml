@@ -39,11 +39,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
     - name: remove microsoft repos
-      run: |
-         sudo rm /etc/apt/sources.list.d/microsoft-prod*
-         sudo rm /etc/apt/sources.list.d/azure-cli*
-         sudo apt-get update
+      run: sudo rm /etc/apt/sources.list.d/microsoft-prod*
     
     - name: Get Conan
       run: pip3 install conan
