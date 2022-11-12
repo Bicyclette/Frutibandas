@@ -35,7 +35,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
   build_ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v3
@@ -49,9 +49,6 @@ jobs:
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
     
-    - name: remove conan system requirements
-      run: conan remove --system-reqs "*"
-
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
       
