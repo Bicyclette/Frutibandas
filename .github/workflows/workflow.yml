@@ -39,10 +39,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
-    - name: remove microsoft repos
-      run: sudo rm /etc/apt/sources.list.d/microsoft-prod*
-    
+ 
     - name: Get Conan
       run: pip3 install conan
 
@@ -51,6 +48,9 @@ jobs:
 
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
+    
+    - name: remove conan system requirements
+      run: conan remove --system-reqs "*"
 
     - name: Dependencies
       run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
