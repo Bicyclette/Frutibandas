@@ -39,14 +39,14 @@ jobs:
     container:
       image: conanio/gcc7
       volumes:
-        - ${{github.workspace}}:/home
+        - ${{github.workspace}}:/github/home
     
     steps:
       #- name: Get source code
       #run: git clone https://github.com/Bicyclette/Frutibandas.git
 
     - name: checkout to frutibandas directory
-      run: cd /home/Frutibandas
+      run: cd /github/home/Frutibandas/Frutibandas
 
     - name: Conan profile update package manager mode
       run: conan profile update conf.tools.system.package_manager:mode=install default
