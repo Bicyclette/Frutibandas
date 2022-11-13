@@ -1,14 +1,9 @@
-name: workflow
+name: Create Assets
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-env:
-  BUILD_TYPE: Release
-
+  release:
+    types: [published]
+    
 jobs:
   build_windows:
     runs-on: windows-latest
@@ -33,7 +28,23 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
+        
+    - name: Tar and strip the binary
+      run: |
+        export PROGRAM=bandas
+        tar -czfv bandas.tar.gz $PROGRAM shaders assets
+        
+    - name: Upload assets
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./bandas.tar.gz
+        asset_name: bandas-WINDOWS.tar.gz
+        asset_content_type: application/tar.gz
+  
   build_mac:
     runs-on: macos-latest
 
@@ -60,3 +71,19 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    
+    - name: Tar and strip the binary
+      run: |
+        export PROGRAM=bandas
+        tar -czfv bandas.tar.gz $PROGRAM shaders assets
+        
+    - name: Upload assets
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./bandas.tar.gz
+        asset_name: bandas-MACOSX.tar.gz
+        asset_content_type: application/tar.gz
