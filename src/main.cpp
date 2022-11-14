@@ -10,8 +10,6 @@
 
 #define SERVER "staging.frutibandas.eternaltwin.org"
 #define PORT 50385
-//#define SERVER "127.0.0.1"
-//#define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
 {
@@ -390,10 +388,29 @@ void render(std::shared_ptr<Game> game, std::shared_ptr<WindowManager> client)
 	}
 }
 
+void force_use_gpu()
+{
+	// get GPU informations
+	const GLubyte* gpu_vendor = glGetString(GL_VENDOR);
+	const GLubyte* gpu_renderer = glGetString(GL_RENDERER);
+	const GLubyte* gpu_version = glGetString(GL_VERSION);
+	std::cout << "GPU::VENDOR = " << gpu_vendor << std::endl;
+	std::cout << "GPU::RENDERER = " << gpu_renderer << std::endl;
+	std::cout << "GPU::VERSION = " << gpu_version << std::endl;
+
+	size_t cmp_length = my_min(strlen((const char*)gpu_vendor), strlen("NVIDIA Corporation"));
+	if (strncmp((const char*)gpu_vendor, "NVIDIA Corporation", cmp_length) == 0) {
+		std::cout << "Using NVIDIA chip." << std::endl;
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	std::shared_ptr<WindowManager> client{ std::make_shared<WindowManager>("Frutibandas") };
 	std::shared_ptr<Game> game{ std::make_shared<Game>(c_screen_width, c_screen_height) };
+
+	// if integrated CPU graphics and GPU available, then force use GPU 
+	//force_use_gpu();
 
 	// network thread
 	std::thread net_thread(network_thread, std::ref(client), std::ref(game));

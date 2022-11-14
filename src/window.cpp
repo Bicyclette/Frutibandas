@@ -52,6 +52,9 @@ WindowManager::WindowManager(const std::string& title)
 		std::exit(-1);
 	}
 
+	// enable composition for X11
+	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+
 	glContext = SDL_GL_CreateContext(window);
 
 	// Glew init

@@ -13,7 +13,7 @@ class Frutibandas(ConanFile):
                 ("libsndfile/1.0.31"),
                 ("openal/1.21.1"),
                 ("sdl/2.0.20"),
-                ("zlib/1.2.13", "override"))
+                ("zlib/1.2.12", "override"))
 
     generators = "cmake"
 
