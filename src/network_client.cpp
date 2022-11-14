@@ -25,7 +25,10 @@ NetworkClient::NetworkClient() :
 NetworkClient::~NetworkClient()
 {
 	enet_host_destroy(m_client);
-	enet_peer_reset(m_peer);
+	if(is_connected())
+	{
+		enet_peer_reset(m_peer);
+	}
 }
 
 bool NetworkClient::is_trying_to_connect()
