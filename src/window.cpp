@@ -4,6 +4,9 @@ WindowManager::WindowManager(const std::string& title)
 {
 	m_alive = true;
 
+	// enable composition for X11
+	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+
 	if(SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
 		std::cerr << SDL_GetError() << std::endl;
@@ -51,9 +54,6 @@ WindowManager::WindowManager(const std::string& title)
 		SDL_Quit();
 		std::exit(-1);
 	}
-
-	// enable composition for X11
-	SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
 
 	glContext = SDL_GL_CreateContext(window);
 
