@@ -1,10 +1,12 @@
 # Frutibandas
 
 <p align=center style="font-size:150%;">
-Bringing the game Frutibandas back to life.<br><br>
+Bringing the game Frutibandas back to life.<br>
 
-[https://bicyclette.itch.io/frutibandas](https://bicyclette.itch.io/frutibandas)
-<br><br>
+<p align=center>
+<a href="https://bicyclette.itch.io/frutibandas">bicyclette.itch.io/frutibandas</a>
+</p>
+
 
 <img alt="home" src="screen_capture/home_page.png">
 <br><br>
