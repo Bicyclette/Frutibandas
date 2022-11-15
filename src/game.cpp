@@ -59,7 +59,7 @@ void Game::draw(float& delta, double& elapsedTime, int width, int height, DRAWIN
 	}
 
 	// get shader
-	Shader s = graphics.getPBRShader();
+	Shader& s = graphics.getPBRShader();
 
 	if(activeScene < scenes.size())
 	{

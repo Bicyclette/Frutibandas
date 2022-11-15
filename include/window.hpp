@@ -11,6 +11,7 @@
 #include <cmath>
 #include <memory>
 #include "color.hpp"
+#include "gl_debug.hpp"
 
 struct WindowEvent
 {

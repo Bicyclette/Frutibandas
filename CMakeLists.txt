@@ -49,7 +49,8 @@ set(SRCS
 	src/mouse.cpp
 	src/writer.cpp
 	src/bandas.cpp
-	src/logic.cpp)
+	src/logic.cpp
+	src/gl_debug.cpp)
 
 set(HEADERS
 	include/stb_image.h
@@ -89,7 +90,8 @@ set(HEADERS
 	include/logic.hpp
 	include/music.hpp
 	include/tinyutf8/tinyutf8.h
-	include/card.hpp)
+	include/card.hpp
+	include/gl_debug.hpp)
 
 add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
 

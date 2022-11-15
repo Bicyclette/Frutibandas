@@ -29,7 +29,12 @@ WindowManager::WindowManager(const std::string& title)
 	// OPENGL VERSION
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 4);
+
+	// CREATE OPENGL DEBUG CONTEXT IF DEBUG BUILD_TYPE
+#if _DEBUG
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
 
 	// DOUBLE BUFFER
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -83,6 +88,25 @@ WindowManager::WindowManager(const std::string& title)
 
 	// window callback (move with mouse pointer)
 	SDL_SetWindowHitTest(window, moveWindowCallback, 0);
+
+#if _DEBUG
+	if (glDebugMessageCallback) {
+		std::cout << "Register OpenGL debug callback " << std::endl;
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(openglCallbackFunction, nullptr);
+		GLuint unusedIds = 0;
+		glDebugMessageControl(GL_DONT_CARE,
+			GL_DONT_CARE,
+			GL_DONT_CARE,
+			0,
+			&unusedIds,
+			true);
+	}
+	else
+	{
+		std::cout << "glDebugMessageCallback not available" << std::endl;
+	}
+#endif
 }
 
 WindowManager::~WindowManager()
