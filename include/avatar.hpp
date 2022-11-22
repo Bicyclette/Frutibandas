@@ -64,12 +64,12 @@ struct Avatar
 		MIXTE,
 		HERISSON,
 		BULBE,
-		ARRIERE,
+		NORHO,
 		DECOIFFE,
 		ELVIS,
-		EPI1,
-		EPI2,
-		EPI3,
+		HIGEM,
+		MANGA,
+		CULBUR,
 		MECHE_AVANT,
 		STEADY,
 		CRETE,
@@ -135,7 +135,7 @@ struct Avatar
 
 	Avatar() :
 		m_gender(Avatar::GENDER::MALE),
-		m_homme(Avatar::FACE::TACHES, Avatar::HAIR::BULBE, Avatar::EYES::MANGA, Avatar::MOUTH::MACHOIRE_SOURIRE, Avatar::SAC::NONE, 4, 3, 0),
+		m_homme(Avatar::FACE::TACHES, Avatar::HAIR::BULBE, Avatar::EYES::MANGA, Avatar::MOUTH::MOYENNE, Avatar::SAC::NONE, 4, 3, 0),
 		m_femme(Avatar::FACE::TACHES, Avatar::HAIR::COUETTES, Avatar::EYES::MANGA, Avatar::MOUTH::SOURIRE, Avatar::SAC::NONE, 4, 3, 0),
 		m_eyes_color{JAUNE,MARRON,ROUGE,VIOLET,ROSE,BLEU,VERT},
 		m_skin_color{
@@ -157,26 +157,28 @@ struct Avatar
 			createTexture("assets/avatar/sprites/homme/cheveux_bulbe.tga", TEXTURE_TYPE::DIFFUSE, true),					// 1
 			createTexture("assets/avatar/sprites/homme/cheveux_decoiffe.tga", TEXTURE_TYPE::DIFFUSE, true),					// 2
 			createTexture("assets/avatar/sprites/homme/cheveux_elvis.tga", TEXTURE_TYPE::DIFFUSE, true),					// 3
-			createTexture("assets/avatar/sprites/homme/cheveux_epi1.tga", TEXTURE_TYPE::DIFFUSE, true),						// 4
-			createTexture("assets/avatar/sprites/homme/cheveux_epi1_back.tga", TEXTURE_TYPE::DIFFUSE, true),				// 5
+			createTexture("assets/avatar/sprites/homme/cheveux_higem.tga", TEXTURE_TYPE::DIFFUSE, true),						// 4
+			createTexture("assets/avatar/sprites/homme/cheveux_higem_back.tga", TEXTURE_TYPE::DIFFUSE, true),				// 5
 
-			createTexture("assets/avatar/sprites/homme/cheveux_epi2.tga", TEXTURE_TYPE::DIFFUSE, true),						// 6
-			createTexture("assets/avatar/sprites/homme/cheveux_epi3.tga", TEXTURE_TYPE::DIFFUSE, true),						// 7
-			createTexture("assets/avatar/sprites/homme/cheveux_herisson.tga", TEXTURE_TYPE::DIFFUSE, true),					// 8
-			createTexture("assets/avatar/sprites/homme/cheveux_meche_avant.tga", TEXTURE_TYPE::DIFFUSE, true),				// 9
-			createTexture("assets/avatar/sprites/homme/cheveux_steady.tga", TEXTURE_TYPE::DIFFUSE, true),					// 10
-			createTexture("assets/avatar/sprites/homme/crete.tga", TEXTURE_TYPE::DIFFUSE, true),							// 11
-			createTexture("assets/avatar/sprites/homme/crete_back.tga", TEXTURE_TYPE::DIFFUSE, true),						// 12
+			createTexture("assets/avatar/sprites/homme/cheveux_manga.tga", TEXTURE_TYPE::DIFFUSE, true),						// 6
+			createTexture("assets/avatar/sprites/homme/cheveux_culbur.tga", TEXTURE_TYPE::DIFFUSE, true),						// 7
+			createTexture("assets/avatar/sprites/homme/cheveux_culbur_back.tga", TEXTURE_TYPE::DIFFUSE, true),						// 8
 
-			createTexture("assets/avatar/sprites/homme/kaspa_back.tga", TEXTURE_TYPE::DIFFUSE, true),						// 13
-			createTexture("assets/avatar/sprites/homme/kaspa_front.tga", TEXTURE_TYPE::DIFFUSE, true),						// 14
-			createTexture("assets/avatar/sprites/homme/yeux_amande.tga", TEXTURE_TYPE::DIFFUSE, true),						// 15
-			createTexture("assets/avatar/sprites/homme/yeux_colere.tga", TEXTURE_TYPE::DIFFUSE, true),						// 16
-			createTexture("assets/avatar/sprites/homme/yeux_gros.tga", TEXTURE_TYPE::DIFFUSE, true),						// 17
-			createTexture("assets/avatar/sprites/homme/yeux_manga.tga", TEXTURE_TYPE::DIFFUSE, true),						// 18
-			createTexture("assets/avatar/sprites/homme/yeux_amande_mask.tga", TEXTURE_TYPE::DIFFUSE, true),					// 19
-			createTexture("assets/avatar/sprites/homme/yeux_gros_mask.tga", TEXTURE_TYPE::DIFFUSE, true),					// 20
-			createTexture("assets/avatar/sprites/homme/yeux_manga_mask.tga", TEXTURE_TYPE::DIFFUSE, true)					// 21
+			createTexture("assets/avatar/sprites/homme/cheveux_herisson.tga", TEXTURE_TYPE::DIFFUSE, true),					// 9
+			createTexture("assets/avatar/sprites/homme/cheveux_meche_avant.tga", TEXTURE_TYPE::DIFFUSE, true),				// 10
+			createTexture("assets/avatar/sprites/homme/cheveux_steady.tga", TEXTURE_TYPE::DIFFUSE, true),					// 11
+			createTexture("assets/avatar/sprites/homme/crete.tga", TEXTURE_TYPE::DIFFUSE, true),							// 12
+			createTexture("assets/avatar/sprites/homme/crete_back.tga", TEXTURE_TYPE::DIFFUSE, true),						// 13
+
+			createTexture("assets/avatar/sprites/homme/kaspa_back.tga", TEXTURE_TYPE::DIFFUSE, true),						// 14
+			createTexture("assets/avatar/sprites/homme/kaspa_front.tga", TEXTURE_TYPE::DIFFUSE, true),						// 15
+			createTexture("assets/avatar/sprites/homme/yeux_amande.tga", TEXTURE_TYPE::DIFFUSE, true),						// 16
+			createTexture("assets/avatar/sprites/homme/yeux_colere.tga", TEXTURE_TYPE::DIFFUSE, true),						// 17
+			createTexture("assets/avatar/sprites/homme/yeux_gros.tga", TEXTURE_TYPE::DIFFUSE, true),						// 18
+			createTexture("assets/avatar/sprites/homme/yeux_manga.tga", TEXTURE_TYPE::DIFFUSE, true),						// 19
+			createTexture("assets/avatar/sprites/homme/yeux_amande_mask.tga", TEXTURE_TYPE::DIFFUSE, true),					// 20
+			createTexture("assets/avatar/sprites/homme/yeux_gros_mask.tga", TEXTURE_TYPE::DIFFUSE, true),					// 21
+			createTexture("assets/avatar/sprites/homme/yeux_manga_mask.tga", TEXTURE_TYPE::DIFFUSE, true)					// 22
 		},
 		m_tex_femme{
 			createTexture("assets/avatar/sprites/femme/cheveux_70_back.tga", TEXTURE_TYPE::DIFFUSE, true),					// 0
@@ -301,19 +303,25 @@ struct Avatar
 			}
 			else if (m_homme.m_hair == HAIR::KASPA)
 			{
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[13].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[14].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_hair == HAIR::CRETE)
 			{
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[12].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[13].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
-			else if (m_homme.m_hair == HAIR::EPI1)
+			else if (m_homme.m_hair == HAIR::HIGEM)
 			{
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[5].id);
+				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+			}
+			else if (m_homme.m_hair == HAIR::CULBUR)
+			{
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[8].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
@@ -365,32 +373,32 @@ struct Avatar
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::MANGA) {
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[18].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[19].id);
 				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
 				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[21].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[22].id);
 				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::COLERE) {
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[16].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[17].id);
 				m_shaderHSL.setVec3f("HSL", BLACK);
 				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::AMANDE) {
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[15].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[16].id);
 				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
 				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[19].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[20].id);
 				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_eyes == EYES::GROS) {
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[17].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[18].id);
 				m_shaderHSL.setVec3f("HSL", m_eyes_color[m_homme.m_eyes_color_id]);
 				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[20].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[21].id);
 				glActiveTexture(GL_TEXTURE0);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
@@ -455,11 +463,11 @@ struct Avatar
 			}
 			else if (m_homme.m_hair == HAIR::KASPA)
 			{
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[14].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[15].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
-			else if (m_homme.m_hair == HAIR::ARRIERE)
+			else if (m_homme.m_hair == HAIR::NORHO)
 			{
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[0].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
@@ -473,7 +481,7 @@ struct Avatar
 			}
 			else if (m_homme.m_hair == HAIR::CRETE)
 			{
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[11].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[12].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
@@ -489,19 +497,19 @@ struct Avatar
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
-			else if (m_homme.m_hair == HAIR::EPI1)
+			else if (m_homme.m_hair == HAIR::HIGEM)
 			{
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[4].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
-			else if (m_homme.m_hair == HAIR::EPI2)
+			else if (m_homme.m_hair == HAIR::MANGA)
 			{
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[6].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
-			else if (m_homme.m_hair == HAIR::EPI3)
+			else if (m_homme.m_hair == HAIR::CULBUR)
 			{
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[7].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
@@ -509,23 +517,23 @@ struct Avatar
 			}
 			else if (m_homme.m_hair == HAIR::HERISSON)
 			{
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[8].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[9].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_hair == HAIR::MECHE_AVANT)
 			{
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[9].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[10].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
 			else if (m_homme.m_hair == HAIR::STEADY)
 			{
-				glBindTexture(GL_TEXTURE_2D, m_tex_homme[10].id);
+				glBindTexture(GL_TEXTURE_2D, m_tex_homme[11].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 			}
-			else if (m_homme.m_hair == HAIR::ARRIERE)
+			else if (m_homme.m_hair == HAIR::NORHO)
 			{
 				glBindTexture(GL_TEXTURE_2D, m_tex_homme[0].id);
 				m_shaderRGB.setVec3f("color", m_hair_color[m_homme.m_hair_color_id]);

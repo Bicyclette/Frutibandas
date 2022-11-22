@@ -35,17 +35,31 @@ void Writer::write_aux(WRITE_ACTION writeAction, std::string& character, float d
 		m_lastWriteAction = writeAction;
 		return;
 	}
-	if (m_lastWriteAction == writeAction || (writeAction == WRITE_ACTION::CHARACTER && character == m_lastCharacter))
+	if (writeAction == WRITE_ACTION::CHARACTER && character == m_lastCharacter)
 	{
 		m_deltaWrite += delta;
-		if (m_deltaWrite < 1.0f)
+		if (m_deltaWrite < 0.8f) {
 			return;
-		else
-		{
-			if (m_deltaWrite < 1.05f)
-				return;
-			else
-				m_deltaWrite = 1.0f;
+		}
+		else {
+			m_deltaWrite = 0.75f;
+		}
+	}
+	else if (m_lastWriteAction == WRITE_ACTION::CHARACTER)
+	{
+		m_deltaWrite += delta;
+		if (m_deltaWrite < 0.075f) {
+			return;
+		}
+	}
+	else if(m_lastWriteAction == writeAction)
+	{
+		m_deltaWrite += delta;
+		if (m_deltaWrite < 0.8f) {
+			return;
+		}
+		else {
+			m_deltaWrite = 0.75f;
 		}
 	}
 	if (writeAction == WRITE_ACTION::CHARACTER)

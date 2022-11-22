@@ -187,6 +187,7 @@ class Bandas
 		Player m_me;
 		Player m_enemy;
 		Music music;
+		std::string m_num_connected_players;
 
 	public: // game logic
 		Board m_board;

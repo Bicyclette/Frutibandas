@@ -4,7 +4,8 @@ Bandas::Bandas(Graphics& graphics) :
 	m_graphics(graphics),
 	m_text(c_screen_width, c_screen_height),
 	m_mouse("assets/mouse/viseur.tga"),
-	m_writer(c_screen_width, c_screen_height)
+	m_writer(c_screen_width, c_screen_height),
+	m_num_connected_players("N/A")
 {
 	// user interface
 	createUI();
@@ -105,12 +106,12 @@ void Bandas::create_home_page()
 	Layer& h_layer4 = home_page.get_layer(4);
 	h_layer4.set_visibility(false);
 	h_layer4.add_sprite(9, glm::vec2(610, 728 - (140 + 48 * 2 + 12)), glm::vec2(130, 24), c_screen_width, c_screen_height);
-	h_layer4.get_sprite(9)->set_background_img("assets/frutibouilleur/bulb1.tga");
-	h_layer4.get_sprite(9)->set_background_img_selected("assets/frutibouilleur/bulb1_hover.tga");
+	h_layer4.get_sprite(9)->set_background_img("assets/frutibouilleur/norho.tga");
+	h_layer4.get_sprite(9)->set_background_img_selected("assets/frutibouilleur/norho_hover.tga");
 	h_layer4.get_sprite(9)->use_background_img();
 	h_layer4.add_sprite(10, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 24)), glm::vec2(130, 24), c_screen_width, c_screen_height);
-	h_layer4.get_sprite(10)->set_background_img("assets/frutibouilleur/bulb2.tga");
-	h_layer4.get_sprite(10)->set_background_img_selected("assets/frutibouilleur/bulb2_hover.tga");
+	h_layer4.get_sprite(10)->set_background_img("assets/frutibouilleur/bulb.tga");
+	h_layer4.get_sprite(10)->set_background_img_selected("assets/frutibouilleur/bulb_hover.tga");
 	h_layer4.get_sprite(10)->use_background_img();
 	h_layer4.add_sprite(11, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 48)), glm::vec2(130, 24), c_screen_width, c_screen_height);
 	h_layer4.get_sprite(11)->set_background_img("assets/frutibouilleur/decoiffe.tga");
@@ -121,16 +122,16 @@ void Bandas::create_home_page()
 	h_layer4.get_sprite(12)->set_background_img_selected("assets/frutibouilleur/elvis_hover.tga");
 	h_layer4.get_sprite(12)->use_background_img();
 	h_layer4.add_sprite(13, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 96)), glm::vec2(130, 24), c_screen_width, c_screen_height);
-	h_layer4.get_sprite(13)->set_background_img("assets/frutibouilleur/epi1.tga");
-	h_layer4.get_sprite(13)->set_background_img_selected("assets/frutibouilleur/epi1_hover.tga");
+	h_layer4.get_sprite(13)->set_background_img("assets/frutibouilleur/higem.tga");
+	h_layer4.get_sprite(13)->set_background_img_selected("assets/frutibouilleur/higem_hover.tga");
 	h_layer4.get_sprite(13)->use_background_img();
 	h_layer4.add_sprite(14, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 120)), glm::vec2(130, 24), c_screen_width, c_screen_height);
-	h_layer4.get_sprite(14)->set_background_img("assets/frutibouilleur/epi2.tga");
-	h_layer4.get_sprite(14)->set_background_img_selected("assets/frutibouilleur/epi2_hover.tga");
+	h_layer4.get_sprite(14)->set_background_img("assets/frutibouilleur/manga.tga");
+	h_layer4.get_sprite(14)->set_background_img_selected("assets/frutibouilleur/manga_hover.tga");
 	h_layer4.get_sprite(14)->use_background_img();
 	h_layer4.add_sprite(15, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 144)), glm::vec2(130, 24), c_screen_width, c_screen_height);
-	h_layer4.get_sprite(15)->set_background_img("assets/frutibouilleur/epi3.tga");
-	h_layer4.get_sprite(15)->set_background_img_selected("assets/frutibouilleur/epi3_hover.tga");
+	h_layer4.get_sprite(15)->set_background_img("assets/frutibouilleur/culbur.tga");
+	h_layer4.get_sprite(15)->set_background_img_selected("assets/frutibouilleur/culbur_hover.tga");
 	h_layer4.get_sprite(15)->use_background_img();
 	h_layer4.add_sprite(16, glm::vec2(610, 728 - (140 + 48 * 2 + 12 + 168)), glm::vec2(130, 24), c_screen_width, c_screen_height);
 	h_layer4.get_sprite(16)->set_background_img("assets/frutibouilleur/herisson.tga");
@@ -988,13 +989,13 @@ void Bandas::update_avatar(Page& page, int id)
 		if(id == 7) { m_me.m_avatar.m_homme.m_face = Avatar::FACE::NORMAL; }
 		else if (id == 8) { m_me.m_avatar.m_homme.m_face = Avatar::FACE::TACHES; }
 		// cheveux homme
-		if (id == 9) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::ARRIERE; }
+		if (id == 9) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::NORHO; }
 		else if (id == 10) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::BULBE; }
 		else if (id == 11) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::DECOIFFE; }
 		else if (id == 12) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::ELVIS; }
-		else if (id == 13) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::EPI1; }
-		else if (id == 14) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::EPI2; }
-		else if (id == 15) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::EPI3; }
+		else if (id == 13) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::HIGEM; }
+		else if (id == 14) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::MANGA; }
+		else if (id == 15) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::CULBUR; }
 		else if (id == 16) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::HERISSON; }
 		else if (id == 17) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::CRETE; }
 		else if (id == 18) { m_me.m_avatar.m_homme.m_hair = Avatar::HAIR::KASPA; }
@@ -1203,6 +1204,10 @@ void Bandas::draw_home_page(float delta)
 				home_page.get_layer(12).get_sprite(62)->set_grey(false);
 				home_page.get_layer(12).get_sprite(62)->set_selectable(true);
 			}
+			// get number of connected players
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("8");
+			g_msg2server_mtx.unlock();
 		}
 		else
 		{
@@ -1222,6 +1227,13 @@ void Bandas::draw_home_page(float delta)
 			}
 		}
 	}
+	// print number of connected players
+	g_connected_players_mtx.lock();
+	std::string connected_players_str = m_num_connected_players;
+	g_connected_players_mtx.unlock();
+	m_text.use_police(1);
+	m_text.print("PLAYERS CONNECTED : " + connected_players_str, 24, 625, 1, glm::vec3(0));
+	m_text.use_police(0);
 }
 
 void Bandas::start_game()
@@ -1258,6 +1270,8 @@ void Bandas::quit_game()
 	m_enemy.m_chrono.reset();
 	// flush advertiser queue
 	m_advertiser.clear();
+	// reset connected players amount
+	m_num_connected_players = "N/A";
 }
 
 void Bandas::enemy_gave_up()

@@ -89,6 +89,10 @@ void send_message(std::shared_ptr<Game> & game)
 		// send message
 		game->m_bandas.m_net.send_data("card:" + message);
 	}
+	else if (code == 8) // get amount of connected players
+	{
+		game->m_bandas.m_net.send_data("cp");
+	}
 }
 
 void receive_message(std::shared_ptr<Game> & game)
@@ -152,6 +156,12 @@ void receive_message(std::shared_ptr<Game> & game)
 				game->m_bandas.m_enemy.m_avatar.create_from_net_data(avatar);
 				// switch to game page
 				game->m_bandas.start_game();
+			}
+			else if (type == "cp")
+			{
+				g_connected_players_mtx.lock();
+				game->m_bandas.m_num_connected_players = message.substr(3);
+				g_connected_players_mtx.unlock();
 			}
 			else if (type == "gu")
 			{
