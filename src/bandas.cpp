@@ -574,6 +574,13 @@ void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input,
 		m_writer.write(txt_input, user_input, delta, boundX, cursor_shape);
 		m_me.m_pseudo = m_writer.m_textInput[0];
 	}
+	// get number of connected players
+	if(m_net.is_connected())
+	{
+		g_msg2server_mtx.lock();
+		g_msg2server.emplace("8");
+		g_msg2server_mtx.unlock();
+	}
 }
 
 void Bandas::hovering_home_page(Page& page, int id)
@@ -1204,10 +1211,6 @@ void Bandas::draw_home_page(float delta)
 				home_page.get_layer(12).get_sprite(62)->set_grey(false);
 				home_page.get_layer(12).get_sprite(62)->set_selectable(true);
 			}
-			// get number of connected players
-			g_msg2server_mtx.lock();
-			g_msg2server.emplace("8");
-			g_msg2server_mtx.unlock();
 		}
 		else
 		{
@@ -1228,11 +1231,8 @@ void Bandas::draw_home_page(float delta)
 		}
 	}
 	// print number of connected players
-	g_connected_players_mtx.lock();
-	std::string connected_players_str = m_num_connected_players;
-	g_connected_players_mtx.unlock();
 	m_text.use_police(1);
-	m_text.print("PLAYERS CONNECTED : " + connected_players_str, 24, 625, 1, glm::vec3(0));
+	m_text.print("PLAYERS CONNECTED : " + m_num_connected_players, 24, 625, 1, glm::vec3(0));
 	m_text.use_police(0);
 }
 
