@@ -929,6 +929,7 @@ void Bandas::click_home_page(Page& page, int id)
 	{
 		g_msg2server_mtx.lock();
 		g_leave_game = true;
+		g_msg2server.emplace("9");
 		g_msg2server_mtx.unlock();
 		g_cv_connect_leave.notify_one();
 		SDL_Event event;

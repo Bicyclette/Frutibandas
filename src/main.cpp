@@ -8,10 +8,10 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "staging.frutibandas.eternaltwin.org"
-#define PORT 50385
-//#define SERVER "127.0.0.1"
-//#define PORT 7777
+//#define SERVER "staging.frutibandas.eternaltwin.org"
+//#define PORT 50385
+#define SERVER "127.0.0.1"
+#define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
 {
@@ -94,6 +94,10 @@ void send_message(std::shared_ptr<Game> & game)
 	else if (code == 8) // get amount of connected players
 	{
 		game->m_bandas.m_net.send_data("cp");
+	}
+	else if (code == 9) // leave game
+	{
+		game->m_bandas.m_net.send_data("bye");
 	}
 }
 
