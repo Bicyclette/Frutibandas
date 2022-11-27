@@ -8,6 +8,8 @@ build-mac:
     - "shared-macos-amd64"
   image: "macos-12-xcode-13"
   script:
+    - "brew install cmake"
+    - "brew install conan"
     - "conan install . -s build_type=Release --build missing --install-folder=build"
     - "cmake -B build -S ."
     - "cmake --build build"
