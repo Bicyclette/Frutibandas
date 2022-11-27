@@ -586,8 +586,10 @@ bool Board::is_pushed_x(int col, int line, char pusher, int dir, int origin, boo
 	{
 		do
 		{
-			if (col == solo_x) {
-				if (!exist_petrified_fruit_line(col, line, backward)) {
+			if (col == solo_x)
+			{
+				if (!exist_petrified_fruit_line(col, line, backward))
+				{
 					return true;
 				}
 			}
@@ -598,8 +600,10 @@ bool Board::is_pushed_x(int col, int line, char pusher, int dir, int origin, boo
 	{
 		do
 		{
-			if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
-				if (!exist_petrified_fruit_line(col, line, backward)) {
+			if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified())
+			{
+				if (!exist_petrified_fruit_line(col, line, backward))
+				{
 					return true;
 				}
 			}
@@ -616,8 +620,10 @@ bool Board::is_pushed_y(int col, int line, char pusher, int dir, int origin, boo
 	{
 		do
 		{
-			if (line == solo_y) {
-				if (!exist_petrified_fruit_column(col, line, backward)) {
+			if (line == solo_y)
+			{
+				if (!exist_petrified_fruit_column(col, line, backward))
+				{
 					return true;
 				}
 			}
@@ -628,8 +634,10 @@ bool Board::is_pushed_y(int col, int line, char pusher, int dir, int origin, boo
 	{
 		do
 		{
-			if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified()) {
-				if (!exist_petrified_fruit_column(col, line, backward)) {
+			if (tile[col][line].fruit.type == pusher && !tile[col][line].fruit.is_petrified())
+			{
+				if (!exist_petrified_fruit_column(col, line, backward))
+				{
 					return true;
 				}
 			}

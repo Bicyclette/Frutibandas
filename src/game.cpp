@@ -80,7 +80,7 @@ void Game::drawUI(float& delta, double& elapsedTime, int width, int height, DRAW
 	if (m_bandas.m_ui.get_active_page() == 0)
 	{
 		m_bandas.draw_home_page(delta);
-		bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
+		//bloomPass(width, height, graphics.userInterfaceFBO, 1, graphics.getBloomTexture(1));
 	}
 	else if (m_bandas.m_ui.get_active_page() == 1)
 	{

@@ -8,10 +8,10 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-//#define SERVER "staging.frutibandas.eternaltwin.org"
-//#define PORT 50385
-#define SERVER "127.0.0.1"
-#define PORT 7777
+#define SERVER "staging.frutibandas.eternaltwin.org"
+#define PORT 50385
+//#define SERVER "127.0.0.1"
+//#define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
 {
@@ -110,7 +110,7 @@ void receive_message(std::shared_ptr<Game> & game)
 		{
 			std::string message(reinterpret_cast<char*>(game->m_bandas.m_net.m_event.packet->data));
 			std::string type(message.substr(0, message.find_first_of(':')));
-			if (type == "gs")
+			if (type.compare("gs") == 0)
 			{
 				message = message.substr(6);
 				// get pseudo
@@ -163,21 +163,21 @@ void receive_message(std::shared_ptr<Game> & game)
 				// switch to game page
 				game->m_bandas.start_game();
 			}
-			else if (type == "cp")
+			else if (type.compare("cp") == 0)
 			{
 				g_connected_players_mtx.lock();
 				game->m_bandas.m_num_connected_players = message.substr(3);
 				g_connected_players_mtx.unlock();
 			}
-			else if (type == "gu")
+			else if (type.compare("gu") == 0)
 			{
 				game->m_bandas.enemy_gave_up();
 			}
-			else if (type == "dc")
+			else if (type.compare("dc") == 0)
 			{
 				game->m_bandas.enemy_disconnected();
 			}
-			else if (type == "gc")
+			else if (type.compare("gc") == 0)
 			{
 				std::string data = message.substr(3);
 				int messageLength = data.size();
@@ -186,7 +186,7 @@ void receive_message(std::shared_ptr<Game> & game)
 					game->m_bandas.add_chat_message(data);
 				}
 			}
-			else if (type == "mv")
+			else if (type.compare("mv") == 0)
 			{
 				std::string move_dir_str = message.substr(3, 1);
 				std::string chrono_timer_str = message.substr(5);
@@ -232,7 +232,7 @@ void receive_message(std::shared_ptr<Game> & game)
 				game->m_bandas.m_board.set_animTimer(game->m_bandas.m_logic);
 				game->m_bandas.m_logic.card_effect.solo_coords = glm::ivec2( -1, -1 );
 			}
-			else if (type == "card")
+			else if (type.compare("card") == 0)
 			{
 				// ignore useless data
 				message = message.substr(5);
@@ -325,7 +325,7 @@ void receive_message(std::shared_ptr<Game> & game)
 					game->m_bandas.process_card_effect(card_id, false);
 				}
 			}
-			else if (type == "end")
+			else if (type.compare("end") == 0)
 			{
 				game->m_bandas.m_logic.game_is_finished = true;
 			}
@@ -404,29 +404,10 @@ void render(std::shared_ptr<Game> game, std::shared_ptr<WindowManager> client)
 	}
 }
 
-void force_use_gpu()
-{
-	// get GPU informations
-	const GLubyte* gpu_vendor = glGetString(GL_VENDOR);
-	const GLubyte* gpu_renderer = glGetString(GL_RENDERER);
-	const GLubyte* gpu_version = glGetString(GL_VERSION);
-	std::cout << "GPU::VENDOR = " << gpu_vendor << std::endl;
-	std::cout << "GPU::RENDERER = " << gpu_renderer << std::endl;
-	std::cout << "GPU::VERSION = " << gpu_version << std::endl;
-
-	size_t cmp_length = my_min(strlen((const char*)gpu_vendor), strlen("NVIDIA Corporation"));
-	if (strncmp((const char*)gpu_vendor, "NVIDIA Corporation", cmp_length) == 0) {
-		std::cout << "Using NVIDIA chip." << std::endl;
-	}
-}
-
 int main(int argc, char* argv[])
 {
 	std::shared_ptr<WindowManager> client{ std::make_shared<WindowManager>("Frutibandas") };
 	std::shared_ptr<Game> game{ std::make_shared<Game>(c_screen_width, c_screen_height) };
-
-	// if integrated CPU graphics and GPU available, then force use GPU 
-	//force_use_gpu();
 
 	// network thread
 	std::thread net_thread(network_thread, std::ref(client), std::ref(game));

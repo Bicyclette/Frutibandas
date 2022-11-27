@@ -335,12 +335,15 @@ void Bandas::create_home_page()
 	Layer& h_layer12 = home_page.get_layer(12);
 	h_layer12.add_sprite(61, glm::vec2(225, 728 - 285), glm::vec2(50, 50), c_screen_width, c_screen_height);
 	h_layer12.get_sprite(61)->set_background_img("assets/frutibouilleur/couleur_left.tga");
+	h_layer12.get_sprite(61)->set_background_img_selected("assets/frutibouilleur/couleur_left_glow.tga");
 	h_layer12.get_sprite(61)->use_background_img();
 	h_layer12.add_sprite(62, glm::vec2(525, 728 - 285), glm::vec2(50, 50), c_screen_width, c_screen_height);
 	h_layer12.get_sprite(62)->set_background_img("assets/frutibouilleur/couleur_right.tga");
+	h_layer12.get_sprite(62)->set_background_img_selected("assets/frutibouilleur/couleur_right_glow.tga");
 	h_layer12.get_sprite(62)->use_background_img();
 	h_layer12.add_sprite(63, glm::vec2(984, 728 - 65), glm::vec2(50, 50), c_screen_width, c_screen_height);
 	h_layer12.get_sprite(63)->set_background_img("assets/home_page/off.tga");
+	h_layer12.get_sprite(63)->set_background_img_selected("assets/home_page/off_glow.tga");
 	h_layer12.get_sprite(63)->use_background_img();
 
 	Layer& h_layer13 = home_page.get_layer(13);
@@ -713,25 +716,31 @@ void Bandas::hovering_home_page(Page& page, int id)
 
 	if (id == 61) // choix couleur
 	{
-		page.get_layer(12).get_sprite(id)->set_bloom_strength(1.5f);
+		//page.get_layer(12).get_sprite(id)->set_bloom_strength(1.5f);
+		page.get_layer(12).get_sprite(id)->use_background_img_selected();
 	}
 	else if (id == 62) // choix couleur
 	{
-		page.get_layer(12).get_sprite(id)->set_bloom_strength(1.5f);
+		//page.get_layer(12).get_sprite(id)->set_bloom_strength(1.5f);
+		page.get_layer(12).get_sprite(id)->use_background_img_selected();
 	}
 	else
 	{
-		page.get_layer(12).get_sprite(61)->set_bloom_strength(1.0f);
-		page.get_layer(12).get_sprite(62)->set_bloom_strength(1.0f);
+		//page.get_layer(12).get_sprite(61)->set_bloom_strength(1.0f);
+		//page.get_layer(12).get_sprite(62)->set_bloom_strength(1.0f);
+		page.get_layer(12).get_sprite(61)->use_background_img();
+		page.get_layer(12).get_sprite(62)->use_background_img();
 	}
 
 	if (id == 63) // quitter le jeu
 	{
-		page.get_layer(12).get_sprite(id)->set_bloom_strength(100000.0f);
+		//page.get_layer(12).get_sprite(id)->set_bloom_strength(100000.0f);
+		page.get_layer(12).get_sprite(id)->use_background_img_selected();
 	}
 	else
 	{
-		page.get_layer(12).get_sprite(63)->set_bloom_strength(1.0f);
+		//page.get_layer(12).get_sprite(63)->set_bloom_strength(1.0f);
+		page.get_layer(12).get_sprite(63)->use_background_img();
 	}
 
 	if (id == 65) // connexion
