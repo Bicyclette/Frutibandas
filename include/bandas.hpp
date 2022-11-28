@@ -188,6 +188,7 @@ class Bandas
 		Player m_enemy;
 		Music music;
 		std::string m_num_connected_players;
+		float m_delta_poll_cp;
 
 	public: // game logic
 		Board m_board;

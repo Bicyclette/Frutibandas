@@ -5,7 +5,8 @@ Bandas::Bandas(Graphics& graphics) :
 	m_text(c_screen_width, c_screen_height),
 	m_mouse("assets/mouse/viseur.tga"),
 	m_writer(c_screen_width, c_screen_height),
-	m_num_connected_players("N/A")
+	m_num_connected_players("N/A"),
+	m_delta_poll_cp(0.0f)
 {
 	// user interface
 	createUI();
@@ -580,9 +581,13 @@ void Bandas::update_home_page(std::bitset<10> user_input, std::string txt_input,
 	// get number of connected players
 	if(m_net.is_connected())
 	{
-		g_msg2server_mtx.lock();
-		g_msg2server.emplace("8");
-		g_msg2server_mtx.unlock();
+		m_delta_poll_cp += delta;
+		if(m_delta_poll_cp >= 2.0f) {
+			m_delta_poll_cp = 0.0f;
+			g_msg2server_mtx.lock();
+			g_msg2server.emplace("8");
+			g_msg2server_mtx.unlock();
+		}
 	}
 }
 
@@ -1282,6 +1287,8 @@ void Bandas::quit_game()
 	m_advertiser.clear();
 	// reset connected players amount
 	m_num_connected_players = "N/A";
+	// reset poll cp delta
+	m_delta_poll_cp = 0.0f;
 }
 
 void Bandas::enemy_gave_up()
