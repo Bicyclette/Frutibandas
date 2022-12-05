@@ -1,4 +1,5 @@
 #include "writer.hpp"
+#include <glm/gtx/string_cast.hpp>
 
 void Writer::write(std::string character, std::bitset<10> userInputs, float delta, int boundX, glm::vec3 cursor_shape)
 {

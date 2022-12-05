@@ -15,6 +15,19 @@ Bandas::Bandas(Graphics& graphics) :
     m_text.load_police("assets/fonts/ebrima.ttf", 20);
     m_text.load_police("assets/fonts/ebrima.ttf", 15);
     m_text.use_police(0);
+
+	// load frutibouille and pseudo
+	char line[256];
+	std::ifstream user_data;
+	user_data.open("user.txt");
+	if(user_data.is_open())
+	{
+		user_data.getline(line, 256);
+		m_writer.init(std::string(line));
+		user_data.getline(line, 256);
+		m_me.m_avatar.create_from_net_data(std::string(line));
+		user_data.close();
+	}
 }
 
 Bandas::~Bandas()
@@ -941,11 +954,26 @@ void Bandas::click_home_page(Page& page, int id)
 
 	if (id == 63) // quitter le jeu
 	{
+		// save pseudo and frutibouille
+		std::ofstream user_data;
+		user_data.open("user.txt", std::ios::trunc);
+		if(user_data.is_open())
+		{
+			user_data << m_me.m_pseudo << "\n";
+			user_data << m_me.m_avatar.get_net_data();
+			user_data.close();
+		}
+		else
+		{
+			std::cerr << "ERROR: Failed saving pseudo and frutibouille data." << std::endl;
+		}
+		// send leave message to server
 		g_msg2server_mtx.lock();
 		g_leave_game = true;
 		g_msg2server.emplace("9");
 		g_msg2server_mtx.unlock();
 		g_cv_connect_leave.notify_one();
+		// destroy SDL window
 		SDL_Event event;
 		event.type = SDL_QUIT;
 		SDL_PushEvent(&event);
@@ -2000,7 +2028,7 @@ void Bandas::update_chat_input(std::bitset<10> user_input, std::string txt_input
 	if (m_writer.m_cursor.m_focus == 1 && !user_input.test(5))
 	{
 		int boundX = game_page.get_layer(1).get_sprite(5)->get_position().x + game_page.get_layer(1).get_sprite(5)->get_size().x;
-		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[1], 525 - 72, 272, 1, m_writer.m_cursor.m_pos);
+		glm::vec3 cursor_shape = m_text.get_cursor_shape(m_writer.m_textInput[1], 240 + 13, 728 - 698 - 12, 1, m_writer.m_cursor.m_pos);
 		m_writer.write(txt_input, user_input, delta, boundX, cursor_shape);
 	}
 	else if (m_writer.m_cursor.m_focus == 1 && user_input.test(5))

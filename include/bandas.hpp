@@ -2,6 +2,7 @@
 #define BANDAS_HPP
 
 #include <iostream>
+#include <fstream>
 #include <mutex>
 #include <queue>
 #include <sstream>

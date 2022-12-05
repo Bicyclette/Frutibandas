@@ -97,6 +97,18 @@ public:
 		m_lastWriteAction = WRITE_ACTION::NOTHING;
 		m_lastCharacter = "";
 	}
+	void init(std::string data)
+	{
+		m_textInput[0] = data;
+		std::vector<int>& sections = m_textSectionsWidth[0];
+		for(char c : m_textInput[0])
+		{
+			sections.push_back(1);
+		}
+		m_lastCharacter = m_textInput[0][m_textInput[0].size()-1];
+		m_cursor.m_pos = m_textInput[0].size();
+		m_deltaWrite = 0.007f;
+	}
 	~Writer();
 
 	void write(std::string character, std::bitset<10> userInputs, float delta, int boundX, glm::vec3 cursor_shape);
