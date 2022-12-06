@@ -1758,11 +1758,14 @@ void Bandas::draw_avatar_game_page()
 		mirror = true;
 	}
 	if (mirror) {
+		/*
 		m_graphics.cs_horizontal_mirror.use();
 		m_graphics.cs_horizontal_mirror.setInt("screen_width", c_avatar_width);
 		glBindImageTexture(0, m_graphics.avatarFBO->getAttachments()[0].id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
 		glBindImageTexture(1, m_graphics.avatar_mirror_rt.getId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
 		m_graphics.cs_horizontal_mirror.dispatch(c_screen_width / 8, c_screen_height / 8, 1, GL_ALL_BARRIER_BITS);
+		*/
+
 	}
 
 	// draw enemy avatar
@@ -1772,21 +1775,23 @@ void Bandas::draw_avatar_game_page()
 	glClear(GL_COLOR_BUFFER_BIT);
 	m_enemy.m_avatar.draw();
 	if (!mirror) {
+		/*
 		m_graphics.cs_horizontal_mirror.use();
 		m_graphics.cs_horizontal_mirror.setInt("screen_width", c_avatar_width);
 		glBindImageTexture(0, m_graphics.opponentAvatarFBO->getAttachments()[0].id, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
 		glBindImageTexture(1, m_graphics.avatar_mirror_rt.getId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
 		m_graphics.cs_horizontal_mirror.dispatch(c_screen_width / 8, c_screen_height / 8, 1, GL_ALL_BARRIER_BITS);
+		*/
 	}
 	
 	if (m_me.m_team == 0)
 	{
-		m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(m_graphics.avatar_mirror_rt.getId());			// orange
+		m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(m_graphics.avatarFBO->getAttachments()[1].id);			// orange
 		m_ui.get_page(1).get_layer(0).get_sprite(2)->set_background_img_gl(m_graphics.opponentAvatarFBO->getAttachments()[0].id);	// banane
 	}
 	else
 	{
-		m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(m_graphics.avatar_mirror_rt.getId());	// orange
+		m_ui.get_page(1).get_layer(0).get_sprite(1)->set_background_img_gl(m_graphics.opponentAvatarFBO->getAttachments()[1].id);	// orange
 		m_ui.get_page(1).get_layer(0).get_sprite(2)->set_background_img_gl(m_graphics.avatarFBO->getAttachments()[0].id);			// banane
 	}
 }

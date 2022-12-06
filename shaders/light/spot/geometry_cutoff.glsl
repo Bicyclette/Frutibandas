@@ -1,4 +1,4 @@
-#version 440 core
+#version 410 core
 
 layout (points) in;
 layout (line_strip, max_vertices = 174) out;

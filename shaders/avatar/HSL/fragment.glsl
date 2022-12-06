@@ -1,6 +1,7 @@
-#version 440 core
+#version 410 core
 
-out vec4 color;
+layout (location = 0) out vec4 color;
+layout (location = 1) out vec4 colorMirrorX;
 
 in vec2 texCoords;
 
@@ -91,4 +92,18 @@ void main()
 		RGB = hsl2rgb(vec3(1.0f, 1.0f, L));
 	}
 	color = vec4(RGB, alpha);
+
+	float diff = texCoords.x - 0.5f;
+	float x = 0.5f - diff;
+	vec2 coords = vec2(x, texCoords.y);
+	image_sample = texture(image, coords);
+	iris = texture(mask, coords).r;
+	L = rgb2hsl(image_sample.rgb).b;
+	alpha = image_sample.a;
+	if(iris > 0.5f) {
+		RGB = hsl2rgb(HSL * vec3(1.0f, 1.0f, L));
+	} else {
+		RGB = hsl2rgb(vec3(1.0f, 1.0f, L));
+	}
+	colorMirrorX = vec4(RGB, alpha);
 }

@@ -100,9 +100,9 @@ Graphics::Graphics(int width, int height) :
 		std::make_unique<Framebuffer>(true, false, true),
 		std::make_unique<Framebuffer>(true, false, true)
 	},
-	avatar_mirror_rt(512, 512, 1, GL_RGBA16F, GL_RGBA, GL_FLOAT),
+	//avatar_mirror_rt(512, 512, 1, GL_RGBA16F, GL_RGBA, GL_FLOAT),
 	omniPerspProjection(glm::perspective(glm::radians(90.0f), 1.0f, near, far)),
-	cs_horizontal_mirror("shaders/compute/horizontal_mirror.glsl", SHADER_TYPE::COMPUTE),
+	//cs_horizontal_mirror("shaders/compute/horizontal_mirror.glsl", SHADER_TYPE::COMPUTE),
 	blinnPhong("shaders/blinn_phong/vertex.glsl", "shaders/blinn_phong/fragment.glsl", SHADER_TYPE::BLINN_PHONG),
 	pbr("shaders/PBR/vertex.glsl", "shaders/PBR/fragment.glsl", SHADER_TYPE::PBR),
 	shadowMapping("shaders/shadowMapping/vertex.glsl", "shaders/shadowMapping/geometry.glsl", "shaders/shadowMapping/fragment.glsl", SHADER_TYPE::SHADOWS),
@@ -222,12 +222,14 @@ Graphics::Graphics(int width, int height) :
 
 	// AVATAR FBO
 	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
+	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// AVATAR MIRROR RENDER TEXTURE
-	avatar_mirror_rt.set_min_mag_filter(GL_LINEAR, GL_LINEAR);
-	avatar_mirror_rt.set_wrap_method(GL_CLAMP_TO_EDGE);
+	//avatar_mirror_rt.set_min_mag_filter(GL_LINEAR, GL_LINEAR);
+	//avatar_mirror_rt.set_wrap_method(GL_CLAMP_TO_EDGE);
 	
 	// OPPONENT AVATAR FBO
+	opponentAvatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 	opponentAvatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// COMPOSITING
@@ -652,8 +654,10 @@ void Graphics::resizeScreen(int width, int height)
 
 	// AVATAR FBO
 	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
+	avatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// OPPONENT AVATAR FBO
+	opponentAvatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 	opponentAvatarFBO->addAttachment(ATTACHMENT_TYPE::TEXTURE, ATTACHMENT_TARGET::COLOR, 512, 512);
 
 	// COMPOSITING

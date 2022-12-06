@@ -102,7 +102,7 @@ class Graphics
 		std::unique_ptr<Framebuffer> avatarFBO;
 		std::unique_ptr<Framebuffer> opponentAvatarFBO;
 		std::array<std::unique_ptr<Framebuffer>, 2> compositeFBO;
-		RenderTexture avatar_mirror_rt;
+		//RenderTexture avatar_mirror_rt;
 
 		TONE_MAPPING scene_tone_mapping;
 		TONE_MAPPING ui_tone_mapping;
@@ -123,7 +123,7 @@ class Graphics
 		GLuint aoNoiseTexture;
 		std::vector<glm::vec3> aoKernel;
 
-		Shader cs_horizontal_mirror;
+		//Shader cs_horizontal_mirror;
 		Shader blinnPhong;
 		Shader pbr;
 		Shader shadowMapping;
