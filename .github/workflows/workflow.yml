@@ -34,6 +34,14 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        # artifact name
+        name: frutibandas
+        path: ${{github.workspace}}/build/bin/*
+        retention-days: 90
+
   build_mac:
     runs-on: macos-latest
 
@@ -60,3 +68,11 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        # artifact name
+        name: frutibandas
+        path: ${{github.workspace}}/build/bin/*
+        retention-days: 90
