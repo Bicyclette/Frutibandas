@@ -2018,12 +2018,7 @@ void Bandas::draw_chat(float delta)
 	// conversation
 	for (int i{ 1 }; i <= m_writer.m_chatLog.size(); ++i)
 	{
-		if (m_writer.m_chatLog[i - 1].find_first_of('>') != std::string::npos) {
-			m_text.print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 20 * i, 1, glm::vec3(0));
-		}
-		else {
-			m_text.print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 20 * i, 1, glm::vec3(1,0,0));
-		}
+		m_text.print(m_writer.m_chatLog[i - 1], 240 + 13, 728 - 568 - 20 * i, 1, glm::vec3(0));
 	}
 }
 
@@ -2415,10 +2410,7 @@ void Bandas::click_on_orange_card(int index)
 		break;
 	case 9: // renfort
 		list = m_board.get_free_tiles();
-		if (list.size() < 2) {
-			add_chat_message("Not enough place to spawn up to 3 bandas");
-		}
-		else {
+		if (list.size() >= 3) {
 			reinforcement_position = m_board.get_reinforcement_position(list);
 			g_msg2server_mtx.lock();
 			g_msg2server.emplace("7:9." + std::to_string(index) + "." + reinforcement_position);
@@ -2489,10 +2481,7 @@ void Bandas::click_on_banana_card(int index)
 		break;
 	case 9: // renfort
 		list = m_board.get_free_tiles();
-		if (list.size() < 2) {
-			add_chat_message("Not enough place to spawn up to 3 bandas");
-		}
-		else {
+		if (list.size() >= 3) {
 			reinforcement_position = m_board.get_reinforcement_position(list);
 			g_msg2server_mtx.lock();
 			g_msg2server.emplace("7:9." + std::to_string(index) + "." + reinforcement_position);

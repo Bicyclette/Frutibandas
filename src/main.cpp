@@ -181,7 +181,30 @@ void receive_message(std::shared_ptr<Game> & game)
 				int messageLength = data.size();
 				if (messageLength > 0)
 				{
-					game->m_bandas.add_chat_message(data);
+					std::string part1 = data;
+					std::string part2;
+					int boundX = game->m_bandas.m_ui.get_page(1).get_layer(1).get_sprite(5)->get_position().x + game->m_bandas.m_ui.get_page(1).get_layer(1).get_sprite(5)->get_size().x;
+					int cut_pos = -1;
+					for (int i = 0; i < data.size(); ++i)
+					{
+						glm::vec3 cursor_shape = game->m_bandas.m_text.get_cursor_shape(data.substr(0, i), 240 + 13, 728 - 698 - 12, 1, i);
+						if (cursor_shape.x >= (boundX-10)) {
+							cut_pos = i;
+							break;
+						}
+					}
+
+					if (cut_pos != -1)
+					{
+						part1 = data.substr(0, cut_pos);
+						part2 = data.substr(cut_pos);
+						game->m_bandas.add_chat_message(part1);
+						game->m_bandas.add_chat_message(part2);
+					}
+					else
+					{
+						game->m_bandas.add_chat_message(data);
+					}
 				}
 			}
 			else if (type.compare("mv") == 0)
