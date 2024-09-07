@@ -17,7 +17,7 @@ vec3 rgb2xyz(vec3 c)
     tmp.x = ( c.r > 0.04045 ) ? pow( ( c.r + 0.055 ) / 1.055, 2.4 ) : c.r / 12.92;
     tmp.y = ( c.g > 0.04045 ) ? pow( ( c.g + 0.055 ) / 1.055, 2.4 ) : c.g / 12.92,
     tmp.z = ( c.b > 0.04045 ) ? pow( ( c.b + 0.055 ) / 1.055, 2.4 ) : c.b / 12.92;
-    const mat3x3 mat = mat3x3(
+    mat3x3 mat = mat3x3(
 		0.4124, 0.3576, 0.1805,
         0.2126, 0.7152, 0.0722,
         0.0193, 0.1192, 0.9505 
@@ -47,8 +47,8 @@ void main()
     int halfSize = kernelSize / 2;
 	vec2 blurDirection = (direction == 0) ? vec2(1.0f, 0.0f) : vec2(0.0f, 1.0f);
 	
-	const float gaussLeft = 1.0f / sqrt(2.0f * PI * sigma);
-	const float twoSigmaSquared = 2.0f * sigma * sigma;
+	float gaussLeft = 1.0f / sqrt(2.0f * PI * sigma);
+	float twoSigmaSquared = 2.0f * sigma * sigma;
 
 	float sum = 0.0f;
 	for(int i = -halfSize; i < halfSize+1; ++i)

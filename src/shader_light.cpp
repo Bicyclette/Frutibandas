@@ -39,7 +39,11 @@ Shader::Shader(const std::string & vertex_shader_file, const std::string & fragm
 		std::cerr << "Error while trying to read the fragment shader file : " << fragment_shader_file << std::endl;
 
 	// Now compile the shaders, create the shader program and link
-	compile(vShaderCode, fShaderCode);
+	bool ret = compile(vShaderCode, fShaderCode);
+	if (!ret) {
+		std::cerr << "Error on files => " << vertex_shader_file << std::endl;
+		std::cerr << "Error on files => " << fragment_shader_file << std::endl;
+	}
 
 	delete[](vShaderCode);
 	delete[](fShaderCode);
@@ -98,7 +102,12 @@ Shader::Shader(const std::string & vertex_shader_file, const std::string & geome
 		std::cerr << "Error while trying to read the fragment shader file : " << fragment_shader_file << std::endl;
 
 	// Now compile the shaders, create the shader program and link
-	compile(vShaderCode, gShaderCode, fShaderCode);
+	bool ret = compile(vShaderCode, gShaderCode, fShaderCode);
+	if (!ret) {
+		std::cerr << "Error on files => " << vertex_shader_file << std::endl;
+		std::cerr << "Error on files => " << fragment_shader_file << std::endl;
+		std::cerr << "Error on files => " << geometry_shader_file << std::endl;
+	}
 
 	delete[](vShaderCode);
 	delete[](gShaderCode);
@@ -132,7 +141,11 @@ Shader::Shader(const std::string & compute_shader_file, SHADER_TYPE t) :
 		std::cerr << "Error while trying to read the compute shader file : " << compute_shader_file << std::endl;
 
 	// Now compile the shader, create the shader program and link
-	compile(cShaderCode);
+	bool ret = compile(cShaderCode);
+	if (!ret) {
+		std::cerr << "Error on file => " << compute_shader_file << std::endl;
+	}
+
 	delete[](cShaderCode);
 	c_shader_stream.close();
 }
@@ -142,7 +155,7 @@ Shader::~Shader()
 	glDeleteShader(id);
 }
 
-void Shader::compile(const char * vertex_shader_code, const char * fragment_shader_code)
+bool Shader::compile(const char * vertex_shader_code, const char * fragment_shader_code)
 {
 	GLuint vertex_shader, fragment_shader, shader_program;
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -156,6 +169,7 @@ void Shader::compile(const char * vertex_shader_code, const char * fragment_shad
 	glCompileShader(fragment_shader);
 
 	// Check for errors
+	bool ret = true;
 	int success;
 	int logLength;
 	char* log;
@@ -169,6 +183,7 @@ void Shader::compile(const char * vertex_shader_code, const char * fragment_shad
 		std::cerr << "Error while compiling the vertex shader : " << log << std::endl;
 		delete[](log);
 		glDeleteShader(vertex_shader);
+		ret = false;
 	}
 	
 	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
@@ -180,6 +195,7 @@ void Shader::compile(const char * vertex_shader_code, const char * fragment_shad
 		std::cerr << "Error while compiling the fragment shader : " << log << std::endl;
 		delete[](log);
 		glDeleteShader(fragment_shader);
+		ret = false;
 	}
 
 	// Final step
@@ -197,15 +213,18 @@ void Shader::compile(const char * vertex_shader_code, const char * fragment_shad
 		delete[](log);
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
+		ret = false;
 	}
 
 	glDetachShader(shader_program, vertex_shader);
 	glDetachShader(shader_program, fragment_shader);
 
 	id = shader_program;
+
+	return ret;
 }
 
-void Shader::compile(const char * vertex_shader_code, const char * geometry_shader_code, const char * fragment_shader_code)
+bool Shader::compile(const char * vertex_shader_code, const char * geometry_shader_code, const char * fragment_shader_code)
 {
 	GLuint vertex_shader, geometry_shader, fragment_shader, shader_program;
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -223,6 +242,7 @@ void Shader::compile(const char * vertex_shader_code, const char * geometry_shad
 	glCompileShader(fragment_shader);
 
 	// Check for errors
+	bool ret = true;
 	int success;
 	int logLength;
 	char* log;
@@ -236,6 +256,7 @@ void Shader::compile(const char * vertex_shader_code, const char * geometry_shad
 		std::cerr << "Error while compiling the vertex shader : " << log << std::endl;
 		delete[](log);
 		glDeleteShader(vertex_shader);
+		ret = false;
 	}
 	
 	glGetShaderiv(geometry_shader, GL_COMPILE_STATUS, &success);
@@ -247,6 +268,7 @@ void Shader::compile(const char * vertex_shader_code, const char * geometry_shad
 		std::cerr << "Error while compiling the geometry shader : " << log << std::endl;
 		delete[](log);
 		glDeleteShader(geometry_shader);
+		ret = false;
 	}
 	
 	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
@@ -258,6 +280,7 @@ void Shader::compile(const char * vertex_shader_code, const char * geometry_shad
 		std::cerr << "Error while compiling the fragment shader : " << log << std::endl;
 		delete[](log);
 		glDeleteShader(fragment_shader);
+		ret = false;
 	}
 
 	// Final step
@@ -276,6 +299,7 @@ void Shader::compile(const char * vertex_shader_code, const char * geometry_shad
 		delete[](log);
 		glDeleteShader(vertex_shader);
 		glDeleteShader(fragment_shader);
+		ret = false;
 	}
 
 	glDetachShader(shader_program, vertex_shader);
@@ -283,9 +307,11 @@ void Shader::compile(const char * vertex_shader_code, const char * geometry_shad
 	glDetachShader(shader_program, fragment_shader);
 
 	id = shader_program;
+
+	return ret;
 }
 
-void Shader::compile(const char * compute_shader_code)
+bool Shader::compile(const char * compute_shader_code)
 {
 	GLuint compute_shader, shader_program;
 	compute_shader = glCreateShader(GL_COMPUTE_SHADER);
@@ -295,6 +321,7 @@ void Shader::compile(const char * compute_shader_code)
 	glCompileShader(compute_shader);
 	
 	// Check for errors
+	bool ret = true;
 	int success;
 	int logLength;
 	char* log;
@@ -308,6 +335,7 @@ void Shader::compile(const char * compute_shader_code)
 		std::cerr << "Error while compiling the compute shader : " << log << std::endl;
 		delete[](log);
 		glDeleteShader(compute_shader);
+		ret = false;
 	}
 	
 	// Final step
@@ -323,10 +351,13 @@ void Shader::compile(const char * compute_shader_code)
 		std::cerr << "Error while linking shader into a program : " << log << std::endl;
 		delete[](log);
 		glDeleteShader(compute_shader);
+		ret = false;
 	}
 
 	glDetachShader(shader_program, compute_shader);
 	id = shader_program;
+
+	return ret;
 }
 
 GLuint Shader::getId() const { return id; }

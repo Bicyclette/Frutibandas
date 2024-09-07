@@ -61,9 +61,9 @@ class Shader
 
 	private:
 
-		void compile(const char * vertex_shader_code, const char * fragment_shader_code);
-		void compile(const char * vertex_shader_code, const char * geometry_shader_code, const char * fragment_shader_code);
-		void compile(const char * compute_shader_code);
+		bool compile(const char * vertex_shader_code, const char * fragment_shader_code);
+		bool compile(const char * vertex_shader_code, const char * geometry_shader_code, const char * fragment_shader_code);
+		bool compile(const char * compute_shader_code);
 
 		GLuint id;
 		SHADER_TYPE type;

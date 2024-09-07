@@ -21,7 +21,7 @@ in vec2 texCoords;
 
 void main()
 {
-	const vec2 noiseScale = vec2(screenWidth / 4.0f, screenHeight / 4.0f);
+	vec2 noiseScale = vec2(screenWidth / 4.0f, screenHeight / 4.0f);
 
 	vec3 fragPos = texture(positionBuffer, texCoords).xyz;
 	vec3 normal = texture(normalBuffer, texCoords).xyz;

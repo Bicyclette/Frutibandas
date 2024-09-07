@@ -17,14 +17,16 @@ Bringing the game Frutibandas back to life.<br>
 
 ### Dependencies
 
-- [Conan](https://conan.io/)
+- [VCPKG](https://github.com/microsoft/vcpkg)
 - [Cmake](https://cmake.org/)
 
 ## Build
 
 ```
-conan install . -s build_type=Release --build missing --install-folder=build
-cmake -B build -S .
+./vcpkg install assimp bullet3 enet freetype glew libsndfile sdl2 openal-soft
+mkdir build
+cd build
+cmake ..
 cmake --build build --config Release
 ```
 

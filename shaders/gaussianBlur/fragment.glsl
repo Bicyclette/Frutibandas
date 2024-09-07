@@ -17,8 +17,8 @@ void main()
 	int halfSize = blurSize / 2;
 	vec2 blurDirection = (direction == 0) ? vec2(1.0f, 0.0f) : vec2(0.0f, 1.0f);
 	
-	const float gaussLeft = 1.0f / sqrt(2.0f * PI * sigma);
-	const float twoSigmaSquared = 2.0f * sigma * sigma;
+	float gaussLeft = 1.0f / sqrt(2.0f * PI * sigma);
+	float twoSigmaSquared = 2.0f * sigma * sigma;
 
 	float sum = 0.0f;
 	for(int i = -halfSize; i < halfSize+1; ++i)
