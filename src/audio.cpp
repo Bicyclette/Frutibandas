@@ -75,15 +75,12 @@ void Audio::load_sound(std::string file_path)
 // ##################################################
 
 Source::Source(glm::vec3 position, glm::vec3 direction, float inner_angle, float outer_angle, float volume, bool loop) :
-	m_model(glm::mat4(1.0f)),
 	m_position(position),
 	m_direction(direction),
 	m_inner_angle(inner_angle),
 	m_outer_angle(outer_angle),
 	m_volume(volume),
-	m_loop(loop),
-	shaderIcon("shaders/light/spot/vertex.glsl", "shaders/light/spot/geometry.glsl", "shaders/light/spot/fragment.glsl"),
-	shaderSoundArea("shaders/light/spot/vertex_cutoff.glsl", "shaders/light/spot/geometry_cutoff.glsl", "shaders/light/spot/fragment_cutoff.glsl")
+	m_loop(loop)
 {
 	alGenSources(1, &source_id);
 	set_position(m_position);
@@ -92,73 +89,6 @@ Source::Source(glm::vec3 position, glm::vec3 direction, float inner_angle, float
 	set_direction_outer_angle(m_outer_angle);
 	set_volume(m_volume);
 	set_looping(loop);
-	
-	// draw
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
-
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-	float data[3] = {m_position.x, m_position.y, m_position.z};
-	glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
-	glEnableVertexAttribArray(0);
-	
-	glBindVertexArray(0);
-
-	shaderIcon.use();
-	shaderIcon.setInt("icon", 0);
-	shaderSoundArea.use();
-	shaderSoundArea.setVec3f("direction", m_direction);
-	shaderSoundArea.setFloat("cutOff", m_inner_angle);
-	
-	icon_on = createTexture("assets/audio_icons/source_on.png", TEXTURE_TYPE::DIFFUSE, true);
-	icon_off = createTexture("assets/audio_icons/source_off.png", TEXTURE_TYPE::DIFFUSE, true);
-}
-
-void Source::setModelMatrix(glm::mat4 model)
-{
-	m_model = model;
-	m_position = glm::vec3(m_model * glm::vec4(m_position, 1.0f));
-}
-
-void Source::setViewMatrix(glm::mat4 view)
-{
-	m_view = view;
-}
-
-void Source::setProjMatrix(glm::mat4 proj)
-{
-	m_proj = proj;
-}
-
-void Source::draw()
-{
-	glBindVertexArray(vao);
-	shaderIcon.use();
-	shaderIcon.setMatrix("model", m_model);
-	shaderIcon.setMatrix("view", m_view);
-	shaderIcon.setMatrix("proj", m_proj);
-	glActiveTexture(GL_TEXTURE0);
-	if(is_playing())
-		glBindTexture(GL_TEXTURE_2D, icon_on.id);
-	else
-		glBindTexture(GL_TEXTURE_2D, icon_off.id);
-	glDrawArrays(GL_POINTS, 0, 1);
-
-	if(m_direction != glm::vec3(0.0f))
-	{
-		shaderSoundArea.use();
-		shaderSoundArea.setMatrix("model", m_model);
-		shaderSoundArea.setMatrix("view", m_view);
-		shaderSoundArea.setMatrix("proj", m_proj);
-		shaderSoundArea.setVec3f("direction", glm::normalize(m_direction));
-		shaderSoundArea.setVec3f("right", glm::normalize(glm::cross(m_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
-		shaderSoundArea.setFloat("cutOff", m_inner_angle);
-		glDrawArrays(GL_POINTS, 0, 1);
-	}
-	glBindVertexArray(0);
 }
 
 Source::~Source()

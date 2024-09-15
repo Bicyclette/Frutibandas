@@ -9,7 +9,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include "shader_light.hpp"
-#include "IBL.hpp"
 
 enum class DRAWING_MODE
 {
@@ -22,38 +21,22 @@ struct Vertex
 	glm::vec3 position;
 	glm::vec3 normal;
 	glm::vec2 texCoords;
-	glm::vec3 tangent;
-	glm::vec3 biTangent;
-	glm::ivec4 bonesID;
-	glm::vec4 weights;
 
 	Vertex()
 	{
 		position = glm::vec3(0.0f);
 		normal = glm::vec3(0.0f);
 		texCoords = glm::vec2(0.0f);
-		tangent = glm::vec3(0.0f);
-		biTangent = glm::vec3(0.0f);
-		bonesID = glm::ivec4(0);
-		weights = glm::vec4(0.0f);
 	}
 
 	Vertex(
 		glm::vec3 pos,
 		glm::vec3 norm,
-		glm::vec2 tex,
-		glm::vec3 tang = glm::vec3(0.0f),
-		glm::vec3 bTang = glm::vec3(0.0f),
-		glm::ivec4 idBones = glm::ivec4(0),
-		glm::vec4 bonesWeights = glm::vec4(0.0f))
+		glm::vec2 tex)
 	{
 		position = pos;
 		normal = norm;
 		texCoords = tex;
-		tangent = tang;
-		biTangent = bTang;
-		bonesID = idBones;
-		weights = bonesWeights;
 	}
 };
 
@@ -68,7 +51,7 @@ class Mesh
 		std::vector<int> const& getIndices() const;
 		Material & getMaterial();
 		void bindVAO() const;
-		void draw(Shader & s, struct IBL_DATA * iblData = nullptr, bool instancing = false, int amount = 1, DRAWING_MODE mode = DRAWING_MODE::SOLID);
+		void draw(Shader & s, bool instancing = false, int amount = 1, DRAWING_MODE mode = DRAWING_MODE::SOLID);
 		void recreate(std::vector<Vertex> aVertices, std::vector<int> aIndices, bool dynamicDraw);
 		void updateVBO(std::vector<Vertex> aVertices, std::vector<int> aIndices);
 		bool getVertex(glm::vec3 pos, glm::vec3 normal, glm::vec3 lastPos, Vertex & out);
@@ -89,7 +72,7 @@ class Mesh
         glm::vec3 m_center_update;
 		Material material;
 
-		void shaderProcessing(Shader & s, struct IBL_DATA * iblData); // set proper uniforms according to shader type
+		void shaderProcessing(Shader & s); // set proper uniforms according to shader type
 };
 
 #endif

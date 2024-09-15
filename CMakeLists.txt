@@ -17,27 +17,17 @@ include_directories(include)
 set(SRCS
 	src/stb_image.cpp
 	src/main.cpp
+	src/mesh.cpp
 	src/window.cpp
 	src/shader_light.cpp
 	src/camera.cpp
-	src/mesh.cpp
-	src/object.cpp
-	src/grid_axis.cpp
-	src/skybox.cpp
 	src/scene.cpp
 	src/framebuffer.cpp
 	src/game.cpp
 	src/graphics.cpp
-	src/animatedObject.cpp
-	src/joint.cpp
-	src/worldPhysics.cpp
-	src/character.cpp
-	src/IBL.cpp
-	src/particle.cpp
 	src/audio.cpp
-	src/vehicle.cpp
-        src/renderTexture.cpp
-        src/user_interface.cpp
+    src/renderTexture.cpp
+    src/user_interface.cpp
 	src/network_client.cpp
 	src/helpers.cpp
 	src/mouse.cpp
@@ -50,31 +40,17 @@ set(HEADERS
 	include/stb_image.h
 	include/color.hpp
 	include/window.hpp
+	include/mesh.hpp
 	include/shader_light.hpp
 	include/camera.hpp
-	include/mesh.hpp
-	include/object.hpp
-	include/grid_axis.hpp
-	include/skybox.hpp
 	include/scene.hpp
 	include/framebuffer.hpp
 	include/game.hpp
 	include/graphics.hpp
-	include/animatedObject.hpp
-	include/joint.hpp
-	include/worldPhysics.hpp
-	include/character.hpp
-	include/IBL.hpp
-	include/particle.hpp
 	include/audio.hpp
-	include/vehicle.hpp
-        include/renderTexture.hpp
-        include/user_interface.hpp
-        include/editorUI.hpp
-	include/rapidxml.hpp
-	include/lightning.hpp
+    include/renderTexture.hpp
+    include/user_interface.hpp
 	include/helpers.hpp
-	include/allocation.hpp
 	include/network_client.hpp
 	include/mouse.hpp
 	include/avatar.hpp
@@ -99,12 +75,6 @@ endif()
 
 find_package(SDL2 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2main SDL2::SDL2)
-
-find_package(Bullet CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${BULLET_LIBRARIES})
-
-find_package(assimp CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
 
 find_package(Freetype CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Freetype::Freetype)

@@ -11,7 +11,6 @@
 #include <alc.h>
 #include <sndfile.h>
 #include <glm/glm.hpp>
-#include "shader_light.hpp"
 
 class Audio
 {
@@ -50,10 +49,6 @@ class Source
 		void play_sound(ALuint sound_buffer);
 		bool is_playing() const;
 		float get_elapsed_time() const;
-		void setModelMatrix(glm::mat4 model);
-		void setViewMatrix(glm::mat4 view);
-		void setProjMatrix(glm::mat4 proj);
-		void draw();
 
 	private:
 
@@ -68,18 +63,6 @@ class Source
 		float m_outer_angle;
 		float m_volume;
 		bool m_loop;
-
-		GLuint vao;
-		GLuint vbo;
-
-		glm::mat4 m_model;
-		glm::mat4 m_view;
-		glm::mat4 m_proj;
-
-		struct Texture icon_on;
-		struct Texture icon_off;
-		Shader shaderIcon;
-		Shader shaderSoundArea;
 };
 
 class Listener

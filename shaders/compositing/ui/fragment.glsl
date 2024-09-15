@@ -6,7 +6,6 @@ layout (location = 1) out vec4 ui_mask;
 in vec2 texCoords;
 
 uniform sampler2D ui;
-uniform sampler2D uiBloom;
 uniform int page;
 uniform int tone_mapping; // 0 = Reinhard, 1 = ACES, 2 = OFF
 
@@ -35,12 +34,7 @@ void main()
 {
     // user interface
     vec4 ui_color = texture(ui, texCoords);
-    vec4 ui_bloom;
-	if(page == 0){
-		ui_bloom = texture(uiBloom, texCoords);
-	} else {
-		ui_bloom = vec4(0.0f);
-	}
+    vec4 ui_bloom = vec4(0.0f);
     vec4 userInterface = ui_color + ui_bloom;
 
     // tone mapping

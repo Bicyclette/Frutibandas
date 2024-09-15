@@ -5,14 +5,6 @@
 #include "window.hpp"
 #include "game.hpp"
 #include "framebuffer.hpp"
-#include "editorUI.hpp"
-#include "allocation.hpp"
-
-//#define SERVER "frutibandas.eternaltwin.org"
-//#define PORT 50380
-
-//#define SERVER "raspberrypi-1.home"
-//#define PORT 7777
 
 #define SERVER "vps-ce89df6a.vps.ovh.net"
 #define PORT 7777
@@ -382,10 +374,7 @@ void network_thread(std::shared_ptr<WindowManager>& client, std::shared_ptr<Game
 }
 
 void render(std::shared_ptr<Game> game, std::shared_ptr<WindowManager> client)
-{
-    // IMGUI data
-    EDITOR_UI_SETTINGS editor_settings;
-    
+{    
     // start
 	bool alive;
 	DRAWING_MODE draw_mode{DRAWING_MODE::SOLID};
@@ -405,11 +394,11 @@ void render(std::shared_ptr<Game> game, std::shared_ptr<WindowManager> client)
 
 		if (game->m_bandas.m_writer.m_cursor.m_focus == 2)
 		{
-			client->checkEvents();
+			client->checkEvents(game->m_bandas);
 		}
 		else
 		{
-			client->checkEvents(true);
+			client->checkEvents(game->m_bandas, true);
 		}
 		if (game->m_bandas.m_ui.get_active_page() == 0)
 		{

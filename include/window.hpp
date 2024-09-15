@@ -2,6 +2,7 @@
 #define WINDOW_HPP
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <array>
 #include <SDL2/SDL.h>
@@ -12,6 +13,10 @@
 #include <memory>
 #include "color.hpp"
 #include "gl_debug.hpp"
+#include "communication.hpp"
+#include "bandas.hpp"
+
+class Bandas;
 
 struct WindowEvent
 {
@@ -43,7 +48,7 @@ class WindowManager
 		~WindowManager();
 		SDL_Window* getWindowPtr();
 		bool isAlive();
-		void checkEvents(bool writing = false);
+		void checkEvents(Bandas& bandas, bool writing = false);
 		void resetEvents();
 
 	private:
@@ -62,7 +67,5 @@ class WindowManager
 		std::bitset<10> m_userInputs;
 		char m_textInput[32];
 };
-
-SDL_HitTestResult moveWindowCallback(SDL_Window* win, const SDL_Point* area, void* data);
 
 #endif

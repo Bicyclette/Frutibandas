@@ -23,10 +23,10 @@ Bringing the game Frutibandas back to life.<br>
 ## Build
 
 ```
-./vcpkg install assimp bullet3 enet freetype glew libsndfile sdl2 openal-soft
+./vcpkg install enet freetype glew libsndfile sdl2 openal-soft
 mkdir build
 cd build
-cmake ..
+cmake .. -DCMAKE_TOOLCHAIN_FILE="C:\dev\vcpkg\scripts\buildsystems\vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 

@@ -50,7 +50,7 @@ WindowManager::WindowManager(const std::string& title)
 				SDL_WINDOWPOS_CENTERED,
 				width,
 				height,
-				SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS
+				SDL_WINDOW_OPENGL
 				);
 
 	if(window == nullptr)
@@ -85,9 +85,6 @@ WindowManager::WindowManager(const std::string& title)
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glClearColor(LIGHT_GREY[0], LIGHT_GREY[1], LIGHT_GREY[2], LIGHT_GREY[3]);
 	SDL_GL_SetSwapInterval(1);
-
-	// window callback (move with mouse pointer)
-	SDL_SetWindowHitTest(window, moveWindowCallback, 0);
 
 #if _DEBUG
 	if (glDebugMessageCallback) {
@@ -126,7 +123,7 @@ bool WindowManager::isAlive()
 	return m_alive;
 }
 
-void WindowManager::checkEvents(bool writing)
+void WindowManager::checkEvents(Bandas& bandas, bool writing)
 {
 	event.keyboardState = SDL_GetKeyboardState(nullptr);
 	event.mouseButtonBitMask = SDL_GetRelativeMouseState(&m_mouseData[0], &m_mouseData[1]);
@@ -136,6 +133,26 @@ void WindowManager::checkEvents(bool writing)
 		if(event.e.type == SDL_QUIT)
 		{
 			m_alive = false;
+
+			// save pseudo and frutibouille
+			std::ofstream user_data;
+			user_data.open("user.txt", std::ios::trunc);
+			if (user_data.is_open())
+			{
+				user_data << bandas.m_me.m_pseudo << "\n";
+				user_data << bandas.m_me.m_avatar.get_net_data();
+				user_data.close();
+			}
+			else
+			{
+				std::cerr << "ERROR: Failed saving pseudo and frutibouille data." << std::endl;
+			}
+			// send leave message to server
+			g_msg2server_mtx.lock();
+			g_leave_game = true;
+			g_msg2server.emplace("9");
+			g_msg2server_mtx.unlock();
+			g_cv_connect_leave.notify_one();
 		}
 
 		if(event.e.type == SDL_WINDOWEVENT)
@@ -213,13 +230,4 @@ void WindowManager::checkEvents(bool writing)
 void WindowManager::resetEvents()
 {
 	m_userInputs.reset();
-}
-
-SDL_HitTestResult moveWindowCallback(SDL_Window* win, const SDL_Point* area, void* data)
-{
-	if (area->y >= 0 && area->y <= 15 && area->x >= 231 && area->x <= 819)
-	{
-		return SDL_HITTEST_DRAGGABLE;
-	}
-	return SDL_HITTEST_NORMAL;
 }

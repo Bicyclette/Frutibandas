@@ -20,18 +20,10 @@ Mesh::Mesh(std::vector<Vertex> aVertices, std::vector<int> aIndices, Material m,
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, normal)));
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, texCoords)));
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, tangent)));
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, biTangent)));
-	glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)(offsetof(Vertex, bonesID)));
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, weights)));
 	
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
-	glEnableVertexAttribArray(5);
-	glEnableVertexAttribArray(6);
 
 	// EBO
 	glGenBuffers(1, &ebo);
@@ -98,24 +90,9 @@ void Mesh::bindVAO() const
 	glBindVertexArray(vao);
 }
 
-void Mesh::shaderProcessing(Shader & s, struct IBL_DATA * iblData)
+void Mesh::shaderProcessing(Shader & s)
 {
-	if(s.getType() == SHADER_TYPE::BLINN_PHONG)
-	{
-		s.setVec3f("material.color_diffuse", material.color_diffuse);
-		s.setVec3f("material.emissiveColor", material.color_emissive);
-		s.setFloat("material.emissionIntensity", material.emission_intensity);
-		s.setVec3f("material.color_specular", material.color_specular);
-		s.setVec3f("material.color_ambient", material.color_ambient);
-		s.setFloat("material.shininess", material.shininess);
-		s.setFloat("material.opacity", material.opacity);
-		s.setInt("material.hasNormal", 0);
-		s.setInt("material.hasDiffuse", 0);
-		s.setInt("material.hasSpecular", 0);
-		s.setInt("material.hasEmission", 0);
-		s.setInt("material.nbTextures", material.textures.size());
-	}
-	else if(s.getType() == SHADER_TYPE::PBR)
+	if(s.getType() == SHADER_TYPE::PBR)
 	{
 		s.setVec3f("material.albedo", material.color_diffuse);
 		s.setVec3f("material.emissiveColor", material.color_emissive);
@@ -130,13 +107,8 @@ void Mesh::shaderProcessing(Shader & s, struct IBL_DATA * iblData)
 		s.setInt("material.hasEmission", 0);
 		s.setInt("material.nbTextures", material.textures.size());
 	}
-	else if(s.getType() == SHADER_TYPE::SHADOWS)
-	{
-		s.setInt("hasDiffuse", 0);
-	}
 
-	int diffuse_IBL_index{0};
-	for(int i{0}; i < material.textures.size(); ++i, ++diffuse_IBL_index)
+	for(int i{0}; i < material.textures.size(); ++i)
 	{
 		if(material.textures[i].type == TEXTURE_TYPE::DIFFUSE)
 		{
@@ -196,31 +168,16 @@ void Mesh::shaderProcessing(Shader & s, struct IBL_DATA * iblData)
 			s.setInt("material.hasEmission", 1);
 		}
 	}
-
-	if(s.getType() == SHADER_TYPE::PBR && iblData)
-	{
-		glActiveTexture(GL_TEXTURE0 + 15);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, iblData->irradiance);
-		s.setInt("irradianceMap", 15);
-
-		glActiveTexture(GL_TEXTURE0 + 16);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, iblData->prefilter);
-		s.setInt("prefilterMap", 16);
-
-		glActiveTexture(GL_TEXTURE0 + 17);
-		glBindTexture(GL_TEXTURE_2D, iblData->brdf);
-		s.setInt("brdfLUT", 17);
-	}
 }
 
-void Mesh::draw(Shader& s, struct IBL_DATA * iblData, bool instancing, int amount, DRAWING_MODE mode)
+void Mesh::draw(Shader& s, bool instancing, int amount, DRAWING_MODE mode)
 {
 	// bind vao
 	glBindVertexArray(vao);
 
 	// use shader and sets its uniforms
 	s.use();
-	shaderProcessing(s, iblData);
+	shaderProcessing(s);
 
 	// draw solid or wireframe
 	if(mode == DRAWING_MODE::SOLID)
@@ -278,18 +235,10 @@ void Mesh::recreate(std::vector<Vertex> aVertices, std::vector<int> aIndices, bo
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, normal)));
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, texCoords)));
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, tangent)));
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, biTangent)));
-	glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)(offsetof(Vertex, bonesID)));
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, weights)));
 	
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glEnableVertexAttribArray(4);
-	glEnableVertexAttribArray(5);
-	glEnableVertexAttribArray(6);
 
 	// EBO
 	glGenBuffers(1, &ebo);
