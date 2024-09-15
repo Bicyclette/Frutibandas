@@ -8,8 +8,14 @@
 #include "editorUI.hpp"
 #include "allocation.hpp"
 
-#define SERVER "frutibandas.eternaltwin.org"
-#define PORT 50380
+//#define SERVER "frutibandas.eternaltwin.org"
+//#define PORT 50380
+
+//#define SERVER "raspberrypi-1.home"
+//#define PORT 7777
+
+#define SERVER "vps-ce89df6a.vps.ovh.net"
+#define PORT 7777
 
 void connect(std::shared_ptr<Game>& game)
 {
