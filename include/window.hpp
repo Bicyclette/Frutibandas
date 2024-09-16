@@ -8,7 +8,7 @@
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <bitset>
-#include <omp.h>
+//#include <omp.h>
 #include <cmath>
 #include <memory>
 #include "color.hpp"

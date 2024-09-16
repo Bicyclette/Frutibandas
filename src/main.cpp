@@ -383,14 +383,16 @@ void render(std::shared_ptr<Game> game, std::shared_ptr<WindowManager> client)
 	game->setActiveScene(0);
 
 	// delta
-	double currentFrame{0.0f};
-	double lastFrame{0.0};
+	auto epoch = std::chrono::high_resolution_clock::now();
+	auto currentFrame = std::chrono::high_resolution_clock::now();
+	auto lastFrame = std::chrono::high_resolution_clock::now();
 	float delta{0.0f};
 
 	while(client->isAlive())
 	{
-		currentFrame = omp_get_wtime();
-		delta = static_cast<float>(currentFrame - lastFrame);
+		currentFrame = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> elapsed = currentFrame - lastFrame;
+		delta = static_cast<float>(elapsed.count());
 
 		if (game->m_bandas.m_writer.m_cursor.m_focus == 2)
 		{
@@ -411,7 +413,9 @@ void render(std::shared_ptr<Game> game, std::shared_ptr<WindowManager> client)
 		game->updateSceneActiveCameraView(game->getActiveScene(), client->m_userInputs, client->m_mouseData, delta);
 
 		// draw scene
-		game->draw(delta, currentFrame, c_screen_width, c_screen_height, draw_mode, debug, debugPhysics);
+		std::chrono::duration<double> t = currentFrame - epoch;
+		double total_t = t.count();
+		game->draw(delta, total_t, c_screen_width, c_screen_height, draw_mode, debug, debugPhysics);
 		game->sound_manager();
 
 		client->resetEvents();
