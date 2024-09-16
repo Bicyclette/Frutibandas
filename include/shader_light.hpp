@@ -11,7 +11,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <assimp/scene.h>
 #include <cstdio>
 #include <string.h>
 
@@ -110,7 +109,6 @@ struct Material
 };
 
 struct Texture createTexture(const std::string & texPath, TEXTURE_TYPE t, bool flip);
-struct Texture createTextureFromData(aiTexture* embTex, TEXTURE_TYPE t, bool flip);
 
 enum class LIGHT_TYPE
 {

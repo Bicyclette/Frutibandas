@@ -656,61 +656,6 @@ struct Texture createTexture(const std::string & texPath, TEXTURE_TYPE t, bool f
 	return tex;
 }
 
-struct Texture createTextureFromData(aiTexture* embTex, TEXTURE_TYPE t, bool flip)
-{
-	GLuint texId;
-	GLenum srcFormat;
-	GLenum destFormat;
-	int width;
-	int height;
-	int channels;
-	unsigned char* data;
-	stbi_set_flip_vertically_on_load(flip);
-
-	if(embTex->mHeight == 0)
-		data = stbi_load_from_memory(reinterpret_cast<unsigned char*>(embTex->pcData), embTex->mWidth, &width, &height, &channels, 0);
-	else
-		data = stbi_load_from_memory(reinterpret_cast<unsigned char*>(embTex->pcData), embTex->mWidth * embTex->mHeight, &width, &height, &channels, 0);
-
-	if(data)
-	{
-		if(channels == 3)
-		{
-			if(t == TEXTURE_TYPE::DIFFUSE)
-				srcFormat = GL_SRGB;
-			else
-				srcFormat = GL_RGB;
-			destFormat = GL_RGB;
-		}
-		else if(channels == 4)
-		{
-			if(t == TEXTURE_TYPE::DIFFUSE)
-				srcFormat = GL_SRGB_ALPHA;
-			else
-				srcFormat = GL_RGBA;
-			destFormat = GL_RGBA;
-		}
-
-		glGenTextures(1, &texId);
-		glBindTexture(GL_TEXTURE_2D, texId);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, srcFormat, width, height, 0, destFormat, GL_UNSIGNED_BYTE, data);
-	}
-	else
-	{
-		std::cerr << "Error while trying to load embedded texture !\n";
-	}
-
-	stbi_image_free(data);
-
-	struct Texture tex(texId, t, "embedded");
-
-	return tex;
-}
-
 Light::Light(SHADOW_QUALITY quality, glm::vec3 pos, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec) :
 	shadow_quality(quality),
 	position(pos),
