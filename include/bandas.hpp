@@ -1,6 +1,9 @@
 #ifndef BANDAS_HPP
 #define BANDAS_HPP
 
+#include <string>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <fstream>
 #include <mutex>
@@ -200,5 +203,14 @@ class Bandas
 		Cow m_cow;
 		std::vector<struct Advertiser> m_advertiser;
 };
+
+// Fonction pour retirer les espaces à gauche
+std::string ltrim(const std::string& s);
+
+// Fonction pour retirer les espaces à droite
+std::string rtrim(const std::string& s);
+
+// Fonction pour retirer les espaces des deux côtés
+std::string trim(const std::string& s);
 
 #endif

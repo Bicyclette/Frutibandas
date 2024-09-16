@@ -1,5 +1,25 @@
 #include "bandas.hpp"
 
+// Fonction pour retirer les espaces à gauche
+std::string ltrim(const std::string& s)
+{
+	size_t start = s.find_first_not_of(" \t\n\r\f\v");
+	return (start == std::string::npos) ? "" : s.substr(start);
+}
+
+// Fonction pour retirer les espaces à droite
+std::string rtrim(const std::string& s)
+{
+	size_t end = s.find_last_not_of(" \t\n\r\f\v");
+	return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+}
+
+// Fonction pour retirer les espaces des deux côtés
+std::string trim(const std::string& s)
+{
+	return rtrim(ltrim(s));
+}
+
 Bandas::Bandas(Graphics& graphics) :
 	m_graphics(graphics),
 	m_text(c_screen_width, c_screen_height),
@@ -23,7 +43,11 @@ Bandas::Bandas(Graphics& graphics) :
 	if(user_data.is_open())
 	{
 		user_data.getline(line, 256);
-		m_writer.init(std::string(line));
+		std::string pseudo{ line };
+		pseudo = trim(pseudo);
+		m_writer.init(pseudo);
+		m_me.m_pseudo = pseudo;
+		std::cout << "pseudo = " << m_me.m_pseudo << std::endl;
 		user_data.getline(line, 256);
 		m_me.m_avatar.create_from_net_data(std::string(line));
 		user_data.close();
