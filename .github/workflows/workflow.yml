@@ -35,6 +35,12 @@ jobs:
       - name: Build with CMake
         run: cmake --build build --config Release
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frutibandas_ubuntu
+          path: build
+
   build-macos:
     runs-on: macos-latest
 
@@ -56,6 +62,12 @@ jobs:
 
       - name: Build with CMake
         run: cmake --build build --config Release
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frutibandas_macos
+          path: build
   
   build-windows10:
     runs-on: windows-2019
@@ -78,3 +90,9 @@ jobs:
 
       - name: Build with CMake
         run: cmake --build build --config Release
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frutibandas_win10
+          path: build
