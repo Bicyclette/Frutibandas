@@ -17,6 +17,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install some linux libs
+        run: sudo apt-get install libxmu-dev libxi-dev libgl-dev build-essential
+
       - name: Install vcpkg
         run: |
           git clone https://github.com/microsoft/vcpkg.git
@@ -27,13 +30,10 @@ jobs:
           ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
 
       - name: Configure with CMake
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
 
       - name: Build with CMake
-        run: cmake --build . --config Release
+        run: cmake --build build --config Release
 
   build-macos:
     runs-on: macos-latest
@@ -52,13 +52,10 @@ jobs:
           ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
 
       - name: Configure with CMake
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
 
       - name: Build with CMake
-        run: cmake --build . --config Release
+        run: cmake --build build --config Release
   
   build-windows10:
     runs-on: windows-2019
@@ -77,13 +74,10 @@ jobs:
           ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
 
       - name: Configure with CMake
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
 
       - name: Build with CMake
-        run: cmake --build . --config Release
+        run: cmake --build build --config Release
 
   build-windows8:
     runs-on: windows-2016
@@ -102,11 +96,8 @@ jobs:
           ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
 
       - name: Configure with CMake
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
 
       - name: Build with CMake
-        run: cmake --build . --config Release
+        run: cmake --build build --config Release
 
