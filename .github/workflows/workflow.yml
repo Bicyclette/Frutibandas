@@ -1,78 +1,112 @@
-name: workflow
+name: build
 
-#on:
-#  push:
-#    branches: [ "main" ]
-#  pull_request:
-#    branches: [ "main" ]
+on:
+  push:
+    branches:
+      - main
 
-env:
-  BUILD_TYPE: Release
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build_windows:
-    runs-on: windows-latest
+  build-ubuntu:
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Get Conan
-      uses: turtlebrowser/get-conan@main
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.sh
 
-    - name: Conan profile
-      run: conan profile new default --detect
+      - name: Install dependencies with vcpkg
+        run: |
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
 
-    - name: Conan profile update package manager mode
-      run: conan profile update conf.tools.system.package_manager:mode=install default
+      - name: Configure with CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
 
-    - name: Dependencies
-      run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
-      
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      - name: Build with CMake
+        run: cmake --build . --config Release
 
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v3
-      with:
-        # artifact name
-        name: frutibandas
-        path: ${{github.workspace}}/build/bin/*
-        retention-days: 90
-
-  build_mac:
+  build-macos:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Get Conan
-      run: brew install conan
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Conan profile
-      run: conan profile new default --detect
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.sh
 
-    - name: Conan profile update package manager mode
-      run: conan profile update conf.tools.system.package_manager:mode=install default
+      - name: Install dependencies with vcpkg
+        run: |
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
 
-    - name: Conan profile set compiler to clang
-      run: conan profile update settings.compiler=clang default
+      - name: Configure with CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
 
-    - name: Dependencies
-      run: conan install ${{github.workspace}} -s build_type=Release --build missing --install-folder=${{github.workspace}}/build
-      
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      - name: Build with CMake
+        run: cmake --build . --config Release
+  
+  build-windows10:
+    runs-on: windows-2019
 
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v3
-      with:
-        # artifact name
-        name: frutibandas
-        path: ${{github.workspace}}/build/bin/*
-        retention-days: 90
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.bat
+
+      - name: Install dependencies with vcpkg
+        run: |
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
+
+      - name: Configure with CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build with CMake
+        run: cmake --build . --config Release
+
+  build-windows8:
+    runs-on: windows-2016
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.bat
+
+      - name: Install dependencies with vcpkg
+        run: |
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
+
+      - name: Configure with CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build with CMake
+        run: cmake --build . --config Release
+
