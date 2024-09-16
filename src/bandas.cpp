@@ -47,7 +47,6 @@ Bandas::Bandas(Graphics& graphics) :
 		pseudo = trim(pseudo);
 		m_writer.init(pseudo);
 		m_me.m_pseudo = pseudo;
-		std::cout << "pseudo = " << m_me.m_pseudo << std::endl;
 		user_data.getline(line, 256);
 		m_me.m_avatar.create_from_net_data(std::string(line));
 		user_data.close();
