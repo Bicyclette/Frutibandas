@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.10)
 
 project(frutibandas)
 
@@ -63,7 +63,15 @@ set(HEADERS
 	include/card.hpp
 	include/gl_debug.hpp)
 
-add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
+if(WIN32)
+	add_executable(${PROJECT_NAME} WIN32 ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
+else()
+	add_executable(${PROJECT_NAME} ${SRCS} ${HEADERS} ${APP_ICON_RESOURCE_WINDOWS})
+endif()
+
+if(WIN32)
+	set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 
 find_package(OpenGL REQUIRED)
 if(OPENGL_FOUND)
@@ -88,26 +96,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
 find_package(GLEW CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE GLEW::GLEW)
 
-#if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-#    find_package(LLVM_OPENMP CONFIG REQUIRED)
-#	target_link_libraries(${PROJECT_NAME} PRIVATE LLVM_OPENMP::LLVM_OPENMP)
-#else()
-#	find_package(OpenMP COMPONENTS CXX)
-#	if(OpenMP_CXX_FOUND)
-#		target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
-#	else()
-#		find_package(OPENMP)
-#		if(OPENMP_FOUND)
-#			target_link_libraries(${PROJECT_NAME} ${OpenMP_LD_FLAGS})
-#		endif()
-#	endif()
-#endif()
-
 find_package(unofficial-enet CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::enet::enet)
 
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/net_config DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/bin)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/bin)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/net_config DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/bin)

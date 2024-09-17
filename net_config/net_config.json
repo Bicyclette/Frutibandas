@@ -1,0 +1,10 @@
+{
+  "bicyclette_ovh_vps": {
+    "domain": "vps-ce89df6a.vps.ovh.net",
+    "port" :  7777
+  },
+  "eternal_twin": {
+    "domain": "frutibandas.eternaltwin.org",
+    "port": 50380
+  }
+}

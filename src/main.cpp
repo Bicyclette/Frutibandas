@@ -2,12 +2,35 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <nlohmann/json.hpp>
+#include <exception>
 #include "window.hpp"
 #include "game.hpp"
 #include "framebuffer.hpp"
 
-#define SERVER "vps-ce89df6a.vps.ovh.net"
-#define PORT 7777
+using json = nlohmann::json;
+
+json open_json(const std::string & file_path)
+{
+	std::ifstream file{ file_path };
+	if (file.is_open())
+	{
+		json jsonData;
+		try {
+			file >> jsonData;
+			file.close();
+			return jsonData;
+		}
+		catch (json::parse_error& e) {
+			std::string log{"Error when parsing json file \"" + file_path + "\": " + e.what()};
+		}
+	}
+	else
+	{
+		std::string log{ "Error: failed opening json file \"" + file_path + "\"" };
+		throw std::runtime_error(log);
+	}
+}
 
 void connect(std::shared_ptr<Game>& game)
 {
@@ -27,10 +50,25 @@ void connect(std::shared_ptr<Game>& game)
 	int code = std::atoi(message.substr(0, message.find_first_of(':')).c_str());
 	if(code == 0)
 	{
-		if (game->m_bandas.m_net.connect(SERVER, PORT))
-		{
-			// send pseudo
-			game->m_bandas.m_net.send_data("nn:" + game->m_bandas.m_me.m_pseudo);
+		// open network config file
+		try {
+			json netConfJSON = open_json("net_config/net_config.json");
+
+			for (auto& [key, value] : netConfJSON.items())
+			{
+				std::string server = value["domain"];
+				int port = value["port"];
+
+				if (game->m_bandas.m_net.connect(server, port))
+				{
+					// send pseudo
+					game->m_bandas.m_net.send_data("nn:" + game->m_bandas.m_me.m_pseudo);
+					break;
+				}
+			}
+		}
+		catch (std::exception & e) {
+			std::cerr << "Error: " << e.what() << std::endl;
 		}
 	}
 }

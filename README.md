@@ -23,7 +23,7 @@ Bringing the game Frutibandas back to life.<br>
 ## Build
 
 ```
-./vcpkg install enet freetype glew libsndfile sdl2 openal-soft
+./vcpkg install enet freetype glew libsndfile sdl2 openal-soft nlohmann-json
 mkdir build
 cd build
 cmake .. -DCMAKE_TOOLCHAIN_FILE="C:\dev\vcpkg\scripts\buildsystems\vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
