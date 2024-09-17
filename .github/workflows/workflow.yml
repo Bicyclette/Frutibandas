@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies with vcpkg
         run: |
-          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew nlohmann-json
 
       - name: Configure with CMake
         run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
@@ -55,7 +55,7 @@ jobs:
 
       - name: Install dependencies with vcpkg
         run: |
-          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew nlohmann-json
 
       - name: Configure with CMake
         run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
@@ -83,7 +83,7 @@ jobs:
 
       - name: Install dependencies with vcpkg
         run: |
-          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew nlohmann-json
 
       - name: Configure with CMake
         run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
