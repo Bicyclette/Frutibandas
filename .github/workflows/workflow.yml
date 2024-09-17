@@ -96,3 +96,31 @@ jobs:
         with:
           name: frutibandas_win10
           path: build
+
+  build-windows8:
+    runs-on: windows-2016
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.bat
+
+      - name: Install dependencies with vcpkg
+        run: |
+          ./vcpkg/vcpkg install sdl2 freetype libsndfile openal-soft enet glew nlohmann-json
+
+      - name: Configure with CMake
+        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="./vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build with CMake
+        run: cmake --build build --config Release
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frutibandas_win10
+          path: build
