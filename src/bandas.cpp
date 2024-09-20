@@ -2368,7 +2368,7 @@ void Bandas::click_on_orange_card(int index)
 		break;
 	case 9: // renfort
 		list = m_board.get_free_tiles();
-		if (list.size() >= 3) {
+		if ((list.size()/2) > 0) {
 			reinforcement_position = m_board.get_reinforcement_position(list);
 			g_msg2server_mtx.lock();
 			g_msg2server.emplace("7:9." + std::to_string(index) + "." + reinforcement_position);
@@ -2439,7 +2439,7 @@ void Bandas::click_on_banana_card(int index)
 		break;
 	case 9: // renfort
 		list = m_board.get_free_tiles();
-		if (list.size() >= 3) {
+		if ((list.size()/2) > 0) {
 			reinforcement_position = m_board.get_reinforcement_position(list);
 			g_msg2server_mtx.lock();
 			g_msg2server.emplace("7:9." + std::to_string(index) + "." + reinforcement_position);

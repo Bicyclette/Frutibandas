@@ -358,6 +358,7 @@ struct Board
 	std::string to_string();
 	int get_banana_count();
 	int get_orange_count();
+	void debug_draw();
 	void draw(Logic& logic, std::vector<Advertiser>& advertiser, float delta, bool standby);
 	GLuint get_banana_texture(Logic& logic, int col, int line, float timer);
 	GLuint get_orange_texture(Logic& logic, int col, int line, float timer);

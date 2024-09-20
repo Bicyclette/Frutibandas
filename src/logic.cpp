@@ -122,6 +122,31 @@ int Board::get_orange_count()
 	return count;
 }
 
+void Board::debug_draw()
+{
+	std::cout << "==================== BOARD ====================" << std::endl;
+	for (int i = 0; i < 8; ++i)
+	{
+		for (int j = 0; j < 8; ++j)
+		{
+			if (j == 0) {
+				if (tile[j][i].state == Tile::STATE::ALIVE) {
+					std::cout << "|";
+					std::cout << tile[j][i].fruit.type;
+					std::cout << "|";
+				}
+			}
+			else {
+				if (tile[j][i].state == Tile::STATE::ALIVE) {
+					std::cout << tile[j][i].fruit.type << "|";
+				}
+			}
+		}
+		std::cout << std::endl;
+	}
+	std::cout << "==================== BOARD ====================" << std::endl;
+}
+
 void Board::draw(Logic& logic, std::vector<Advertiser>& advertiser, float delta, bool standby)
 {
 	for (int line = bounds.top; line <= bounds.bottom; ++line)
@@ -1141,7 +1166,7 @@ std::vector<int> Board::get_free_tiles()
 std::string Board::get_reinforcement_position(std::vector<int> & list)
 {
 	const int list_size = list.size() / 2;
-	RandomGenerator rg(0, (list_size/2) - 1);
+	RandomGenerator rg(0, list_size - 1);
 	
 	std::vector<int> position;
 	std::vector<int> index;
@@ -1153,8 +1178,8 @@ std::string Board::get_reinforcement_position(std::vector<int> & list)
 			id = rg.gen();
 		}
 		index.push_back(id);
-		position.push_back(list[id*2]);
-		position.push_back(list[id*2+1]);
+		position.push_back(list[id*2]);   // column
+		position.push_back(list[id*2+1]); // line
 	}
 	std::string res;
 	for (int i = 0; i < num_bandas; ++i) {
